@@ -1,0 +1,20 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# Home page
+GET     /                           controllers.MainController.index()
+POST    /articles                   controllers.MainController.getArticles
+GET     /articles                   controllers.MainController.getArticlesAsync
+GET     /dbaccess                   controllers.MainController.asyncDBTest
+GET     /article                    controllers.MainController.getArticle(title: String)
+
+# 2. parameter will appear in URI
+# POST    /fi                         controllers.MainControllerler.getFachinfo(id: Long)
+GET     /fi/id/:id                  controllers.MainController.fachinfo(id: Long)
+GET     /fii                        controllers.MainController.getFachinfo(id: Long)
+
+GET     /javascriptRoutes           controllers.MainController.javascriptRoutes
+
+# Map static resources from the /public folder to the /assets URL path
+GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)

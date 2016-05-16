@@ -1,0 +1,52 @@
+@(fachinfo: String="")(titles: String="")(search_key: String="")
+
+@main("AmiKoWeb") {
+    <script type="text/javascript" src="@routes.Assets.versioned("javascripts/typeahead.bundle.js")"></script>
+    <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.searchdb.js")"></script>
+    <script type="text/javascript">
+        /*** Temporary script... ***/
+        function move_to_anchor(anchor) {
+            document.getElementById(anchor).scrollIntoView(true);
+        }
+        function clear_field() {
+            document.getElementById("search-field").value = "";
+            /* Clear twitter-typeahead cache */
+            $('#getArticle .twitter-typeahead').typeahead('val', '');
+        }
+    </script>
+
+
+    <header>
+        <a href="http://localhost:9000/" class="home"><img border="0" alt="Home" src="@routes.Assets.versioned("images/amiko_icon.png")" height="48"></a>
+        <a href="https://play.google.com/store/apps/details?id=com.ywesee.amiko.de&hl=de" target="_blank" class="links"><img border="0" alt="Android" src="@routes.Assets.versioned("images/play_store_icon.png")" height="48"></a>
+        <a href="https://itunes.apple.com/ch/app/amiko-desitin/id687642725?mt=8" target="_blank" class="links"><img border="0" alt="iOS" src="@routes.Assets.versioned("images/app_store_ios_icon.png")" height="48"></a>
+        <a href="https://itunes.apple.com/ch/app/amiko-desitin/id708142753?mt=12" target="_blank" class="links"><img border="0" alt="OS X" src="@routes.Assets.versioned("images/app_store_osx_icon.png")" height="48"></a>
+        <a href="http://www.ywesee.com/AmiKo/Windows" target="_blank" class="links"><img border="0" alt="Windows" src="@routes.Assets.versioned("images/windows_icon.png")" height="48"></a>
+    </header>
+
+    <div id="flex-container">
+        <aside id="flex-aside-one">
+            <form id="getArticle"><input id="search-field" class="twitter-typeahead" type="search" value="@(search_key)"
+                placeholder="Suche Präparat" autofocus onclick='clear_field();' /></form>
+            <div id="article_button"><button class="rounded-button">Präparat</button></div>
+            <div id="owner_button"><button class="rounded-button">Inhaberin</button></div>
+            <div id="substance_button"><button class="rounded-button">Wirkstoff/ATC Code</button></div>
+            <div id="regnr_button"><button class="rounded-button">Zulassungsnummer</button></div>
+            <div id="therapy_button"><button class="rounded-button">Therapie</button></div>
+            <div id="special-dropdown" class="twitter-typeahead"></div>
+        </aside>
+
+        <article id="flex-main-content">
+            <div>@Html(fachinfo)</div>
+        </article>
+
+        <aside id="flex-aside-two">
+            <div id="section-ids">@Html(titles)</div>
+        </aside>
+    </div>
+
+    <footer>
+        <div>AmiKo Web</div>
+        <div><a href="http://www.ywesee.com/">Copyright © 2016 ywesee GmbH</a></div>
+    </footer>
+}

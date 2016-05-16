@@ -111,9 +111,14 @@ aside {
     -moz-box-orient: vertical; -webkit-box-orient: vertical; box-orient: vertical;
     -moz-box-ordinal-group: 1; -webkit-box-ordinal-group: 1; box-ordinal-group: 1;
     -moz-box-flex: 1; -webkit-box-flex: 1;  box-flex: 1;
-    -moz-transition:1s all; -webkit-transition:1s all; -ms-transition:1s all;
     background-color: white;
-    transition:1s all;
+    -webkit-transition: max-width 1s; /* Safari */
+    -moz-transition: max-width 1s;
+    transition: max-width 1s;
+}
+
+#flex-aside-one:hover {
+    max-width: 640px;
 }
 
 #flex-aside-two {

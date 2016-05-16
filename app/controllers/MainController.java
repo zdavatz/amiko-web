@@ -1,3 +1,22 @@
+/*
+Copyright (c) 2016 ML <cybrmx@gmail.com>
+
+This file is part of AmiKoWeb.
+
+AmiKoWeb is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package controllers;
 
 import models.Medication;
@@ -7,7 +26,6 @@ import views.html.*;
 import play.data.FormFactory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
@@ -211,7 +229,7 @@ public class MainController extends Controller {
     public Result getArticle(String name) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchTitle(name));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getTherapy(), n.getPackInfo()))
+                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo()))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }

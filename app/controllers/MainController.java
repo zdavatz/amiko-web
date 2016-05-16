@@ -7,13 +7,17 @@ import views.html.*;
 import play.data.FormFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.sql.SQLException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -50,18 +54,103 @@ public class MainController extends Controller {
     @Inject FormFactory formFactory;
 
     private class Article {
-        Article(long id, String title, String author, String atc_code, String substances) {
-            this.id = id;
-            this.title = title;
-            this.author = author;
-            this.atc_code = atc_code;
-            this.substances = substances;
+        // Private
+        public String _title = "";
+        public String _author = "";
+        public String _atccode = "";
+        public String _regnrs = "";
+        public String _therapy = "";
+        private String _packinfo = "";
+        private String _atcclass = "";
+
+        // Interface variables
+        public long id = 0;
+        public String title = "";
+        public String author = "";
+        public String atccode = "";
+        public String regnrs = "";
+        public String therapy = "";
+        public String packinfo = "";
+
+        Article(long _id, String _title, String _author, String _atccode, String _atcclass, String _regnrs, String _therapy, String _packinfo) {
+            // Private
+            this._title = _title;
+            this._author = _author;
+            this._atccode = _atccode;
+            this._regnrs = _regnrs;
+            this._therapy = _therapy;
+            this._packinfo = _packinfo;
+            this._atcclass = _atcclass;
+
+            // Interface
+            this.id = _id;
+            this.title = _title;
+            this.packinfo = packinfoStr();
+            this.author = _author;
+            this.atccode = atccodeStr();
+            this.regnrs = _regnrs;
+            this.therapy = therapyStr();
         }
-        public long id;
-        public String title;
-        public String author;
-        public String atc_code;
-        public String substances;
+
+        String packinfoStr() {
+            String pack_info_str = "";
+            Pattern p_red = Pattern.compile(".*O]");
+            Pattern p_green = Pattern.compile(".*G]");
+            Scanner pack_str_scanner = new Scanner(_packinfo);
+            while (pack_str_scanner.hasNextLine()) {
+                String pack_str_line = pack_str_scanner.nextLine();
+                Matcher m_red = p_red.matcher(pack_str_line);
+                Matcher m_green = p_green.matcher(pack_str_line);
+                if (m_red.find())
+                    pack_info_str += "<font color=red size=-1><p>" + pack_str_line	+ "</p></font>";
+                else if (m_green.find())
+                    pack_info_str += "<font color=green size=-1><p>" + pack_str_line + "</p></font>";
+                else
+                    pack_info_str += "<font color=gray size=-1><p>" + pack_str_line + "</p></font>";
+            }
+            pack_str_scanner.close();
+            return pack_info_str;
+        }
+
+        String atccodeStr() {
+            String atc_code_str = "";
+            String atc_title_str = "";
+
+            if (_atccode != null) {
+                String[] m_code = _atccode.split(";");
+                if (m_code.length > 1) {
+                    atc_code_str = m_code[0];
+                    atc_title_str = m_code[1];
+                }
+                if (_atcclass != null) {
+                    String[] m_class = _atcclass.split(";");
+                    String atc_class_str;
+                    if (m_class.length == 1) {
+                        atc_code_str = "<font color=gray size=-1><p>" + atc_code_str + " - " + atc_title_str + "</p><p>" + m_class[0] + "</p></font>";
+                    } else if (m_class.length == 2) { // *** Ver.<1.2.4
+                        atc_code_str = "<font color=gray size=-1><p>" + atc_code_str + " - " + atc_title_str + "</p><p>" + m_class[1] + "</p></font>";
+                    } else if (m_class.length == 3) { // *** Ver. 1.2.4 and above
+                        atc_class_str = "";
+                        String[] atc_class_l4_and_l5 = m_class[2].split("#");
+                        if (atc_class_l4_and_l5.length > 0)
+                            atc_class_str = atc_class_l4_and_l5[atc_class_l4_and_l5.length - 1];
+                        atc_code_str = "<font color=gray size=-1><p>" + atc_code_str + " - " + atc_title_str + "</p><p>" + atc_class_str + "</p><p>" + m_class[1] + "</p></font>";
+                    }
+                } else {
+                    atc_code_str = "<font color=gray size=-1><p>" + atc_code_str + " - " + atc_title_str + "</p><p>k.A.</p></font>";
+                }
+            }
+            return atc_code_str;
+        }
+
+        String therapyStr() {
+            String application_str = "";
+            if (_therapy != null) {
+                application_str = _therapy.replaceAll(";", "<p>");
+                application_str = "<font color=gray size=-1>" + application_str + "</font>";
+            }
+            return application_str;
+        }
     }
 
     public Result index() {
@@ -122,7 +211,7 @@ public class MainController extends Controller {
     public Result getArticle(String name) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchTitle(name));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getSubstances()))
+                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getTherapy(), n.getPackInfo()))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }

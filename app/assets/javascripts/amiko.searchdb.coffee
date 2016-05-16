@@ -29,15 +29,25 @@ $ ->
     templates:
       suggestion: (data) ->
         if search_type == 1
-          "<div style='display:table;vertical-align:middle;'><p style='color:#444444;'><b>#{data.title}</b></p><p style='color:#8888cc;'>#{data.author}</p></div>"
+          "<div style='display:table;vertical-align:middle;'>\
+          <p style='color:#444444;'><b>#{data.title}</b></p>\
+          <p style='color:#cccccc;'>#{data.packinfo}</p></div>"
         else if search_type == 2
-          "<div style='display:table;vertical-align:middle;'><p style='color:#444444;'><b>#{data.author}</b></p><p style='color:#8888cc;'>#{data.title}</p></div>"
+          "<div style='display:table;vertical-align:middle;'>\
+          <p style='color:#444444;'><b>#{data.title}</b></p>\
+          <p style='color:#8888cc;'>#{data.author}</p></div>"
         else if search_type == 3
-          "<div style='display:table;vertical-align:middle;'><p style='color:#444444;'><b>#{data.substances}</b></p><p style='color:#8888cc;'>#{data.title}</p></div>"
+          "<div style='display:table;vertical-align:middle;'>\
+          <p style='color:#444444;'><b>#{data.title}</b></p>\
+          <p style='color:#8888cc;'>#{data.atccode}</p></div>"
         else if search_type == 4
-          "<div style='display:table;vertical-align:middle;'><p style='color:#444444;'><b>#{data.atc_code}</b></p><p style='color:#8888cc;'>#{data.title}</p></div>"
+          "<div style='display:table;vertical-align:middle;'>\
+          <p style='color:#444444;'><b>#{data.title}</b></p>\
+          <p style='color:#8888cc;'>#{data.regnrs}</p></div>"
         else if search_type == 5
-          "<div style='display:table;vertical-align:middle;'><p style='color:#444444;'><b>#{data.atc_code}</b></p><p style='color:#8888cc;'>#{data.title}</p></div>"
+          "<div style='display:table;vertical-align:middle;'>\
+          <p style='color:#444444;'><b>#{data.title}</b></p>\
+          <p style='color:#8888cc;'>#{data.therapy}</p></div>"
 
   $('#getArticle .twitter-typeahead').on 'typeahead:asyncreceive', (event, selection) ->
     console.log 'ASYNC_RECV'

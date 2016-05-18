@@ -4,14 +4,15 @@
 
 # Home page
 GET     /                           controllers.MainController.index()
-POST    /articles                   controllers.MainController.getArticles
-GET     /articles                   controllers.MainController.getArticlesAsync
-GET     /dbaccess                   controllers.MainController.asyncDBTest
-GET     /article                    controllers.MainController.getArticle(title: String)
+GET     /name                       controllers.MainController.getName(name: String)
+GET     /owner                      controllers.MainController.getOwner(owner: String)
+GET     /atc                        controllers.MainController.getATC(atc: String)
+GET     /regnr                      controllers.MainController.getRegnr(regnr: String)
+GET     /therapy                    controllers.MainController.getTherapy(therapy: String)
 
 # 2. parameter will appear in URI
-# POST    /fi                         controllers.MainControllerler.getFachinfo(id: Long)
-GET     /fi/id/:id                  controllers.MainController.fachinfo(id: Long)
+GET     /fi/id/:id                  controllers.MainController.fachinfoId(id: Long)
+GET     /fi/ean/:ean                controllers.MainController.fachinfoEan(ean: String)
 GET     /fii                        controllers.MainController.getFachinfo(id: Long)
 
 GET     /javascriptRoutes           controllers.MainController.javascriptRoutes

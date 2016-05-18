@@ -1,7 +1,7 @@
 $ ->
   typed_input = ''
   search_type = 1   # default search type is 'article'
-  search_query = '/article?title=%QUERY'
+  search_query = '/name?name='  # default search query
 
   articles = new Bloodhound(
     datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name')
@@ -9,6 +9,8 @@ $ ->
     remote:
       wildcard: '%QUERY'
       url: search_query
+      replace: (url, query) ->
+        return search_query + query
   )
 
   # kicks off the loading/processing of "remote" and "prefetch"
@@ -50,7 +52,6 @@ $ ->
           <p style='color:#8888cc;'>#{data.therapy}</p></div>"
 
   $('#getArticle .twitter-typeahead').on 'typeahead:asyncreceive', (event, selection) ->
-    console.log 'ASYNC_RECV'
     typed_input = $('.twitter-typeahead').typeahead('val')
 
   $('#getArticle .twitter-typeahead').on 'typeahead:change', (event, selection) ->
@@ -63,8 +64,8 @@ $ ->
 # $.get '/fi?id=' + selection.id
     $.ajax(jsRoutes.controllers.MainController.getFachinfo(selection.id))
     .done (response) ->
-      console.log selection.id + ' -> ' + selection.name
-      window.location.assign '/fi/id/' + selection.id
+      console.log selection.id + ' -> ' + selection.title
+      window.location.assign '/fi/ean/' + selection.eancode
     .fail (jqHXR, textStatus) ->
       alert('error')
 
@@ -77,25 +78,29 @@ $ ->
   $('#article_button').on 'click', ->
     search_type = 1
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
-    $('#search-field').attr 'placeholder', 'Suche Präparat'
+    $('#search-field').attr 'placeholder', 'Suche Präparatname'
+    search_query = '/name?name='
 
   $('#owner_button').on 'click', ->
     search_type = 2
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
     $('#search-field').attr 'placeholder', 'Suche Inhaberin'
+    search_query = '/owner?owner='
 
   $('#substance_button').on 'click', ->
     search_type = 3
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
     $('#search-field').attr 'placeholder', 'Suche Wirkstoff/ATC'
+    search_query = '/atc?atc='
 
   $('#regnr_button').on 'click', ->
     search_type = 4
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
     $('#search-field').attr 'placeholder', 'Suche Zulassungsnummer'
+    search_query = '/regnr?regnr='
 
   $('#therapy_button').on 'click', ->
     search_type = 5
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
     $('#search-field').attr 'placeholder', 'Suche Therapie'
-
+    search_query = '/therapy?therapy='

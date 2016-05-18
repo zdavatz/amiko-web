@@ -57,29 +57,31 @@ public class MainController extends Controller {
     public static final String KEY_CUSTOMER_ID = "customer_id";
     public static final String KEY_PACK_INFO = "pack_info_str";
     public static final String KEY_ADDINFO = "add_info_str";
+    public static final String KEY_PACKAGES = "packages";
 
     private static final String DATABASE_TABLE = "amikodb";
 
     /**
      * Table columns used for fast queries
      */
-    private static final String SHORT_TABLE = String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",
+    private static final String SHORT_TABLE = String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",
             KEY_ROWID, KEY_TITLE, KEY_AUTH, KEY_ATCCODE, KEY_SUBSTANCES, KEY_REGNRS,
             KEY_ATCCLASS, KEY_THERAPY, KEY_APPLICATION, KEY_INDICATIONS,
-            KEY_CUSTOMER_ID, KEY_PACK_INFO, KEY_ADDINFO);
+            KEY_CUSTOMER_ID, KEY_PACK_INFO, KEY_ADDINFO, KEY_PACKAGES);
 
     @Inject Database db;
     @Inject FormFactory formFactory;
 
     private class Article {
         // Private
-        public String _title = "";
-        public String _author = "";
-        public String _atccode = "";
-        public String _regnrs = "";
-        public String _therapy = "";
+        private String _title = "";
+        private String _author = "";
+        private String _atccode = "";
+        private String _regnrs = "";
+        private String _therapy = "";
         private String _packinfo = "";
         private String _atcclass = "";
+        private String _packages = "";
 
         // Interface variables
         public long id = 0;
@@ -89,8 +91,9 @@ public class MainController extends Controller {
         public String regnrs = "";
         public String therapy = "";
         public String packinfo = "";
+        public String eancode = "";
 
-        Article(long _id, String _title, String _author, String _atccode, String _atcclass, String _regnrs, String _therapy, String _packinfo) {
+        Article(long _id, String _title, String _author, String _atccode, String _atcclass, String _regnrs, String _therapy, String _packinfo, String _packages) {
             // Private
             this._title = _title;
             this._author = _author;
@@ -99,6 +102,7 @@ public class MainController extends Controller {
             this._therapy = _therapy;
             this._packinfo = _packinfo;
             this._atcclass = _atcclass;
+            this._packages = _packages;
 
             // Interface
             this.id = _id;
@@ -108,6 +112,7 @@ public class MainController extends Controller {
             this.atccode = atccodeStr();
             this.regnrs = _regnrs;
             this.therapy = therapyStr();
+            this.eancode = eancodeStr();
         }
 
         String packinfoStr() {
@@ -169,14 +174,47 @@ public class MainController extends Controller {
             }
             return application_str;
         }
+
+        String eancodeStr() {
+            if (_packages!=null) {
+                String[] packs = _packages.split("\n");
+                // Extract first ean code
+                if (packs.length>0) {
+                    String p[] = packs[0].split("\\|");
+                    if (p.length>9)
+                        return p[9];
+                }
+            }
+            return "0000000000000";
+        }
     }
 
     public Result index() {
         return ok(index.render("", "", ""));
     }
 
-    public Result fachinfo(long id) {
+    public Result fachinfoId(long id) {
         Medication m = getMedicationWithId(id);
+        String content = m.getContent().replaceAll("<html>|</html>|<body>|</body>|<head>|</head>", "");
+        String[] titles = getSectionTitles(m);
+        String[] section_ids = m.getSectionIds().split(",");
+        String name = m.getTitle();
+        String titles_html;
+        titles_html = "<ul style=\"list-style-type:none;\n\">";
+        for (int i = 0; i < titles.length; ++i) {
+            if (i < section_ids.length)
+                titles_html += "<li><a onclick=\"move_to_anchor('" + section_ids[i] + "')\">" + titles[i] + "</a></li>";
+        }
+        titles_html += "</ul>";
+        // Text-based HTTP response, default encoding: utf-8
+        if (content!=null) {
+            return ok(index.render(content, titles_html, name));
+        }
+        return ok("WEIRD");
+    }
+
+    public Result fachinfoEan(String ean) {
+        Medication m = getMedicationWithEan(ean);
         String content = m.getContent().replaceAll("<html>|</html>|<body>|</body>|<head>|</head>", "");
         String[] titles = getSectionTitles(m);
         String[] section_ids = m.getSectionIds().split(",");
@@ -226,45 +264,48 @@ public class MainController extends Controller {
                 .as("text/javascript");
     }
 
-    public Result getArticle(String name) {
-        CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchTitle(name));
+    public Result getFachinfo(long id) {
+        return redirect(controllers.routes.MainController.fachinfoId(id));
+    }
+
+    public Result getName(String name) {
+        CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchName(name));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo()))
+                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages()))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
 
-    public Result getFachinfo(long id) {
-        return redirect(controllers.routes.MainController.fachinfo(id));
-    }
-
-    public Result getArticles() {
-        String article = formFactory.form().bindFromRequest().get("name");
-        CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchTitle(article));
-        CompletableFuture<List<String>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> n.getTitle())
+    public Result getOwner(String owner) {
+        CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchOwner(owner));
+        CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
+                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages()))
                 .collect(Collectors.toList()));
-        Result r = names.thenApply(f -> ok(toJson(f))).join();
-        return ok(index.render("", "", ""));
+        return names.thenApply(f -> ok(toJson(f))).join();
     }
 
-    /*
-
-     */
-    public CompletionStage<Result> getArticlesAsync() {
-        long starttime = java.lang.System.currentTimeMillis();
-        String article = formFactory.form(String.class).bindFromRequest().get();
-        CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchTitle(article));
-        CompletableFuture<List<String>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> n.getTitle())
+    public Result getATC(String atc) {
+        CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchATC(atc));
+        CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
+                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages()))
                 .collect(Collectors.toList()));
-        // return names.thenApply(f -> ok(String.format("Time: %.3f\n", (System.currentTimeMillis() - starttime) / 1000.0) + toJson(f)));
-        return names.thenApply(f -> ok(toJson(f)));
+        return names.thenApply(f -> ok(toJson(f))).join();
     }
 
-    public CompletionStage<Result> asyncDBTest() {
-        CompletableFuture<Integer> future = CompletableFuture.supplyAsync(()-> numRecords());
-        return future.thenApply(f -> ok(String.format("Num records = %d\n", f)));
+    public Result getRegnr(String regnr) {
+        CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchRegnr(regnr));
+        CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
+                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages()))
+                .collect(Collectors.toList()));
+        return names.thenApply(f -> ok(toJson(f))).join();
+    }
+
+    public Result getTherapy(String therapy) {
+        CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchTherapy(therapy));
+        CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
+                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages()))
+                .collect(Collectors.toList()));
+        return names.thenApply(f -> ok(toJson(f))).join();
     }
 
     private int numRecords() {
@@ -282,7 +323,7 @@ public class MainController extends Controller {
         return num_rec;
     }
 
-    public List<Medication> searchTitle(String title) {
+    public List<Medication> searchName(String name) {
         List<Medication> med_titles = new ArrayList<>();
 
         try {
@@ -290,14 +331,14 @@ public class MainController extends Controller {
             Statement stat = conn.createStatement();
             ResultSet rs;
             // Allow for search to start inside a word...
-            if (title.length()>2) {
+            if (name.length()>2) {
                 String query = "select " + SHORT_TABLE + " from " + DATABASE_TABLE + " where "
-                        + KEY_TITLE + " like " + "'" + title + "%' or "
-                        + KEY_TITLE + " like " + "'%" + title + "%'";
+                        + KEY_TITLE + " like " + "'" + name + "%' or "
+                        + KEY_TITLE + " like " + "'%" + name + "%'";
                 rs = stat.executeQuery(query);
             } else {
                 String query = "select " + SHORT_TABLE + " from " + DATABASE_TABLE + " where "
-                        + KEY_TITLE + " like " + "'" + title + "%'";
+                        + KEY_TITLE + " like " + "'" + name + "%'";
                 rs = stat.executeQuery(query);
             }
             if (rs!=null) {
@@ -307,10 +348,112 @@ public class MainController extends Controller {
             }
             conn.close();
         } catch (SQLException e) {
-            System.err.println(">> SqlDatabase: SQLException in searchTitle!");
+            System.err.println(">> SqlDatabase: SQLException in searchName!");
         }
 
         return med_titles;
+    }
+
+    public List<Medication> searchOwner(String owner) {
+        List<Medication> med_auth = new ArrayList<>();
+
+        try {
+            Connection conn = db.getConnection();
+            Statement stat = conn.createStatement();
+            ResultSet rs;
+            String query = "select " + SHORT_TABLE + " from " + DATABASE_TABLE
+                    + " where " + KEY_AUTH + " like " + "'" + owner + "%'";
+            rs = stat.executeQuery(query);
+            if (rs!=null) {
+                while (rs.next()) {
+                    med_auth.add(cursorToShortMedi(rs));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println(">> SqlDatabase: SQLException in searchOwner!");
+        }
+
+        return med_auth;
+    }
+
+    public List<Medication> searchATC(String atccode) {
+        List<Medication> med_auth = new ArrayList<>();
+
+        try {
+            Connection conn = db.getConnection();
+            Statement stat = conn.createStatement();
+            ResultSet rs;
+            String query = "select " + SHORT_TABLE + " from " + DATABASE_TABLE + " where "
+                    + KEY_ATCCODE + " like " + "'%;" + atccode + "%' or "
+                    + KEY_ATCCODE + " like " + "'" + atccode + "%' or "
+                    + KEY_ATCCODE + " like " + "'% " + atccode + "%' or "
+                    + KEY_ATCCLASS + " like " + "'" + atccode + "%' or "
+                    + KEY_ATCCLASS + " like " + "'%;" + atccode + "%' or "
+                    + KEY_ATCCLASS + " like " + "'%#" + atccode + "%' or "
+                    + KEY_SUBSTANCES + " like " + "'%, " + atccode + "%' or "
+                    + KEY_SUBSTANCES + " like " + "'" + atccode + "%'";
+            rs = stat.executeQuery(query);
+            if (rs!=null) {
+                while (rs.next()) {
+                    med_auth.add(cursorToShortMedi(rs));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println(">> SqlDatabase: SQLException in searchOwner!");
+        }
+
+        return med_auth;
+    }
+
+    public List<Medication> searchRegnr(String regnr) {
+        List<Medication> med_auth = new ArrayList<>();
+
+        try {
+            Connection conn = db.getConnection();
+            Statement stat = conn.createStatement();
+            ResultSet rs;
+            String query = "select " + SHORT_TABLE + " from " + DATABASE_TABLE + " where "
+                    + KEY_REGNRS + " like " + "'%, " + regnr + "%' or "
+                    + KEY_REGNRS + " like " + "'" + regnr + "%'";
+            rs = stat.executeQuery(query);
+            if (rs!=null) {
+                while (rs.next()) {
+                    med_auth.add(cursorToShortMedi(rs));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println(">> SqlDatabase: SQLException in searchOwner!");
+        }
+
+        return med_auth;
+    }
+
+    public List<Medication> searchTherapy(String application) {
+        List<Medication> med_auth = new ArrayList<>();
+
+        try {
+            Connection conn = db.getConnection();
+            Statement stat = conn.createStatement();
+            ResultSet rs;
+            String query = "select " + SHORT_TABLE + " from " + DATABASE_TABLE
+                    + " where " + KEY_APPLICATION + " like " + "'%,"
+                    + application + "%' or " + KEY_APPLICATION + " like " + "'"
+                    + application + "%' or " + KEY_APPLICATION + " like "
+                    + "'% " + application + "%' or " + KEY_APPLICATION
+                    + " like " + "'%;" + application + "%' or "
+                    + KEY_INDICATIONS + " like " + "'" + application + "%' or "
+                    + KEY_INDICATIONS + " like " + "'%;" + application + "%'";
+            rs = stat.executeQuery(query);
+            if (rs!=null) {
+                while (rs.next()) {
+                    med_auth.add(cursorToShortMedi(rs));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println(">> SqlDatabase: SQLException in searchOwner!");
+        }
+
+        return med_auth;
     }
 
     public Medication getMedicationWithId(long rowId) {
@@ -318,6 +461,22 @@ public class MainController extends Controller {
             Connection conn = db.getConnection();
             Statement stat = conn.createStatement();
             String query = "select * from " + DATABASE_TABLE + " where " + KEY_ROWID + "=" + rowId;
+            ResultSet rs = stat.executeQuery(query);
+            Medication m = cursorToMedi(rs);
+            conn.close();
+            if (m!=null)
+                return m;
+        } catch (SQLException e) {
+            System.err.println(">> SqlDatabase: SQLException in getContentWithId!");
+        }
+        return null;
+    }
+
+    public Medication getMedicationWithEan(String eancode) {
+        try {
+            Connection conn = db.getConnection();
+            Statement stat = conn.createStatement();
+            String query = "select * from " + DATABASE_TABLE + " where " + KEY_PACKAGES + " like " + "'%" + eancode + "%'";
             ResultSet rs = stat.executeQuery(query);
             Medication m = cursorToMedi(rs);
             conn.close();
@@ -345,6 +504,7 @@ public class MainController extends Controller {
             medi.setCustomerId(result.getInt(11));      // KEY_CUSTOMER_ID
             medi.setPackInfo(result.getString(12));     // KEY_PACK_INFO
             medi.setAddInfo(result.getString(13));      // KEY_ADD_INFO
+            medi.setPackages(result.getString(14));     // KEY_PACKAGES
         } catch (SQLException e) {
             System.err.println(">> SqlDatabase: SQLException in cursorToShortMedi");
         }

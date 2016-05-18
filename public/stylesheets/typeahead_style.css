@@ -41,6 +41,10 @@
     box-shadow: 0px 0px 16px 1px rgba(176,196,222,0.4);
 }
 
+.tt-input:hover {
+    border: 2px solid lightsteelblue;
+}
+
 /*Added to hint input.*/
 .twitter-typeahead .hint {
     margin-bottom: 0;
@@ -91,3 +95,5 @@
     width: 100%;
     /* margin-left: 8px; */
 }
+
+

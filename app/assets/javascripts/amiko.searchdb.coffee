@@ -25,8 +25,7 @@ $ ->
     name: 'articles'
     displayKey: 'name'
     limit: '40'
-# "ttAdapter" wraps the suggestion engine in an adapter that
-# is compatible with the typeahead jQuery plugin
+    # "ttAdapter" wraps the suggestion engine in an adapter that is compatible with the typeahead jQuery plugin
     source: articles.ttAdapter()
     templates:
       suggestion: (data) ->
@@ -55,52 +54,59 @@ $ ->
     typed_input = $('.twitter-typeahead').typeahead('val')
 
   $('#getArticle .twitter-typeahead').on 'typeahead:change', (event, selection) ->
-    console.log 'CHANGE'
     typed_input = $('.twitter-typeahead').typeahead('val')
 
   # Retrieves the fachinfo, the URL should be of the form /fi/ean/
   $('#getArticle .twitter-typeahead').on 'typeahead:selected', (event, selection) ->
-# $.post '/fi?id=' + selection.id
-# $.get '/fi?id=' + selection.id
     $.ajax(jsRoutes.controllers.MainController.getFachinfo(selection.id))
     .done (response) ->
       console.log selection.id + ' -> ' + selection.title
       window.location.assign '/fi/ean/' + selection.eancode
     .fail (jqHXR, textStatus) ->
-      alert('error')
+      alert('ajax error')
 
   # Detect list related key up and key down events
   $('#getArticle .twitter-typeahead').on 'typeahead:cursorchange', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')
     $('.twitter-typeahead').val(typed_input)
 
+  # Detect click on search field
+  $('#search-field').on 'click', ->
+    $('search-field').attr 'value', ''
+    $('#getArticle .twitter-typeahead').typeahead('val', '');
+    if search_type == 1
+      search_query = '/name?name='
+    else if search_type == 2
+      search_query = '/owner?owner='
+    else if search_type == 3
+      search_query = '/atc?atc='
+    else if search_type == 4
+      search_query = '/regnr?regnr='
+    else if search_type == 5
+      search_query = '/therapy?therapy='
+
   # Detect click events on filters
   $('#article_button').on 'click', ->
     search_type = 1
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
     $('#search-field').attr 'placeholder', 'Suche Präparatname'
-    search_query = '/name?name='
 
   $('#owner_button').on 'click', ->
     search_type = 2
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
     $('#search-field').attr 'placeholder', 'Suche Inhaberin'
-    search_query = '/owner?owner='
 
   $('#substance_button').on 'click', ->
     search_type = 3
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
     $('#search-field').attr 'placeholder', 'Suche Wirkstoff/ATC'
-    search_query = '/atc?atc='
 
   $('#regnr_button').on 'click', ->
     search_type = 4
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
     $('#search-field').attr 'placeholder', 'Suche Zulassungsnummer'
-    search_query = '/regnr?regnr='
 
   $('#therapy_button').on 'click', ->
     search_type = 5
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
     $('#search-field').attr 'placeholder', 'Suche Therapie'
-    search_query = '/therapy?therapy='

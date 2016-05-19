@@ -15,7 +15,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+*/
 
 package controllers;
 
@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -193,44 +192,35 @@ public class MainController extends Controller {
         return ok(index.render("", "", ""));
     }
 
+    public Result retrieveFachinfo(Medication m) {
+        if (m!=null) {
+            String content = m.getContent().replaceAll("<html>|</html>|<body>|</body>|<head>|</head>", "");
+            String[] titles = getSectionTitles(m);
+            String[] section_ids = m.getSectionIds().split(",");
+            String name = m.getTitle();
+            String titles_html;
+            titles_html = "<ul style=\"list-style-type:none;\n\">";
+            for (int i = 0; i < titles.length; ++i) {
+                if (i < section_ids.length)
+                    titles_html += "<li><a onclick=\"move_to_anchor('" + section_ids[i] + "')\">" + titles[i] + "</a></li>";
+            }
+            titles_html += "</ul>";
+            // Text-based HTTP response, default encoding: utf-8
+            if (content != null) {
+                return ok(index.render(content, titles_html, name));
+            }
+        }
+        return ok("Hasta la vista, baby! You just terminated me.");
+    }
+
     public Result fachinfoId(long id) {
         Medication m = getMedicationWithId(id);
-        String content = m.getContent().replaceAll("<html>|</html>|<body>|</body>|<head>|</head>", "");
-        String[] titles = getSectionTitles(m);
-        String[] section_ids = m.getSectionIds().split(",");
-        String name = m.getTitle();
-        String titles_html;
-        titles_html = "<ul style=\"list-style-type:none;\n\">";
-        for (int i = 0; i < titles.length; ++i) {
-            if (i < section_ids.length)
-                titles_html += "<li><a onclick=\"move_to_anchor('" + section_ids[i] + "')\">" + titles[i] + "</a></li>";
-        }
-        titles_html += "</ul>";
-        // Text-based HTTP response, default encoding: utf-8
-        if (content!=null) {
-            return ok(index.render(content, titles_html, name));
-        }
-        return ok("WEIRD");
+        return retrieveFachinfo(m);
     }
 
     public Result fachinfoEan(String ean) {
         Medication m = getMedicationWithEan(ean);
-        String content = m.getContent().replaceAll("<html>|</html>|<body>|</body>|<head>|</head>", "");
-        String[] titles = getSectionTitles(m);
-        String[] section_ids = m.getSectionIds().split(",");
-        String name = m.getTitle();
-        String titles_html;
-        titles_html = "<ul style=\"list-style-type:none;\n\">";
-        for (int i = 0; i < titles.length; ++i) {
-            if (i < section_ids.length)
-                titles_html += "<li><a onclick=\"move_to_anchor('" + section_ids[i] + "')\">" + titles[i] + "</a></li>";
-        }
-        titles_html += "</ul>";
-        // Text-based HTTP response, default encoding: utf-8
-        if (content!=null) {
-            return ok(index.render(content, titles_html, name));
-        }
-        return ok("WEIRD");
+        return retrieveFachinfo(m);
     }
 
     public String[] getSectionTitles(Medication m) {

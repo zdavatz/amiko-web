@@ -3,18 +3,7 @@
 @main("AmiKoWeb") {
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/typeahead.bundle.js")"></script>
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.searchdb.js")"></script>
-    <script type="text/javascript">
-        /*** Temporary script... ***/
-        function move_to_anchor(anchor) {
-            document.getElementById(anchor).scrollIntoView(true);
-        }
-        function clear_field() {
-            document.getElementById("search-field").value = "";
-            /* Clear twitter-typeahead cache */
-            $('#getArticle .twitter-typeahead').typeahead('val', '');
-        }
-    </script>
-
+    <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.helpers.js")"></script>
 
     <header>
         <a href="http://localhost:9000/" class="home"><img border="0" alt="Home" src="@routes.Assets.versioned("images/amiko_icon.png")" height="48"></a>
@@ -27,7 +16,7 @@
     <div id="flex-container">
         <aside id="flex-aside-one">
             <form id="getArticle"><input id="search-field" class="twitter-typeahead" type="search" value="@(search_key)"
-                placeholder="Suche Präparatname" autofocus onclick='clear_field();' /></form>
+                placeholder="Suche Präparatname" autofocus /></form>
             <div id="article_button"><button class="rounded-button">Präparat</button></div>
             <div id="owner_button"><button class="rounded-button">Inhaberin</button></div>
             <div id="substance_button"><button class="rounded-button">Wirkstoff/ATC Code</button></div>

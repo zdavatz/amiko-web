@@ -1,9 +1,10 @@
 # amiko-web
 AmiKo auf dem Web mit Play 2.5.2
 ## Install Activator
-```https://www.lightbend.com/activator/download```
-```Add it to your Path in .bashrc```
-```export PATH=/usr/local/src/activator-dist-1.3.10/bin:$PATH```
+https://www.lightbend.com/activator/download
+Add it to your Path in .bashrc
+export PATH=/usr/local/src/activator-dist-1.3.10/bin:$PATH
+
 ## Clone the Software
 git clone https://github.com/zdavatz/amiko-web.git
 

@@ -57,3 +57,9 @@ svc -h /service/amiko.oddb.org
   SSLCertificateChainFile /etc/letsencrypt/live/amiko.oddb.org/chain.pem
 </VirtualHost>
 ```
+## Setup SSL Encryption with Letsencrypt.org
+```
+cd /usr/local/src
+https://github.com/certbot/certbot.git
+https://github.com/certbot/certbot/blob/master/README.rst
+```

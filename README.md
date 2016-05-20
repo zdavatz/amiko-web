@@ -36,15 +36,15 @@ svc -h /service/amiko.oddb.org
 ## Setup Daemontools in /service/amiko.oddb.org
 ```
 mkdir /var/www/amiko.oddb.org/svc/run
-#!/bin/sh
-exec /var/www/amiko.oddb.org/bin/amikoweb -java-home /usr/local/src/jdk1.8.0_92/
+-> #!/bin/sh
+-> exec /var/www/amiko.oddb.org/bin/amikoweb -java-home /usr/local/src/jdk1.8.0_92/
 ln -s /var/www/amiko.oddb.org/svc/ /service/amiko.oddb.org
 ```
 ## Setup Daemontools logging
 ```
 vim /var/www/amiko.oddb.org/svc/log/run
-#!/bin/sh
-exec multilog t ./main
+-> #!/bin/sh
+-> exec multilog t ./main
 ```
 ## Setup Apache with amiko.oddb.org.conf
 ```

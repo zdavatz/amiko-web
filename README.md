@@ -33,3 +33,27 @@ unzip amiko_db_full_idx_de.zip
 rm amiko_db_full_idx_de.zip
 svc -h /service/amiko.oddb.org
 ```
+## Setup Apache with amiko.oddb.org.conf
+```
+<VirtualHost *:80>
+  ProxyPreserveHost On
+  ServerName amiko.oddb.org
+  ProxyPass  /excluded !
+  ProxyPass / http://127.0.0.1:9000/
+  ProxyPassReverse / http://127.0.0.1:9000/
+  Redirect permanent /secure https://amiko.oddb.org
+</VirtualHost>
+
+<VirtualHost 62.12.131.45:443>
+#<VirtualHost *:80>
+  ProxyPreserveHost On
+  ServerName amiko.oddb.org
+  ProxyPass  /excluded !
+  ProxyPass / http://127.0.0.1:9000/
+  ProxyPassReverse / http://127.0.0.1:9000/
+  SSLEngine on
+  SSLCertificateFile /etc/letsencrypt/live/amiko.oddb.org/cert.pem
+  SSLCertificateKeyFile /etc/letsencrypt/live/amiko.oddb.org/privkey.pem
+  SSLCertificateChainFile /etc/letsencrypt/live/amiko.oddb.org/chain.pem
+</VirtualHost>
+```

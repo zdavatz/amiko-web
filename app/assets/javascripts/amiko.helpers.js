@@ -4,10 +4,14 @@ Copyright (c) 2016 ML <cybrmx@gmail.com>
 */
 
 function move_to_anchor(anchor) {
-    document.getElementById(anchor).scrollIntoView(true);
+    /* document.getElementById(anchor).scrollIntoView(true); */
+    var id = document.getElementById(anchor).getAttribute('id');
+    $('html, body').animate({
+        scrollTop: $('#'+id).offset().top-120
+    }, 1000);
 }
-/*
-$(document).on('click', '.rounded-button', function() {
-    $(this).toggleClass('rounded-button-selected');
-});
-*/
+
+function download_links() {
+    var options = {direction: 'right'};
+    $('#download-links').toggle('slide', options, 250);
+}

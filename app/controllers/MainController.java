@@ -168,8 +168,15 @@ public class MainController extends Controller {
         String therapyStr() {
             String application_str = "";
             if (_therapy != null) {
-                application_str = _therapy.replaceAll(";", "<p>");
-                application_str = "<font color=gray size=-1>" + application_str + "</font>";
+                /*  Alternative----
+                    application_str = _therapy.replaceAll(";", "<p>");
+                    application_str = "<font color=gray size=-1>" + application_str + "</font>";
+                */
+                String[] apps = _therapy.split(";");
+                if (apps.length>1)
+                    application_str = "<font color=gray size=-1><p>" + apps[0] + "</p><p>" + apps[1] + "</p></font>";
+                else if(apps.length==1)
+                    application_str = "<font color=gray size=-1><p>" + apps[0] + "</p></font>";
             }
             return application_str;
         }
@@ -338,7 +345,7 @@ public class MainController extends Controller {
             }
             conn.close();
         } catch (SQLException e) {
-            System.err.println(">> SqlDatabase: SQLException in searchName!");
+            System.err.println(">> SqlDatabase: SQLException in searchName for "+name);
         }
 
         return med_titles;
@@ -350,17 +357,17 @@ public class MainController extends Controller {
         try {
             Connection conn = db.getConnection();
             Statement stat = conn.createStatement();
-            ResultSet rs;
             String query = "select " + SHORT_TABLE + " from " + DATABASE_TABLE
                     + " where " + KEY_AUTH + " like " + "'" + owner + "%'";
-            rs = stat.executeQuery(query);
+            ResultSet rs = stat.executeQuery(query);
             if (rs!=null) {
                 while (rs.next()) {
                     med_auth.add(cursorToShortMedi(rs));
                 }
             }
+            conn.close();
         } catch (SQLException e) {
-            System.err.println(">> SqlDatabase: SQLException in searchOwner!");
+            System.err.println(">> SqlDatabase: SQLException in searchOwner for " + owner);
         }
 
         return med_auth;
@@ -372,7 +379,6 @@ public class MainController extends Controller {
         try {
             Connection conn = db.getConnection();
             Statement stat = conn.createStatement();
-            ResultSet rs;
             String query = "select " + SHORT_TABLE + " from " + DATABASE_TABLE + " where "
                     + KEY_ATCCODE + " like " + "'%;" + atccode + "%' or "
                     + KEY_ATCCODE + " like " + "'" + atccode + "%' or "
@@ -382,14 +388,15 @@ public class MainController extends Controller {
                     + KEY_ATCCLASS + " like " + "'%#" + atccode + "%' or "
                     + KEY_SUBSTANCES + " like " + "'%, " + atccode + "%' or "
                     + KEY_SUBSTANCES + " like " + "'" + atccode + "%'";
-            rs = stat.executeQuery(query);
+            ResultSet rs = stat.executeQuery(query);
             if (rs!=null) {
                 while (rs.next()) {
                     med_auth.add(cursorToShortMedi(rs));
                 }
             }
+            conn.close();
         } catch (SQLException e) {
-            System.err.println(">> SqlDatabase: SQLException in searchOwner!");
+            System.err.println(">> SqlDatabase: SQLException in searcATC!");
         }
 
         return med_auth;
@@ -401,18 +408,18 @@ public class MainController extends Controller {
         try {
             Connection conn = db.getConnection();
             Statement stat = conn.createStatement();
-            ResultSet rs;
             String query = "select " + SHORT_TABLE + " from " + DATABASE_TABLE + " where "
                     + KEY_REGNRS + " like " + "'%, " + regnr + "%' or "
                     + KEY_REGNRS + " like " + "'" + regnr + "%'";
-            rs = stat.executeQuery(query);
+            ResultSet rs = stat.executeQuery(query);
             if (rs!=null) {
                 while (rs.next()) {
                     med_auth.add(cursorToShortMedi(rs));
                 }
             }
+            conn.close();
         } catch (SQLException e) {
-            System.err.println(">> SqlDatabase: SQLException in searchOwner!");
+            System.err.println(">> SqlDatabase: SQLException in searchRegnr!");
         }
 
         return med_auth;
@@ -424,23 +431,24 @@ public class MainController extends Controller {
         try {
             Connection conn = db.getConnection();
             Statement stat = conn.createStatement();
-            ResultSet rs;
-            String query = "select " + SHORT_TABLE + " from " + DATABASE_TABLE
-                    + " where " + KEY_APPLICATION + " like " + "'%,"
-                    + application + "%' or " + KEY_APPLICATION + " like " + "'"
-                    + application + "%' or " + KEY_APPLICATION + " like "
-                    + "'% " + application + "%' or " + KEY_APPLICATION
-                    + " like " + "'%;" + application + "%' or "
+            String query = "select " + SHORT_TABLE + " from " + DATABASE_TABLE + " where "
+                    + KEY_APPLICATION + " like " + "'%," + application + "%' or "
+                    + KEY_APPLICATION + " like " + "'" + application + "%' or "
+                    + KEY_APPLICATION + " like " + "'%" + application + "%' or "
+                    + KEY_APPLICATION + " like " + "'% " + application + "%' or "
+                    + KEY_APPLICATION + " like " + "'%;" + application + "%' or "
+                    + KEY_THERAPY + " like " + "'" + application + "%' or "
                     + KEY_INDICATIONS + " like " + "'" + application + "%' or "
                     + KEY_INDICATIONS + " like " + "'%;" + application + "%'";
-            rs = stat.executeQuery(query);
+            ResultSet rs = stat.executeQuery(query);
             if (rs!=null) {
                 while (rs.next()) {
                     med_auth.add(cursorToShortMedi(rs));
                 }
             }
+            conn.close();
         } catch (SQLException e) {
-            System.err.println(">> SqlDatabase: SQLException in searchOwner!");
+            System.err.println(">> SqlDatabase: SQLException in searchTherapy!");
         }
 
         return med_auth;

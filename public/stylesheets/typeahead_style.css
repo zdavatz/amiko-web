@@ -28,21 +28,27 @@
 .tt-input {
     width: 100%;
     height: 36px;
+    text-align: left;
     font-size: 18px;
+    color:#aaaaaa;
     margin-bottom: 16px;
-    background-color: #ffffff;
     line-height: 24px;
-    border: 1px solid lightsteelblue;
+    border: 2px solid #dddddd;
     border-radius: 6px;
     outline: none;
-    text-align: left;
-    padding: 0.3em 0.3em 0.3em 0.6em;
+    padding: 0.3em 1.5em 0.3em 0.6em;
+    background: url('../images/mag_glass_16x16.svg') right no-repeat;
+    background-size: 16px 16px;
+    background-position: 98% 50%;
+    /*
     -webkit-box-shadow: 0px 0px 16px 1px rgba(176,196,222.0,0.4);
     -moz-box-shadow: 0px 0px 16px 1px rgba(176,196,222,0.4);
     box-shadow: 0px 0px 16px 1px rgba(176,196,222,0.4);
+    */
 }
 
-.tt-input:hover {
+.tt-input:hover,
+.tt-input:focus {
     border: 2px solid lightsteelblue;
 }
 

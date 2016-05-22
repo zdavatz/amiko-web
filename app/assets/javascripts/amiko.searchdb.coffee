@@ -1,7 +1,27 @@
 $ ->
+  if localStorage.getItem 'search-type'
+    search_type = (Number) localStorage.getItem 'search-type'
+  else
+    search_type = 1   # default search type is 'article'
+
+  setSearchQuery = (type) ->
+    if type == 1
+      return '/name?name='
+    else if type == 2
+      return '/owner?owner='
+    else if type == 3
+      return '/atc?atc='
+    else if type == 4
+      return '/regnr?regnr='
+    else if type == 5
+      return '/therapy?therapy='
+    return '/name?name='
+
+  search_query = setSearchQuery(search_type)
+
+  start_time = new Date().getTime()
+
   typed_input = ''
-  search_type = 1   # default search type is 'article'
-  search_query = '/name?name='  # default search query
 
   articles = new Bloodhound(
     datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name')
@@ -11,12 +31,15 @@ $ ->
       url: search_query
       replace: (url, query) ->
         return search_query + query
+      filter: (list) ->
+        console.log 'num results = ' + list.length
+        return list
   )
 
   # kicks off the loading/processing of "remote" and "prefetch"
   articles.initialize()
 
-  $('#getArticle .twitter-typeahead').typeahead
+  typeaheadCtrl = $('#getArticle .twitter-typeahead').typeahead
     menu: $('#special-dropdown')
     hint: false
     highlight: false
@@ -50,23 +73,28 @@ $ ->
           <p style='color:#444444;'><b>#{data.title}</b></p>\
           <p style='color:#8888cc;'>#{data.therapy}</p></div>"
 
-  $('#getArticle .twitter-typeahead').on 'typeahead:asyncreceive', (event, selection) ->
+  typeaheadCtrl.on 'typeahead:asyncrequest', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')
+    start_time = new Date().getTime()
 
-  $('#getArticle .twitter-typeahead').on 'typeahead:change', (event, selection) ->
+  typeaheadCtrl.on 'typeahead:asyncreceive', (event, selection) ->
+    typed_input = $('.twitter-typeahead').typeahead('val')
+    request_time = new Date().getTime() - start_time  # request time in [ms]
+
+  typeaheadCtrl.on 'typeahead:change', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')
 
   # Retrieves the fachinfo, the URL should be of the form /fi/ean/
-  $('#getArticle .twitter-typeahead').on 'typeahead:selected', (event, selection) ->
+  typeaheadCtrl.on 'typeahead:selected', (event, selection) ->
     $.ajax(jsRoutes.controllers.MainController.getFachinfo(selection.id))
     .done (response) ->
-      console.log selection.id + ' -> ' + selection.title
       window.location.assign '/fi/ean/' + selection.eancode
+      console.log selection.id + ' -> ' + selection.title
     .fail (jqHXR, textStatus) ->
       alert('ajax error')
 
   # Detect list related key up and key down events
-  $('#getArticle .twitter-typeahead').on 'typeahead:cursorchange', (event, selection) ->
+  typeaheadCtrl.on 'typeahead:cursorchange', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')
     $('.twitter-typeahead').val(typed_input)
 
@@ -74,39 +102,48 @@ $ ->
   $('#search-field').on 'click', ->
     $('search-field').attr 'value', ''
     $('#getArticle .twitter-typeahead').typeahead('val', '');
-    if search_type == 1
-      search_query = '/name?name='
-    else if search_type == 2
-      search_query = '/owner?owner='
-    else if search_type == 3
-      search_query = '/atc?atc='
-    else if search_type == 4
-      search_query = '/regnr?regnr='
-    else if search_type == 5
-      search_query = '/therapy?therapy='
+    search_query = setSearchQuery(search_type)
+
+  disableAllButtons = ->
+    localStorage.setItem 'search-type', search_type
+    $('#article-button').removeClass('active')
+    $('#owner-button').removeClass('active')
+    $('#substance-button').removeClass('active')
+    $('#regnr-button').removeClass('active')
+    $('#therapy-button').removeClass('active')
 
   # Detect click events on filters
-  $('#article_button').on 'click', ->
+  $('#article-button').on 'click', ->
     search_type = 1
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
     $('#search-field').attr 'placeholder', 'Suche Präparatname'
+    disableAllButtons()
+    $(this).toggleClass('active')
 
-  $('#owner_button').on 'click', ->
+  $('#owner-button').on 'click', ->
     search_type = 2
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
     $('#search-field').attr 'placeholder', 'Suche Inhaberin'
+    disableAllButtons()
+    $(this).toggleClass('active')
 
-  $('#substance_button').on 'click', ->
+  $('#substance-button').on 'click', ->
     search_type = 3
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
     $('#search-field').attr 'placeholder', 'Suche Wirkstoff/ATC'
+    disableAllButtons()
+    $(this).toggleClass('active')
 
-  $('#regnr_button').on 'click', ->
+  $('#regnr-button').on 'click', ->
     search_type = 4
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
     $('#search-field').attr 'placeholder', 'Suche Zulassungsnummer'
+    disableAllButtons()
+    $(this).toggleClass('active')
 
-  $('#therapy_button').on 'click', ->
+  $('#therapy-button').on 'click', ->
     search_type = 5
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
     $('#search-field').attr 'placeholder', 'Suche Therapie'
+    disableAllButtons()
+    $(this).toggleClass('active')

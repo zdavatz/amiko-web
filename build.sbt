@@ -2,8 +2,6 @@ name := """AmiKoWeb"""
 
 version := "1.0-SNAPSHOT"
 
-lazy val root = (project in file(".")).enablePlugins(PlayJava)
-
 scalaVersion := "2.11.7"
 
 libraryDependencies ++= Seq(
@@ -11,6 +9,8 @@ libraryDependencies ++= Seq(
   cache,
   javaWs
 )
+
+lazy val root = (project in file(".")).enablePlugins(PlayJava)
 
 sources in (Compile, doc) := Seq.empty
 

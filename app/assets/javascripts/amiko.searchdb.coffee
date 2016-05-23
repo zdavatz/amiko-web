@@ -32,14 +32,16 @@ $ ->
       replace: (url, query) ->
         return search_query + query
       filter: (list) ->
-        console.log 'num results = ' + list.length
+        # console.log 'num results = ' + list.length
         return list
   )
 
   # kicks off the loading/processing of "remote" and "prefetch"
   articles.initialize()
 
-  typeaheadCtrl = $('#getArticle .twitter-typeahead').typeahead
+  typeaheadCtrl = $('#getArticle .twitter-typeahead')
+
+  typeaheadCtrl.typeahead
     menu: $('#special-dropdown')
     hint: false
     highlight: false
@@ -75,10 +77,12 @@ $ ->
 
   typeaheadCtrl.on 'typeahead:asyncrequest', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')
+    # console.log 'request = ' + typed_input
     start_time = new Date().getTime()
 
   typeaheadCtrl.on 'typeahead:asyncreceive', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')
+    # console.log 'receive = ' + typed_input
     request_time = new Date().getTime() - start_time  # request time in [ms]
 
   typeaheadCtrl.on 'typeahead:change', (event, selection) ->
@@ -101,7 +105,7 @@ $ ->
   # Detect click on search field
   $('#search-field').on 'click', ->
     $('search-field').attr 'value', ''
-    $('#getArticle .twitter-typeahead').typeahead('val', '');
+    $('.twitter-typeahead').typeahead('val', '');
     search_query = setSearchQuery(search_type)
 
   disableAllButtons = ->

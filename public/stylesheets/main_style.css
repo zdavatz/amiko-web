@@ -81,7 +81,8 @@ aside {
 }
 
 #flex-aside-one {
-    flex: 1; /* flex: 0 0 320px; */
+    height: 100%;
+    flex: 0 0 320px;
     max-width: 320px;   /* ensures that box does not RESIZE **/
     -moz-box-orient: vertical; -webkit-box-orient: vertical; box-orient: vertical;
     -moz-box-ordinal-group: 1; -webkit-box-ordinal-group: 1; box-ordinal-group: 1;

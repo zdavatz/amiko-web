@@ -191,7 +191,7 @@ public class MainController extends Controller {
                         return p[9];
                 }
             }
-            return "0000000000000";
+            return "1";
         }
     }
 

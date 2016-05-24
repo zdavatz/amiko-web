@@ -17,7 +17,8 @@ $ ->
       return '/therapy?therapy='
     return '/name?name='
 
-  search_query = setSearchQuery(search_type)
+  # default value
+  search_query = setSearchQuery(1)
 
   start_time = new Date().getTime()
 
@@ -32,7 +33,7 @@ $ ->
       replace: (url, query) ->
         return search_query + query
       filter: (list) ->
-        # console.log 'num results = ' + list.length
+        console.log 'num results = ' + list.length
         return list
   )
 

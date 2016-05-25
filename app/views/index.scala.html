@@ -5,7 +5,7 @@
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.searchdb.js")"></script>
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.helpers.js")"></script>
 
-    <header>
+    <header class="nav-down">
         <a href="http://amiko.oddb.org" class="home"><img border="0" alt="Home" src="@routes.Assets.versioned("images/amiko_icon.png")" height="48"></a>
         <button id="download-button" onclick="download_links()"><img border="0" alt="Download" src="@routes.Assets.versioned("images/download_icon.svg")" height="48"></button>
     </header>
@@ -13,7 +13,7 @@
     <div id="flex-container">
         <aside id="flex-aside-one">
             <form id="getArticle">
-                <input id="search-field" class="twitter-typeahead" type="search" value="@(search_key)" placeholder="Suche Präparatname" autofocus />
+                <input id="search-field" class="twitter-typeahead" type="search" value="@(search_key)" placeholder="Suche Präparatname" autofocus/>
             </form>
             <div>
                 <button id="article-button" class="rounded-button">Präparat</button>
@@ -48,20 +48,24 @@
     <script>
         if (localStorage.getItem('search-type')==1) {
             $('#article-button').addClass('active');
-            $('#search-field').attr('placeholder', 'Suche Präparatname');
+            $('#search-field').attr('placeholder', 'Suche Präparatname...');
         } else if (localStorage.getItem('search-type')==2) {
             $('#owner-button').addClass('active')
-            $('#search-field').attr('placeholder', 'Suche Inhaberin');
+            $('#search-field').attr('placeholder', 'Suche Inhaberin...');
         } else if (localStorage.getItem('search-type')==3) {
             $('#substance-button').addClass('active')
-            $('#search-field').attr('placeholder', 'Suche Wirkstoff/ATC');
+            $('#search-field').attr('placeholder', 'Suche Wirkstoff/ATC...');
         } else if (localStorage.getItem('search-type')==4) {
             $('#regnr-button').addClass('active')
-            $('#search-field').attr('placeholder', 'Suche Zulassungsnummer');
+            $('#search-field').attr('placeholder', 'Suche Zulassungsnummer...');
         } else if (localStorage.getItem('search-type')==5) {
             $('#therapy-button').addClass('active')
-            $('#search-field').attr('placeholder', 'Suche Therapie');
+            $('#search-field').attr('placeholder', 'Suche Therapie...');
+        } else {
+            $('#article-button').addClass('active');
+            $('#search-field').attr('placeholder', 'Suche Präparatname...');
         }
+
     </script>
 
         <!-- Google Analytics -->

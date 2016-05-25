@@ -12,7 +12,7 @@ GET     /therapy                    controllers.MainController.getTherapy(therap
 
 # 2. parameter will appear in URI
 GET     /fi/id/:id                  controllers.MainController.fachinfoId(id: Long)
-GET     /fi/ean/:ean                controllers.MainController.fachinfoEan(ean: String)
+GET     /fi/gtin/:gtin              controllers.MainController.fachinfoEan(gtin: String)
 GET     /fii                        controllers.MainController.getFachinfo(id: Long)
 
 GET     /javascriptRoutes           controllers.MainController.javascriptRoutes

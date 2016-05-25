@@ -19,6 +19,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 package controllers;
 
+import controllers.routes;
 import models.Medication;
 import play.db.Database;
 import play.mvc.*;
@@ -191,7 +192,7 @@ public class MainController extends Controller {
                         return p[9];
                 }
             }
-            return "1";
+            return _regnrs;
         }
     }
 
@@ -257,7 +258,7 @@ public class MainController extends Controller {
 
     public Result javascriptRoutes() {
         return ok(
-                play.routing.JavaScriptReverseRouter.create("jsRoutes", routes.javascript.MainController.getFachinfo()))
+                play.routing.JavaScriptReverseRouter.create("jsRoutes", controllers.routes.javascript.MainController.getFachinfo()))
                 .as("text/javascript");
     }
 
@@ -474,7 +475,10 @@ public class MainController extends Controller {
         try {
             Connection conn = db.getConnection();
             Statement stat = conn.createStatement();
-            String query = "select * from " + DATABASE_TABLE + " where " + KEY_PACKAGES + " like " + "'%" + eancode + "%'";
+            String search_key = KEY_PACKAGES;
+            if (eancode.length()==5)
+                search_key = KEY_REGNRS;
+            String query = "select * from " + DATABASE_TABLE + " where " + search_key + " like " + "'%" + eancode + "%'";
             ResultSet rs = stat.executeQuery(query);
             Medication m = cursorToMedi(rs);
             conn.close();

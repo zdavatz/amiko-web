@@ -89,11 +89,11 @@ $ ->
   typeaheadCtrl.on 'typeahead:change', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')
 
-  # Retrieves the fachinfo, the URL should be of the form /fi/ean/
+  # Retrieves the fachinfo, the URL should be of the form /fi/gtin/
   typeaheadCtrl.on 'typeahead:selected', (event, selection) ->
     $.ajax(jsRoutes.controllers.MainController.getFachinfo(selection.id))
     .done (response) ->
-      window.location.assign '/fi/ean/' + selection.eancode
+      window.location.assign '/fi/gtin/' + selection.eancode
       console.log selection.id + ' -> ' + selection.title
     .fail (jqHXR, textStatus) ->
       alert('ajax error')
@@ -121,34 +121,34 @@ $ ->
   $('#article-button').on 'click', ->
     search_type = 1
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
-    $('#search-field').attr 'placeholder', 'Suche Präparatname'
+    $('#search-field').attr 'placeholder', 'Suche Präparatname...'
     disableAllButtons()
     $(this).toggleClass('active')
 
   $('#owner-button').on 'click', ->
     search_type = 2
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
-    $('#search-field').attr 'placeholder', 'Suche Inhaberin'
+    $('#search-field').attr 'placeholder', 'Suche Inhaberin...'
     disableAllButtons()
     $(this).toggleClass('active')
 
   $('#substance-button').on 'click', ->
     search_type = 3
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
-    $('#search-field').attr 'placeholder', 'Suche Wirkstoff/ATC'
+    $('#search-field').attr 'placeholder', 'Suche Wirkstoff/ATC...'
     disableAllButtons()
     $(this).toggleClass('active')
 
   $('#regnr-button').on 'click', ->
     search_type = 4
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
-    $('#search-field').attr 'placeholder', 'Suche Zulassungsnummer'
+    $('#search-field').attr 'placeholder', 'Suche Zulassungsnummer...'
     disableAllButtons()
     $(this).toggleClass('active')
 
   $('#therapy-button').on 'click', ->
     search_type = 5
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
-    $('#search-field').attr 'placeholder', 'Suche Therapie'
+    $('#search-field').attr 'placeholder', 'Suche Therapie...'
     disableAllButtons()
     $(this).toggleClass('active')

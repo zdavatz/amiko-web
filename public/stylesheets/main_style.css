@@ -6,6 +6,7 @@ html, body {
     width: 100%;
     padding: 0;
     margin: 0;
+    /* overflow-x: hidden; */
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
@@ -46,12 +47,22 @@ footer {
 }
 
 header {
+    width: auto;
+    position: fixed;     /* make this position: fixed if header should not disappear */
+    z-index: 10;
     left: 0;
     right: 0;
+    top: 0;
     height: 48px;
-    position: relative;     /* make this position: fixed if header should not disappear */
     border-bottom: 1px solid #cccccc;
     background-color: #cccccc;
+    -webkit-transition: top 0.2s;
+    -moz-transition: top 0.2s;
+    transition: top 0.2s;
+}
+
+.nav-up {
+    top: -80px;
 }
 
 footer {
@@ -67,7 +78,7 @@ footer {
 
 article,
 aside {
-    margin-top: 0px;        /* add margin or padding if header is fixed */
+    margin-top: 80px;        /* add margin or padding if header is fixed */
     padding: 1.0em;
 }
 
@@ -122,6 +133,7 @@ aside {
     font-size: 14px;
     line-height: 1.4em;
     background-color: white;
+    overflow: hidden;
 }
 
 #section-ids {
@@ -239,3 +251,22 @@ input[type="search"]::-webkit-search-results-button,
 input[type="search"]::-webkit-search-results-decoration {
     display: none;
 }
+
+/*
+@media screen and (max-device-width: 1024px) {
+    header {
+        width: 100%;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 48px;
+        position: relative;
+    }
+    #flex-aside-one {
+        max-width: 200px;
+    }
+    #flex-aside-two {
+        max-width: 540px;
+    }
+}
+*/

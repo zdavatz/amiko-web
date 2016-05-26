@@ -106,8 +106,9 @@ $ ->
   # Detect click on search field
   $('#search-field').on 'click', ->
     $('search-field').attr 'value', ''
-    $('.twitter-typeahead').typeahead('val', '');
+    $('.twitter-typeahead').typeahead('val', '')
     search_query = setSearchQuery(search_type)
+    $('#fachinfo-id').replaceWith ''
 
   disableAllButtons = ->
     localStorage.setItem 'search-type', search_type

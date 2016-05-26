@@ -258,7 +258,9 @@ public class MainController extends Controller {
 
     public Result javascriptRoutes() {
         return ok(
-                play.routing.JavaScriptReverseRouter.create("jsRoutes", controllers.routes.javascript.MainController.getFachinfo()))
+                play.routing.JavaScriptReverseRouter.create("jsRoutes",
+                        controllers.routes.javascript.MainController.getFachinfo(),
+                        controllers.routes.javascript.MainController.index()))
                 .as("text/javascript");
     }
 

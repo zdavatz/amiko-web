@@ -19,13 +19,13 @@ function download_links() {
     $('#download-links').toggle('slide', options, 250);
 }
 
-// Hide Header on on scroll down
+// Hide Header on scroll down
 var didScroll;
 var lastScrollTop = 0;
 var delta = 5;
 var navbarHeight = $('header').outerHeight();
 
-$(window).scroll(function(event){
+$(window).scroll(function(event) {
     didScroll = true;
 });
 
@@ -48,10 +48,12 @@ function hasScrolled() {
     if (st > lastScrollTop && st > navbarHeight){
         // Scroll Down
         $('header').removeClass('nav-down').addClass('nav-up');
+        $('#flex-aside-two').removeClass('nav-down').addClass('nav-up2');
     } else {
         // Scroll Up
-        if(st + $(window).height() < $(document).height()) {
+        if (st<80) {
             $('header').removeClass('nav-up').addClass('nav-down');
+            $('#flex-aside-two').removeClass('nav-up2').addClass('nav-down');
         }
     }
 

@@ -83,5 +83,6 @@ git clone https://github.com/nodejs/node.git
 cd /usr/local/src/node
 ./configure --with-intl=full-icu --download=all --prefix=/usr/local
 make -j17
+sudo make install
 ```
-make sure you got gcc-4.9.3, mpfr-3.1.4, 
+make sure you got gcc-4.9.3, mpfr-3.1.4

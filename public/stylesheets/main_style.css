@@ -6,6 +6,7 @@ html, body {
     width: 100%;
     padding: 0;
     margin: 0;
+    -web-text-size-adjust: none;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
@@ -72,8 +73,6 @@ footer {
     right: 0;
     height: 48px;
     text-align: center;
-    border-top: 1px solid #cccccc;
-    border-bottom: 1px solid #cccccc;
     background-color: #cccccc;
     color: black;
     line-height: 1.5em;
@@ -109,7 +108,7 @@ aside {
 }
 
 #flex-main-content {
-    min-height: 100%;
+    min-height: 320px;
     min-width: 640px;
     flex: 1;
     box-orient: vertical;

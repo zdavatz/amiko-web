@@ -125,11 +125,11 @@ public class MainController extends Controller {
                 Matcher m_red = p_red.matcher(pack_str_line);
                 Matcher m_green = p_green.matcher(pack_str_line);
                 if (m_red.find())
-                    pack_info_str += "<p style='color:red'>" + pack_str_line	+ "</p>";
+                    pack_info_str += "<p style='color:red;'>" + pack_str_line	+ "</p>";
                 else if (m_green.find())
-                    pack_info_str += "<p style='color:green'>" + pack_str_line + "</p>";
+                    pack_info_str += "<p style='color:green;'>" + pack_str_line + "</p>";
                 else
-                    pack_info_str += "<p style='color:gray'>" + pack_str_line + "</p>";
+                    pack_info_str += "<p style='color:gray;'>" + pack_str_line + "</p>";
             }
             pack_str_scanner.close();
             return pack_info_str;

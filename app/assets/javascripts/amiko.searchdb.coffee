@@ -58,8 +58,8 @@ $ ->
       suggestion: (data) ->
         if search_type == 1
           "<div style='display:table;vertical-align:middle;'>\
-          <p style='color:#444444'><b>#{data.title}</b></p>\
-          <span style='font-size:small'>#{data.packinfo}</span></div>"
+          <p style='color:#444444;'><b>#{data.title}</b></p>\
+          <span style='font-size:small;'>#{data.packinfo}</span></div>"
         else if search_type == 2
           "<div style='display:table;vertical-align:middle;'>\
           <p style='color:#444444'><b>#{data.title}</b></p>\

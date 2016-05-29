@@ -6,7 +6,6 @@ html, body {
     width: 100%;
     padding: 0;
     margin: 0;
-    /* overflow-x: hidden; */
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
@@ -35,7 +34,6 @@ aside ul {
 aside li {
     padding: 0.25em 0.25em 0.25em 0.5em;
     vertical-align: middle;
-    -webkit-transition-duration: 0.3s; /* Safari */
     transition-duration: 0.3s;
 }
 
@@ -57,8 +55,6 @@ header {
     height: 48px;
     border-bottom: 1px solid #cccccc;
     background-color: #cccccc;
-    -webkit-transition: top 0.2s;
-    -moz-transition: top 0.2s;
     transition: top 0.2s;
 }
 
@@ -102,12 +98,9 @@ aside {
     height: 100%;
     flex: 0 0 320px;
     max-width: 320px;   /* ensures that box does not RESIZE **/
-    -moz-box-orient: vertical; -webkit-box-orient: vertical; box-orient: vertical;
-    -moz-box-ordinal-group: 1; -webkit-box-ordinal-group: 1; box-ordinal-group: 1;
-    -moz-box-flex: 1; -webkit-box-flex: 1;  box-flex: 1;
+    box-orient: vertical;
+    box-ordinal-group: 1;
     background-color: white;
-    -webkit-transition: max-width 1s; /* Safari */
-    -moz-transition: max-width 1s;
     transition: max-width 1s;
 }
 
@@ -119,8 +112,8 @@ aside {
     min-height: 100%;
     min-width: 640px;
     flex: 1;
-    -moz-box-orient: vertical; -webkit-box-orient: vertical; box-orient: vertical;
-    -moz-box-ordinal-group: 2; -webkit-box-ordinal-group: 2; box-ordinal-group: 2;
+    box-orient: vertical;
+    box-ordinal-group: 2;
     border-left: 16px solid #eeeeee;
     border-right: 16px solid #eeeeee;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -133,16 +126,13 @@ aside {
 #flex-aside-two {
     height: 100%;
     flex: 0 0 200px;
-    -moz-box-orient: vertical;  -webkit-box-orient: vertical;  box-orient: vertical;
-    -moz-box-ordinal-group: 3; -webkit-box-ordinal-group: 3;  box-ordinal-group: 3;
-    -moz-box-flex: 1; -webkit-box-flex: 1;  box-flex: 1;
+    box-orient: vertical;
+    box-ordinal-group: 3;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 14px;
     line-height: 1.4em;
     background-color: white;
     overflow: hidden;
-    -webkit-transition: margin-top 0.2s; /* Safari */
-    -moz-transition: margin-top 0.2s;
     transition: margin-top 0.2s;
 }
 
@@ -153,24 +143,61 @@ aside {
 #section-ids li:hover {
     width: 100%;
     margin-left: 0px;
-    cursor: pointer; !important;
+    cursor: pointer;
     background-color: #FFFF80;
     display: block;
-    -moz-border-radius: 6px;
-    -webkit-border-radius: 6px;
     border-radius: 6px;
-    /* color: white; */
 }
 
 #search-field:hover {
     /* background-color: #ffffff; */
     color:#555555;
-    cursor: pointer; !important
+    cursor: pointer;
 }
 
 #search-field:focus {
     /* background-color: #ffffff; */
     color:#555555;
+}
+
+.badge {
+    display: table-cell;
+    text-align: center;
+    border-left: 1px solid #aaaaaa;
+}
+
+#num-results {
+    font-size: 10px;
+    float: right;
+}
+
+#input-form{
+    display: block;
+    position: relative;
+}
+
+#input-form label {
+    position: absolute;
+    margin-top: 6px;
+    right: 8px;
+    padding-left: 4px;
+    color: #aaaaaa;
+    z-index: 1;
+    cursor: text;
+    pointer-events: none;
+    line-height: 24px;
+}
+
+#input-form input, #input-form textarea, #input-form select {
+    z-index: 0;
+    margin: 0;
+    vertical-align: middle;
+    font: inherit;
+    line-height: 24px;
+}
+
+#main-result {
+    color: #444444;
 }
 
 header .home {
@@ -188,16 +215,8 @@ header .links {
     padding: 0.3em 0.3em 0.3em 0.6em;
     outline: none;
     background-color: white;
-    -moz-border-radius: 4px;
-    -webkit-border-radius: 4px;
     border-radius: 4px;
     border: 1px solid #dddddd;
-    /*
-    -webkit-box-shadow: 0px 0px 6px 1px rgba(176,196,222.0,0.4);
-    -moz-box-shadow: 0px 0px 6px 1px rgba(176,196,222,0.4);
-    box-shadow: 0px 0px 6px 1px rgba(176,196,222,0.4);
-    */
-    -webkit-transition-duration: 0.3s; /* Safari */
     transition-duration: 0.3s;
     text-align: left;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -206,8 +225,7 @@ header .links {
 
 .rounded-button:hover {
     margin-left: 0px;
-    cursor: pointer; !important;
-    /* background-color: #eeeeee; */
+    cursor: pointer;
 }
 
 .rounded-button:active, .active {
@@ -224,7 +242,7 @@ header .links {
 }
 
 #download-button:hover {
-    cursor: pointer; !important;
+    cursor: pointer;
 }
 
 #download-links {

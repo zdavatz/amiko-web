@@ -125,11 +125,11 @@ public class MainController extends Controller {
                 Matcher m_red = p_red.matcher(pack_str_line);
                 Matcher m_green = p_green.matcher(pack_str_line);
                 if (m_red.find())
-                    pack_info_str += "<font color=red size=-1><p>" + pack_str_line	+ "</p></font>";
+                    pack_info_str += "<p style='color:red'>" + pack_str_line	+ "</p>";
                 else if (m_green.find())
-                    pack_info_str += "<font color=green size=-1><p>" + pack_str_line + "</p></font>";
+                    pack_info_str += "<p style='color:green'>" + pack_str_line + "</p>";
                 else
-                    pack_info_str += "<font color=gray size=-1><p>" + pack_str_line + "</p></font>";
+                    pack_info_str += "<p style='color:gray'>" + pack_str_line + "</p>";
             }
             pack_str_scanner.close();
             return pack_info_str;
@@ -149,18 +149,18 @@ public class MainController extends Controller {
                     String[] m_class = _atcclass.split(";");
                     String atc_class_str;
                     if (m_class.length == 1) {
-                        atc_code_str = "<font color=gray size=-1><p>" + atc_code_str + " - " + atc_title_str + "</p><p>" + m_class[0] + "</p></font>";
+                        atc_code_str = "<p>" + atc_code_str + " - " + atc_title_str + "</p><p>" + m_class[0] + "</p>";
                     } else if (m_class.length == 2) { // *** Ver.<1.2.4
-                        atc_code_str = "<font color=gray size=-1><p>" + atc_code_str + " - " + atc_title_str + "</p><p>" + m_class[1] + "</p></font>";
+                        atc_code_str = "<p>" + atc_code_str + " - " + atc_title_str + "</p><p>" + m_class[1] + "</p>";
                     } else if (m_class.length == 3) { // *** Ver. 1.2.4 and above
                         atc_class_str = "";
                         String[] atc_class_l4_and_l5 = m_class[2].split("#");
                         if (atc_class_l4_and_l5.length > 0)
                             atc_class_str = atc_class_l4_and_l5[atc_class_l4_and_l5.length - 1];
-                        atc_code_str = "<font color=gray size=-1><p>" + atc_code_str + " - " + atc_title_str + "</p><p>" + atc_class_str + "</p><p>" + m_class[1] + "</p></font>";
+                        atc_code_str = "<p>" + atc_code_str + " - " + atc_title_str + "</p><p>" + atc_class_str + "</p><p>" + m_class[1] + "</p>";
                     }
                 } else {
-                    atc_code_str = "<font color=gray size=-1><p>" + atc_code_str + " - " + atc_title_str + "</p><p>k.A.</p></font>";
+                    atc_code_str = "<p>" + atc_code_str + " - " + atc_title_str + "</p><p>k.A.</p>";
                 }
             }
             return atc_code_str;
@@ -175,9 +175,9 @@ public class MainController extends Controller {
                 */
                 String[] apps = _therapy.split(";");
                 if (apps.length>1)
-                    application_str = "<font color=gray size=-1><p>" + apps[0] + "</p><p>" + apps[1] + "</p></font>";
+                    application_str = "<p>" + apps[0] + "</p><p>" + apps[1] + "</p>";
                 else if(apps.length==1)
-                    application_str = "<font color=gray size=-1><p>" + apps[0] + "</p></font>";
+                    application_str = "<p>" + apps[0] + "</p>";
             }
             return application_str;
         }

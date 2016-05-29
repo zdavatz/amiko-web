@@ -34,13 +34,14 @@ $ ->
         return search_query + query
       filter: (list) ->
         console.log 'num results = ' + list.length
+        document.getElementById('num-results').textContent=list.length
         return list
   )
 
   # kicks off the loading/processing of "remote" and "prefetch"
   articles.initialize()
 
-  typeaheadCtrl = $('#getArticle .twitter-typeahead')
+  typeaheadCtrl = $('#input-form .twitter-typeahead')
 
   typeaheadCtrl.typeahead
     menu: $('#special-dropdown')
@@ -57,33 +58,31 @@ $ ->
       suggestion: (data) ->
         if search_type == 1
           "<div style='display:table;vertical-align:middle;'>\
-          <p style='color:#444444;'><b>#{data.title}</b></p>\
-          <p style='color:#cccccc;'>#{data.packinfo}</p></div>"
+          <p style='color:#444444'><b>#{data.title}</b></p>\
+          <span style='font-size:small'>#{data.packinfo}</span></div>"
         else if search_type == 2
           "<div style='display:table;vertical-align:middle;'>\
-          <p style='color:#444444;'><b>#{data.title}</b></p>\
-          <p style='color:#8888cc;'>#{data.author}</p></div>"
+          <p style='color:#444444'><b>#{data.title}</b></p>\
+          <span style='color:#8888cc;font-size:medium;'><p>#{data.author}</p></span></div>"
         else if search_type == 3
           "<div style='display:table;vertical-align:middle;'>\
-          <p style='color:#444444;'><b>#{data.title}</b></p>\
-          <p style='color:#8888cc;'>#{data.atccode}</p></div>"
+          <p style='color:#444444'><b>#{data.title}</b></p>\
+          <span style='color:gray;font-size:small;'>#{data.atccode}</span></div>"
         else if search_type == 4
           "<div style='display:table;vertical-align:middle;'>\
-          <p style='color:#444444;'><b>#{data.title}</b></p>\
-          <p style='color:#8888cc;'>#{data.regnrs}</p></div>"
+          <p style='color:#444444'><b>#{data.title}</b></p>\
+          <span style='color:#8888cc;font-size:medium;'><p>#{data.regnrs}</p></span></div>"
         else if search_type == 5
           "<div style='display:table;vertical-align:middle;'>\
-          <p style='color:#444444;'><b>#{data.title}</b></p>\
-          <p style='color:#8888cc;'>#{data.therapy}</p></div>"
+          <p style='color:#444444'><b>#{data.title}</b></p>\
+          <span style='color:gray;font-size:small;'>#{data.therapy}</span></div>"
 
   typeaheadCtrl.on 'typeahead:asyncrequest', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')
-    # console.log 'request = ' + typed_input
     start_time = new Date().getTime()
 
   typeaheadCtrl.on 'typeahead:asyncreceive', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')
-    # console.log 'receive = ' + typed_input
     request_time = new Date().getTime() - start_time  # request time in [ms]
 
   typeaheadCtrl.on 'typeahead:change', (event, selection) ->

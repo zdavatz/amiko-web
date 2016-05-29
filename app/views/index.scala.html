@@ -12,9 +12,12 @@
 
     <div id="flex-container">
         <aside id="flex-aside-one">
-            <form id="getArticle">
-                <input id="search-field" class="twitter-typeahead" type="search" value="@(search_key)" placeholder="Suche Präparatname" autofocus/>
+            <form>
+                <div id="input-form">
+                    <label id="num-results" for="input-form" class="badge"></label><input id="search-field" class="twitter-typeahead" type="search" value="@(search_key)" placeholder="Suche Präparatname" autofocus/>
+                </div>
             </form>
+            <br>
             <div>
                 <button id="article-button" class="rounded-button">Präparat</button>
                 <button id="owner-button" class="rounded-button">Inhaberin</button>

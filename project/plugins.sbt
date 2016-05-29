@@ -10,6 +10,10 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-digest" % "1.1.0")
 addSbtPlugin("com.typesafe.sbt" % "sbt-mocha" % "1.1.0")
 addSbtPlugin("org.irundaia.sbt" % "sbt-sassify" % "1.4.2")
 
+// Autoprefixer plugin
+lazy val root = project.in(file(".")).dependsOn(sbtAutoprefixer)
+lazy val sbtAutoprefixer = uri("git://github.com/matthewrennie/sbt-autoprefixer")
+
 // Play enhancer - this automatically generates getters/setters for public fields
 // and rewrites accessors of these fields to use the getters/setters. Remove this
 // plugin if you prefer not to have this feature, or disable on a per project

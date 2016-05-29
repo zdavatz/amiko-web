@@ -76,3 +76,12 @@ cd /usr/local/src
 https://github.com/certbot/certbot.git
 https://github.com/certbot/certbot/blob/master/README.rst
 ```
+## Install Nodejs from source
+```
+cd /usr/local/src
+git clone https://github.com/nodejs/node.git
+cd /usr/local/src/node
+./configure --with-intl=full-icu --download=all --prefix=/usr/local
+make -j17
+```
+make sure you got gcc-4.9.3, mpfr-3.1.4, 

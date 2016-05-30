@@ -68,7 +68,7 @@ header {
 }
 
 footer {
-    width: auto;
+    width: 100%;
     left: 0;
     right: 0;
     height: 48px;

@@ -71,8 +71,8 @@ footer {
     width: auto;
     left: 0;
     right: 0;
-    margin:0 auto;
-    display: table;
+    margin-left: auto ;
+    margin-right: auto ;
     height: 48px;
     text-align: center;
     background-color: #cccccc;

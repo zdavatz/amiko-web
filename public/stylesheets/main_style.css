@@ -109,7 +109,7 @@ aside {
 
 #flex-main-content {
     min-height: 320px;
-    min-width: 640px;
+    min-width: 500px;
     flex: 1;
     box-orient: vertical;
     box-ordinal-group: 2;

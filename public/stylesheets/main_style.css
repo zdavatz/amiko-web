@@ -72,6 +72,7 @@ footer {
     left: 0;
     right: 0;
     margin:0 auto;
+    display: table;
     height: 48px;
     text-align: center;
     background-color: #cccccc;

@@ -47,7 +47,7 @@ footer {
 }
 
 header {
-    min-width: 500;
+    min-width: 500px;
     position: fixed;     /* make this position: fixed if header should not disappear */
     z-index: 10;
     left: 0;
@@ -71,6 +71,7 @@ footer {
     width: auto;
     left: 0;
     right: 0;
+    margin:0 auto;
     height: 48px;
     text-align: center;
     background-color: #cccccc;

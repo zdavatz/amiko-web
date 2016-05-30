@@ -68,9 +68,9 @@ header {
 }
 
 footer {
-    width: auto;
-    margin-left: 100%;
-    margin-right: 100%;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
     height: 48px;
     text-align: center;
     background-color: #cccccc;

@@ -69,8 +69,9 @@ header {
 
 footer {
     width: auto;
-    position: relative;
-    z-index:1;
+    position: absolute;
+    bottom:0;
+    left:0;
     height: 48px;
     text-align: center;
     background-color: #cccccc;

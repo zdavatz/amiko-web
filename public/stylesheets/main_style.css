@@ -68,8 +68,8 @@ header {
 }
 
 footer {
-    width: auto;
-    position: relative;
+    width: 100%;
+    position: bottom;
     height: 48px;
     text-align: center;
     background-color: #cccccc;

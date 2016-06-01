@@ -85,6 +85,7 @@
     display: block;
     white-space: nowrap;
     line-height: 0.4em;
+    padding-left: 0.5em;
 }
 
 /*Added to suggestion element when menu cursor moves to said suggestion*/
@@ -92,10 +93,9 @@
 .twitter-typeahead .tt-suggestion:focus,
 .twitter-typeahead .tt-cursor {
     cursor: pointer;
-    background-color: #FFFF80;
+    background-color: #eeeeee;
     color: white;
     width: 100%;
-    /* margin-left: 8px; */
 }
 
 

@@ -20,13 +20,6 @@ body {
     flex-direction: column;
 }
 
-nav li {
-    background: #999;
-    border-radius: 4px;
-    display: inline-block;
-    padding: .5em;
-}
-
 aside ul {
     list-style-type: none;
     padding: 0;
@@ -35,7 +28,7 @@ aside ul {
 aside li {
     padding: 0.25em 0.25em 0.25em 0.5em;
     vertical-align: middle;
-    transition-duration: 0.3s;
+    /* transition-duration: 0.3s; */
 }
 
 header,
@@ -139,21 +132,20 @@ aside {
 
 #section-ids li:hover {
     width: 100%;
-    margin-left: 0px;
+    margin-left: -3px;
     cursor: pointer;
-    background-color: #FFFF80;
     display: block;
-    border-radius: 6px;
+    border-left: 3px solid #cccccc;
+    background-color: #FDE95E;
+    font-weight: bold;
 }
 
 #search-field:hover {
-    /* background-color: #ffffff; */
     color:#555555;
     cursor: pointer;
 }
 
 #search-field:focus {
-    /* background-color: #ffffff; */
     color:#555555;
 }
 
@@ -226,7 +218,7 @@ header .links {
 }
 
 .rounded-button:active, .active {
-    background-color: #FFFF80;
+    background-color: #FDE95E;
     border-radius: 4px;
     border: 1px solid #dddddd;
 }

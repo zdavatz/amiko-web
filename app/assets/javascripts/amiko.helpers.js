@@ -31,7 +31,6 @@ function download_links() {
 var didScroll;
 var lastScrollTop = 0;
 var delta = 5;
-var navbarHeight = $('header').outerHeight();
 
 $(window).scroll(function(event) {
     didScroll = true;
@@ -46,21 +45,22 @@ setInterval(function() {
 
 function hasScrolled() {
     var st = $(this).scrollTop();
+    var headerHeight = $('header').outerHeight();
 
     // Make sure they scroll more than delta
     if (Math.abs(lastScrollTop - st) <= delta)
         return;
 
     // If they scrolled down and are past the navbar, add class .nav-up.
-    if (st > lastScrollTop && st > navbarHeight){
+    if (st > lastScrollTop && st > headerHeight){
         // Scroll Down
-        $('header').removeClass('nav-down').addClass('nav-up');
-        $('#flex-aside-two').removeClass('nav-down').addClass('nav-up2');
+        $('header').removeClass('header-down').addClass('header-up');
+        $('#flex-aside-two').removeClass('section-ids-down').addClass('section-ids-up');
     } else {
         // Scroll Up
-        if (st<80) {
-            $('header').removeClass('nav-up').addClass('nav-down');
-            $('#flex-aside-two').removeClass('nav-up2').addClass('nav-down');
+        if (st < 80) {
+            $('header').removeClass('header-up').addClass('header-down');
+            $('#flex-aside-two').removeClass('section-ids-up').addClass('header-down');
         }
     }
 

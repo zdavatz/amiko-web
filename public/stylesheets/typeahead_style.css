@@ -2,16 +2,12 @@
  *     typeahead.js v0.11.1 - twitter bootstrap v3.3.5    *
  **********************************************************/
 
-
 /*root typeahead class*/
 .twitter-typeahead {
     display: inherit;
-    width: 100%;
-    max-width: 1024px;   /* width of the highlight */
     margin-top: 16px;    /* margin to the top of the frame */
     margin-left: 0px;   /* margin to the left of the frame */
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-size: 16px;
 }
 
 .twitter-typeahead,
@@ -26,13 +22,11 @@
 /*Added to input that's initialized into a typeahead*/
 /* THIS IS THE INPUT - WHAT WE ARE TYPING */
 .tt-input {
-    width: 100%;
     height: 36px;
     text-align: left;
-    padding: 0.3em 1.0em 0.3em 2.1em;
+    padding: 0.0em 1.0em 0.0em 2.1em;
     font-size: 18px;
     color: #aaaaaa;
-    margin-bottom: 16px;
     line-height: 24px;
     border: 2px solid #dddddd;
     border-radius: 6px;
@@ -56,7 +50,6 @@
 
 /*Added to menu element*/
 .twitter-typeahead .tt-menu {
-
 }
 
 /*Added to menu element when it contains no content*/
@@ -71,12 +64,10 @@
 
 /*Added to the element that wraps highlighted text*/
 .twitter-typeahead .tt-highlight {
-
 }
 
 /*Added to dataset elements*/
 .twitter-typeahead .tt-dataset {
-
 }
 
 /*Added to suggestion elements*/

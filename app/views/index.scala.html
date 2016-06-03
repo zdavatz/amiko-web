@@ -14,7 +14,7 @@
         <aside id="flex-aside-one">
             <form>
                 <div id="input-form">
-                    <label id="num-results" for="input-form" class="badge"></label><input id="search-field" class="twitter-typeahead" type="search" value="@(search_key)" placeholder="Suche Präparatname" autofocus/>
+                    <div id="num-results" for="input-form" class="badge"></div><input id="search-field" class="twitter-typeahead" type="text" value="@(search_key)" placeholder="Suche Präparatname" autofocus/>
                 </div>
             </form>
             <br>
@@ -28,9 +28,9 @@
             <div id="special-dropdown" class="twitter-typeahead"></div>
         </aside>
 
-        <article id="flex-main-content">
-            <div id="fachinfo-id">@Html(fachinfo)</div>
-        </article>
+        <div id="flex-main-content">
+            <article id="fachinfo-id">@Html(fachinfo)</article>
+        </div>
 
         <aside id="flex-aside-two" class="nav-down">
             <div id="section-ids">@Html(titles)</div>

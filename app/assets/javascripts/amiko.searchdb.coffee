@@ -58,24 +58,24 @@ $ ->
       suggestion: (data) ->
         if search_type == 1
           "<div style='display:table;vertical-align:middle;'>\
-          <p style='color:#444444;'><b>#{data.title}</b></p>\
-          <span style='font-size:small;'>#{data.packinfo}</span></div>"
+          <p style='color:#444444;font-size:1.0em;'><b>#{data.title}</b></p>\
+          <span style='font-size:0.85em;'>#{data.packinfo}</span></div>"
         else if search_type == 2
           "<div style='display:table;vertical-align:middle;'>\
-          <p style='color:#444444'><b>#{data.title}</b></p>\
-          <span style='color:#8888cc;font-size:medium;'><p>#{data.author}</p></span></div>"
+          <p style='color:#444444;font-size:1.0em;'><b>#{data.title}</b></p>\
+          <span style='color:#8888cc;font-size:1.0em;'><p>#{data.author}</p></span></div>"
         else if search_type == 3
           "<div style='display:table;vertical-align:middle;'>\
-          <p style='color:#444444'><b>#{data.title}</b></p>\
-          <span style='color:gray;font-size:small;'>#{data.atccode}</span></div>"
+          <p style='color:#444444;font-size:1.0em;'><b>#{data.title}</b></p>\
+          <span style='color:gray;font-size:0.85em;'>#{data.atccode}</span></div>"
         else if search_type == 4
           "<div style='display:table;vertical-align:middle;'>\
-          <p style='color:#444444'><b>#{data.title}</b></p>\
-          <span style='color:#8888cc;font-size:medium;'><p>#{data.regnrs}</p></span></div>"
+          <p style='color:#444444;font-size:1.0em;'><b>#{data.title}</b></p>\
+          <span style='color:#8888cc;font-size:1.0em;'><p>#{data.regnrs}</p></span></div>"
         else if search_type == 5
           "<div style='display:table;vertical-align:middle;'>\
-          <p style='color:#444444'><b>#{data.title}</b></p>\
-          <span style='color:gray;font-size:small;'>#{data.therapy}</span></div>"
+          <p style='color:#444444;font-size:1.0em;'><b>#{data.title}</b></p>\
+          <span style='color:gray;font-size:0.85em;'>#{data.therapy}</span></div>"
 
   typeaheadCtrl.on 'typeahead:asyncrequest', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')

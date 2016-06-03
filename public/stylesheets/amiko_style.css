@@ -28,3 +28,12 @@
 .tblArticles .normal-center{border-right:solid 1pt #E5E7E8;border-top:solid 1pt #E5E7E8;width:10%;text-align:center;vertical-align:top;font-size:small;}
 .tblArticles .picture{width:15%;text-align:center;border-top:solid 1pt #E5E7E8;}
 .tblArticles .pictureEmpty{width:15%;border-top:solid 1pt #E5E7E8;}
+
+/*
+@media screen and (max-width: 1024px) {
+    #monographie div p {
+        font-size: 0.6em;
+        color: red;
+    }
+}
+*/

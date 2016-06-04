@@ -8,6 +8,7 @@ html, body {
     margin: 0;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 16px;
+    box-sizing: border-box;
 }
 
 a {
@@ -18,6 +19,7 @@ body {
     width: auto;
     display: flex;
     flex-direction: column;
+    overflow-x: hidden;
 }
 
 nav {
@@ -55,6 +57,14 @@ header {
     border-bottom: 1px solid #cccccc;
     background-color: #cccccc;
     transition: top 0.2s;
+}
+
+header .home {
+    float: left;
+}
+
+header .links {
+    float: right;
 }
 
 footer {
@@ -98,7 +108,7 @@ aside {
 
 #flex-aside-one {
     height: 100%;
-    flex: 0 0 640px;
+    flex: 0 0 320px;
     max-width: 320px;   /* ensures that box does not RESIZE **/
     box-orient: vertical;
     box-ordinal-group: 1;
@@ -107,7 +117,8 @@ aside {
     -webkit-transition: max-width 1s ease;
 }
 
-#flex-aside-one:hover {
+#flex-aside-one:hover,
+#flex-aside-one:focus {
     max-width: 640px;
 }
 
@@ -207,14 +218,6 @@ aside {
 
 #main-result {
     color: #444444;
-}
-
-header .home {
-    float: left;
-}
-
-header .links {
-    float: right;
 }
 
 .rounded-button {

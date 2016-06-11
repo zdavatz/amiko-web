@@ -6,6 +6,7 @@
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.helpers.js")"></script>
 
     <header class="nav-down">
+        <button class="language-button" onclick="set_language()">@Messages("language")</button>
         <a href="http://amiko.oddb.org" class="home"><img border="0" alt="Home" src="@routes.Assets.versioned("images/amiko_icon.png")" height="48"></a>
         <button id="download-button" onclick="download_links()"><img border="0" alt="Download" src="@routes.Assets.versioned("images/download_icon.svg")" height="48"></button>
     </header>
@@ -14,16 +15,16 @@
         <aside id="flex-aside-one">
             <form>
                 <div id="input-form">
-                    <div id="num-results" for="input-form" class="badge"></div><input id="search-field" class="twitter-typeahead" type="text" value="@(search_key)" placeholder="Suche Präparatname" autofocus/>
+                    <div id="num-results" for="input-form" class="badge"></div><input id="search-field" class="twitter-typeahead" type="text" value="@(search_key)" placeholder="@Messages("search_title")" autofocus/>
                 </div>
             </form>
             <br>
             <div>
-                <button id="article-button" class="rounded-button">Präparat</button>
-                <button id="owner-button" class="rounded-button">Inhaberin</button>
-                <button id="substance-button" class="rounded-button">Wirkstoff/ATC Code</button>
-                <button id="regnr-button" class="rounded-button">Zulassungsnummer</button>
-                <button id="therapy-button" class="rounded-button">Therapie</button>
+                <button id="article-button" class="rounded-button">@Messages("title")</button>
+                <button id="owner-button" class="rounded-button">@Messages("author")</button>
+                <button id="substance-button" class="rounded-button">@Messages("substance")</button>
+                <button id="regnr-button" class="rounded-button">@Messages("regnr")</button>
+                <button id="therapy-button" class="rounded-button">@Messages("therapy")</button>
             </div>
             <div id="special-dropdown" class="twitter-typeahead"></div>
         </aside>
@@ -48,29 +49,63 @@
         <div><a href="https://github.com/zdavatz/amiko-web">Copyright © 2016 ywesee GmbH</a></div>
     </footer>
 
+    <!-- Button related JS -->
     <script>
+        function disableButtons() {
+            $('#article-button').removeClass('active');
+            $('#owner-button').removeClass('active');
+            $('#substance-button').removeClass('active');
+            $('#regnr-button').removeClass('active');
+            $('#therapy-button').removeClass('active');
+        }
+        $('#article-button').click(function(){
+            disableButtons();
+            $('#search-field').attr('placeholder', '@Messages("search_title")');
+            $(this).addClass('active');
+        });
+        $('#owner-button').click(function(){
+            disableButtons();
+            $('#search-field').attr('placeholder', '@Messages("search_author")');
+            $(this).addClass('active');
+        });
+        $('#substance-button').click(function(){
+            disableButtons();
+            $('#search-field').attr('placeholder', '@Messages("search_substance")');
+            $(this).addClass('active');
+        });
+        $('#regnr-button').click(function(){
+            disableButtons();
+            $('#search-field').attr('placeholder', '@Messages("search_regnr")');
+            $(this).addClass('active');
+        });
+        $('#therapy-button').click(function(){
+            disableButtons();
+            $('#search-field').attr('placeholder', '@Messages("search_therapy")');
+            $(this).addClass('active');
+        });
+
         if (localStorage.getItem('search-type')==1) {
             $('#article-button').addClass('active');
-            $('#search-field').attr('placeholder', 'Suche Präparatname...');
+            $('#search-field').attr('placeholder', '@Messages("search_title")');
         } else if (localStorage.getItem('search-type')==2) {
             $('#owner-button').addClass('active')
-            $('#search-field').attr('placeholder', 'Suche Inhaberin...');
+            $('#search-field').attr('placeholder', '@Messages("search_author")');
         } else if (localStorage.getItem('search-type')==3) {
             $('#substance-button').addClass('active')
-            $('#search-field').attr('placeholder', 'Suche Wirkstoff/ATC...');
+            $('#search-field').attr('placeholder', '@Messages("search_substance")');
         } else if (localStorage.getItem('search-type')==4) {
             $('#regnr-button').addClass('active')
-            $('#search-field').attr('placeholder', 'Suche Zulassungsnummer...');
+            $('#search-field').attr('placeholder', '@Messages("search_regnr")');
         } else if (localStorage.getItem('search-type')==5) {
             $('#therapy-button').addClass('active')
-            $('#search-field').attr('placeholder', 'Suche Therapie...');
+            $('#search-field').attr('placeholder', '@Messages("search_therapy")');
         } else {
             $('#article-button').addClass('active');
-            $('#search-field').attr('placeholder', 'Suche Präparatname...');
+            $('#search-field').attr('placeholder', '@Messages("search_title")');
         }
     </script>
 
-        <!-- Google Analytics -->
+    <!-- Google Analytics -->
     <script>
             (function(i,s,o,g,r,a,m){i.GoogleAnalyticsObject=r;i[r]=i[r]||function(){
                         (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -80,5 +115,5 @@
             ga('create', 'UA-47115045-2', 'auto');
             ga('send', 'pageview');
     </script>
-        <!-- End Google Analytics -->
+    <!-- End Google Analytics -->
 }

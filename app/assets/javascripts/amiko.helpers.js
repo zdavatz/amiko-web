@@ -26,6 +26,46 @@ function download_links() {
 }
 
 /**
+ * Creates a cookie with a given name and value and expiring in days from now
+ */
+function createCookie(name, value, days) {
+    var expires = "";
+    if (days) {
+        var date = new Date();
+        date.setTime(date.getTime() + (days*24*60*60*1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + value + expires + "; path=/";
+}
+
+/**
+ * Sets language variable and PLAY_LANG cookie
+ */
+function set_language() {
+    var lang = localStorage.getItem('language');
+    console.log('set language -> ' + lang);
+
+    if (lang=='de' || lang=='fr') {
+        // Swap language
+        if (lang=='de') {
+            lang = 'fr';
+        } else if (lang=='fr') {
+            lang = 'de';
+        }
+        localStorage.setItem('language', lang);
+        createCookie('PLAY_LANG', lang, 1000);
+        window.location.assign('/');
+        /*
+        jsRoutes.controllers.MainController.setLang(lang).ajax({
+            success: function(data) {
+                window.location.assign('/');
+            }
+        });
+        */
+    }
+}
+
+/**
  * Hide Header on scroll down
  */
 var didScroll;

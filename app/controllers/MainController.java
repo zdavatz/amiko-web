@@ -19,8 +19,9 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 package controllers;
 
-import controllers.routes;
+import models.Constants;
 import models.Medication;
+import play.db.NamedDatabase;
 import play.db.Database;
 import play.mvc.*;
 import views.html.*;
@@ -69,7 +70,8 @@ public class MainController extends Controller {
             KEY_ATCCLASS, KEY_THERAPY, KEY_APPLICATION, KEY_INDICATIONS,
             KEY_CUSTOMER_ID, KEY_PACK_INFO, KEY_ADDINFO, KEY_PACKAGES);
 
-    @Inject Database db;
+    @Inject @NamedDatabase("german") Database german_db;
+    @Inject @NamedDatabase("french") Database french_db;
     @Inject FormFactory formFactory;
 
     private class Article {
@@ -200,10 +202,16 @@ public class MainController extends Controller {
         return ok(index.render("", "", ""));
     }
 
-    public Result retrieveFachinfo(Medication m) {
+    public Result setLang(String lang) {
+        ctx().changeLang(lang);
+        System.out.println("Change language -> " + lang);
+        return index();
+    }
+
+    public Result retrieveFachinfo(String lang, Medication m) {
         if (m!=null) {
             String content = m.getContent().replaceAll("<html>|</html>|<body>|</body>|<head>|</head>", "");
-            String[] titles = getSectionTitles(m);
+            String[] titles = getSectionTitles(lang, m);
             String[] section_ids = m.getSectionIds().split(",");
             String name = m.getTitle();
             String titles_html;
@@ -221,21 +229,21 @@ public class MainController extends Controller {
         return ok("Hasta la vista, baby! You just terminated me.");
     }
 
-    public Result fachinfoId(long id) {
-        Medication m = getMedicationWithId(id);
-        return retrieveFachinfo(m);
+    public Result fachinfoId(String lang, long id) {
+        Medication m = getMedicationWithId(lang, id);
+        return retrieveFachinfo(lang, m);
     }
 
-    public Result fachinfoEan(String ean) {
-        Medication m = getMedicationWithEan(ean);
-        return retrieveFachinfo(m);
+    public Result fachinfoEan(String lang, String ean) {
+        Medication m = getMedicationWithEan(lang, ean);
+        return retrieveFachinfo(lang, m);
     }
 
-    public String[] getSectionTitles(Medication m) {
+    public String[] getSectionTitles(String lang, Medication m) {
         // Get section titles from chapters
         String[] section_titles = m.getSectionTitles().split(";");
         // Use abbreviations...
-        String[] section_titles_abbr = models.Constants.SectionTitle_DE;
+        String[] section_titles_abbr = lang.equals("de") ? models.Constants.SectionTitle_DE : Constants.SectionTitle_FR;
         for (int i = 0; i < section_titles.length; ++i) {
             for (String s : section_titles_abbr) {
                 String titleA = section_titles[i].replaceAll(" ", "");
@@ -260,58 +268,59 @@ public class MainController extends Controller {
         return ok(
                 play.routing.JavaScriptReverseRouter.create("jsRoutes",
                         controllers.routes.javascript.MainController.getFachinfo(),
+                        controllers.routes.javascript.MainController.setLang(),
                         controllers.routes.javascript.MainController.index()))
                 .as("text/javascript");
     }
 
-    public Result getFachinfo(long id) {
-        return redirect(controllers.routes.MainController.fachinfoId(id));
+    public Result getFachinfo(String lang, long id) {
+        return redirect(controllers.routes.MainController.fachinfoId(lang, id));
     }
 
-    public Result getName(String name) {
-        CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchName(name));
+    public Result getName(String lang, String name) {
+        CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchName(lang, name));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
                 .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages()))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
 
-    public Result getOwner(String owner) {
-        CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchOwner(owner));
+    public Result getOwner(String lang, String owner) {
+        CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchOwner(lang, owner));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
                 .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages()))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
 
-    public Result getATC(String atc) {
-        CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchATC(atc));
+    public Result getATC(String lang, String atc) {
+        CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchATC(lang, atc));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
                 .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages()))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
 
-    public Result getRegnr(String regnr) {
-        CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchRegnr(regnr));
+    public Result getRegnr(String lang, String regnr) {
+        CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchRegnr(lang, regnr));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
                 .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages()))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
 
-    public Result getTherapy(String therapy) {
-        CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchTherapy(therapy));
+    public Result getTherapy(String lang, String therapy) {
+        CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchTherapy(lang, therapy));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
                 .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages()))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
 
-    private int numRecords() {
+    private int numRecords(String lang) {
         int num_rec = -1;
         try {
-            Connection conn = db.getConnection();
+            Connection conn = lang.equals("de") ? german_db.getConnection() : french_db.getConnection();
             Statement stat = conn.createStatement();
             String query = "select count(*) from amikodb";
             ResultSet rs = stat.executeQuery(query);
@@ -323,11 +332,11 @@ public class MainController extends Controller {
         return num_rec;
     }
 
-    public List<Medication> searchName(String name) {
+    public List<Medication> searchName(String lang, String name) {
         List<Medication> med_titles = new ArrayList<>();
 
         try {
-            Connection conn = db.getConnection();
+            Connection conn = lang.equals("de") ? german_db.getConnection() : french_db.getConnection();
             Statement stat = conn.createStatement();
             ResultSet rs;
             // Allow for search to start inside a word...
@@ -354,11 +363,11 @@ public class MainController extends Controller {
         return med_titles;
     }
 
-    public List<Medication> searchOwner(String owner) {
+    public List<Medication> searchOwner(String lang, String owner) {
         List<Medication> med_auth = new ArrayList<>();
 
         try {
-            Connection conn = db.getConnection();
+            Connection conn = lang.equals("de") ? german_db.getConnection() : french_db.getConnection();
             Statement stat = conn.createStatement();
             String query = "select " + SHORT_TABLE + " from " + DATABASE_TABLE
                     + " where " + KEY_AUTH + " like " + "'" + owner + "%'";
@@ -376,11 +385,11 @@ public class MainController extends Controller {
         return med_auth;
     }
 
-    public List<Medication> searchATC(String atccode) {
+    public List<Medication> searchATC(String lang, String atccode) {
         List<Medication> med_auth = new ArrayList<>();
 
         try {
-            Connection conn = db.getConnection();
+            Connection conn = lang.equals("de") ? german_db.getConnection() : french_db.getConnection();
             Statement stat = conn.createStatement();
             String query = "select " + SHORT_TABLE + " from " + DATABASE_TABLE + " where "
                     + KEY_ATCCODE + " like " + "'%;" + atccode + "%' or "
@@ -405,11 +414,11 @@ public class MainController extends Controller {
         return med_auth;
     }
 
-    public List<Medication> searchRegnr(String regnr) {
+    public List<Medication> searchRegnr(String lang, String regnr) {
         List<Medication> med_auth = new ArrayList<>();
 
         try {
-            Connection conn = db.getConnection();
+            Connection conn = lang.equals("de") ? german_db.getConnection() : french_db.getConnection();
             Statement stat = conn.createStatement();
             String query = "select " + SHORT_TABLE + " from " + DATABASE_TABLE + " where "
                     + KEY_REGNRS + " like " + "'%, " + regnr + "%' or "
@@ -428,11 +437,11 @@ public class MainController extends Controller {
         return med_auth;
     }
 
-    public List<Medication> searchTherapy(String application) {
+    public List<Medication> searchTherapy(String lang, String application) {
         List<Medication> med_auth = new ArrayList<>();
 
         try {
-            Connection conn = db.getConnection();
+            Connection conn = lang.equals("de") ? german_db.getConnection() : french_db.getConnection();
             Statement stat = conn.createStatement();
             String query = "select " + SHORT_TABLE + " from " + DATABASE_TABLE + " where "
                     + KEY_APPLICATION + " like " + "'%," + application + "%' or "
@@ -457,9 +466,9 @@ public class MainController extends Controller {
         return med_auth;
     }
 
-    public Medication getMedicationWithId(long rowId) {
+    public Medication getMedicationWithId(String lang, long rowId) {
         try {
-            Connection conn = db.getConnection();
+            Connection conn = lang.equals("de") ? german_db.getConnection() : french_db.getConnection();
             Statement stat = conn.createStatement();
             String query = "select * from " + DATABASE_TABLE + " where " + KEY_ROWID + "=" + rowId;
             ResultSet rs = stat.executeQuery(query);
@@ -473,9 +482,9 @@ public class MainController extends Controller {
         return null;
     }
 
-    public Medication getMedicationWithEan(String eancode) {
+    public Medication getMedicationWithEan(String lang, String eancode) {
         try {
-            Connection conn = db.getConnection();
+            Connection conn = lang.equals("de") ? german_db.getConnection() : french_db.getConnection();
             Statement stat = conn.createStatement();
             String search_key = KEY_PACKAGES;
             if (eancode.length()==5)

@@ -4,16 +4,20 @@
 
 # Home page
 GET     /                           controllers.MainController.index()
-GET     /name                       controllers.MainController.getName(name: String)
-GET     /owner                      controllers.MainController.getOwner(owner: String)
-GET     /atc                        controllers.MainController.getATC(atc: String)
-GET     /regnr                      controllers.MainController.getRegnr(regnr: String)
-GET     /therapy                    controllers.MainController.getTherapy(therapy: String)
+GET     /name                       controllers.MainController.getName(lang: String?="de", name: String)
+GET     /owner                      controllers.MainController.getOwner(lang: String?="de", owner: String)
+GET     /atc                        controllers.MainController.getATC(lang: String?="de", atc: String)
+GET     /regnr                      controllers.MainController.getRegnr(lang: String?="de", regnr: String)
+GET     /therapy                    controllers.MainController.getTherapy(lang: String?="de", therapy: String)
 
 # 2. parameter will appear in URI
-GET     /fi/id/:id                  controllers.MainController.fachinfoId(id: Long)
-GET     /fi/gtin/:gtin              controllers.MainController.fachinfoEan(gtin: String)
-GET     /fii                        controllers.MainController.getFachinfo(id: Long)
+GET     /fi/id/:id                  controllers.MainController.fachinfoId(lang: String?="de", id: Long)
+GET     /fii                        controllers.MainController.getFachinfo(lang: String?="de", id: Long)
+
+GET     /de/fi/gtin/:gtin           controllers.MainController.fachinfoEan(lang: String="de", gtin: String)
+GET     /fr/fi/gtin/:gtin           controllers.MainController.fachinfoEan(lang: String="fr", gtin: String)
+
+POST    /lang/:lang                 controllers.MainController.setLang(lang: String)
 
 GET     /javascriptRoutes           controllers.MainController.javascriptRoutes
 

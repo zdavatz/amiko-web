@@ -248,6 +248,19 @@ aside {
     border: 1px solid #dddddd;
 }
 
+.language-button {
+    position: relative;
+    float: right;
+    outline: none;
+    border: none;
+    padding-top: 40px;
+    background-color: transparent;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: normal;
+}
+
 #download-button {
     float: right;
     outline: none;

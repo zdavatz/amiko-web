@@ -1,24 +1,31 @@
 $ ->
+  # set language
+  if localStorage.getItem 'language'
+    language = (String) localStorage.getItem 'language'
+  else
+    language = 'de'   # default language
+
+  # set search type
   if localStorage.getItem 'search-type'
     search_type = (Number) localStorage.getItem 'search-type'
   else
     search_type = 1   # default search type is 'article'
 
-  setSearchQuery = (type) ->
+  setSearchQuery = (lang, type) ->
     if type == 1
-      return '/name?name='
+      return '/name?lang=' + lang + '&name='
     else if type == 2
-      return '/owner?owner='
+      return '/owner?lang=' + lang + '&owner='
     else if type == 3
-      return '/atc?atc='
+      return '/atc?lang=' + lang + '&atc='
     else if type == 4
-      return '/regnr?regnr='
+      return '/regnr?lang=' + lang + '&regnr='
     else if type == 5
-      return '/therapy?therapy='
-    return '/name?name='
+      return '/therapy?lang=' + lang + '&therapy='
+    return '/name?lang=' + lang + '&name='
 
   # default value
-  search_query = setSearchQuery(1)
+  search_query = setSearchQuery(language, 1)
 
   start_time = new Date().getTime()
 
@@ -33,7 +40,6 @@ $ ->
       replace: (url, query) ->
         return search_query + query
       filter: (list) ->
-        console.log 'num results = ' + list.length
         document.getElementById('num-results').textContent=list.length
         return list
   )
@@ -90,9 +96,9 @@ $ ->
 
   # Retrieves the fachinfo, the URL should be of the form /fi/gtin/
   typeaheadCtrl.on 'typeahead:selected', (event, selection) ->
-    $.ajax(jsRoutes.controllers.MainController.getFachinfo(selection.id))
+    $.ajax(jsRoutes.controllers.MainController.getFachinfo(language, selection.id))
     .done (response) ->
-      window.location.assign '/fi/gtin/' + selection.eancode
+      window.location.assign '/' + language + '/fi/gtin/' + selection.eancode
       console.log selection.id + ' -> ' + selection.title
     .fail (jqHXR, textStatus) ->
       alert('ajax error')
@@ -106,50 +112,29 @@ $ ->
   $('#search-field').on 'click', ->
     $('search-field').attr 'value', ''
     $('.twitter-typeahead').typeahead('val', '')
-    search_query = setSearchQuery(search_type)
+    search_query = setSearchQuery(language, search_type)
+    console.log(search_query)
     $('#fachinfo-id').replaceWith ''
     $('#section-ids').replaceWith ''
 
-  disableAllButtons = ->
-    localStorage.setItem 'search-type', search_type
-    $('#article-button').removeClass('active')
-    $('#owner-button').removeClass('active')
-    $('#substance-button').removeClass('active')
-    $('#regnr-button').removeClass('active')
-    $('#therapy-button').removeClass('active')
+  setSearchType = (type) ->
+    search_type = type
+    localStorage.setItem 'search-type', type
+    console.log typed_input
+    $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
 
   # Detect click events on filters
   $('#article-button').on 'click', ->
-    search_type = 1
-    $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
-    $('#search-field').attr 'placeholder', 'Suche Präparatname...'
-    disableAllButtons()
-    $(this).toggleClass('active')
+    setSearchType(1)
 
   $('#owner-button').on 'click', ->
-    search_type = 2
-    $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
-    $('#search-field').attr 'placeholder', 'Suche Inhaberin...'
-    disableAllButtons()
-    $(this).toggleClass('active')
+    setSearchType(2)
 
   $('#substance-button').on 'click', ->
-    search_type = 3
-    $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
-    $('#search-field').attr 'placeholder', 'Suche Wirkstoff/ATC...'
-    disableAllButtons()
-    $(this).toggleClass('active')
+    setSearchType(3)
 
   $('#regnr-button').on 'click', ->
-    search_type = 4
-    $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
-    $('#search-field').attr 'placeholder', 'Suche Zulassungsnummer...'
-    disableAllButtons()
-    $(this).toggleClass('active')
+    setSearchType(4)
 
   $('#therapy-button').on 'click', ->
-    search_type = 5
-    $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
-    $('#search-field').attr 'placeholder', 'Suche Therapie...'
-    disableAllButtons()
-    $(this).toggleClass('active')
+    setSearchType(5)

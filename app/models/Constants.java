@@ -29,4 +29,12 @@ public class Constants {
             "Sonstige Hinweise", "Zulassungsnummer", "Packungen", "Inhaberin",
             "Stand der Information"
     };
+    // French section title abbreviations
+    public static final String[] SectionTitle_FR = { "Composition",
+            "Forme galénique", "Contre-indications", "Indications",
+            "Posologie", "Précautions", "Interactions", "Grossesse/All.",
+            "Conduite", "Effets indésir.", "Surdosage", "Propriétés/Effets",
+            "Cinétique", "Préclinique", "Remarques", "Numéro d'autorisation",
+            "Présentation", "Titulaire", "Mise à jour"
+    };
 }

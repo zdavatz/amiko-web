@@ -43,8 +43,6 @@ function createCookie(name, value, days) {
  */
 function set_language() {
     var lang = localStorage.getItem('language');
-    console.log('set language -> ' + lang);
-
     if (lang=='de' || lang=='fr') {
         // Swap language
         if (lang=='de') {

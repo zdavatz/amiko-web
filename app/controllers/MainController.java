@@ -202,13 +202,36 @@ public class MainController extends Controller {
         return ok(index.render("", "", ""));
     }
 
+    public Result javascriptRoutes() {
+        return ok(
+                play.routing.JavaScriptReverseRouter.create("jsRoutes",
+                        controllers.routes.javascript.MainController.getFachinfo(),
+                        controllers.routes.javascript.MainController.setLang(),
+                        controllers.routes.javascript.MainController.index()))
+                .as("text/javascript");
+    }
+
     public Result setLang(String lang) {
         ctx().changeLang(lang);
         System.out.println("Change language -> " + lang);
         return index();
     }
 
-    public Result retrieveFachinfo(String lang, Medication m) {
+    public Result fachinfoId(String lang, long id) {
+        Medication m = getMedicationWithId(lang, id);
+        return retrieveFachinfo(lang, m);
+    }
+
+    public Result getFachinfo(String lang, long id) {
+        return redirect(controllers.routes.MainController.fachinfoId(lang, id));
+    }
+
+    public Result fachinfoEan(String lang, String ean) {
+        Medication m = getMedicationWithEan(lang, ean);
+        return retrieveFachinfo(lang, m);
+    }
+
+    private Result retrieveFachinfo(String lang, Medication m) {
         if (m!=null) {
             String content = m.getContent().replaceAll("<html>|</html>|<body>|</body>|<head>|</head>", "");
             String[] titles = getSectionTitles(lang, m);
@@ -229,17 +252,7 @@ public class MainController extends Controller {
         return ok("Hasta la vista, baby! You just terminated me.");
     }
 
-    public Result fachinfoId(String lang, long id) {
-        Medication m = getMedicationWithId(lang, id);
-        return retrieveFachinfo(lang, m);
-    }
-
-    public Result fachinfoEan(String lang, String ean) {
-        Medication m = getMedicationWithEan(lang, ean);
-        return retrieveFachinfo(lang, m);
-    }
-
-    public String[] getSectionTitles(String lang, Medication m) {
+    private String[] getSectionTitles(String lang, Medication m) {
         // Get section titles from chapters
         String[] section_titles = m.getSectionTitles().split(";");
         // Use abbreviations...
@@ -262,19 +275,6 @@ public class MainController extends Controller {
             }
         }
         return section_titles;
-    }
-
-    public Result javascriptRoutes() {
-        return ok(
-                play.routing.JavaScriptReverseRouter.create("jsRoutes",
-                        controllers.routes.javascript.MainController.getFachinfo(),
-                        controllers.routes.javascript.MainController.setLang(),
-                        controllers.routes.javascript.MainController.index()))
-                .as("text/javascript");
-    }
-
-    public Result getFachinfo(String lang, long id) {
-        return redirect(controllers.routes.MainController.fachinfoId(lang, id));
     }
 
     public Result getName(String lang, String name) {
@@ -327,12 +327,12 @@ public class MainController extends Controller {
             num_rec = rs.getInt(1);
             conn.close();
         } catch (SQLException e) {
-
+            System.err.println(">> SqlDatabase: SQLException in numRecords");
         }
         return num_rec;
     }
 
-    public List<Medication> searchName(String lang, String name) {
+    private List<Medication> searchName(String lang, String name) {
         List<Medication> med_titles = new ArrayList<>();
 
         try {
@@ -363,7 +363,7 @@ public class MainController extends Controller {
         return med_titles;
     }
 
-    public List<Medication> searchOwner(String lang, String owner) {
+    private List<Medication> searchOwner(String lang, String owner) {
         List<Medication> med_auth = new ArrayList<>();
 
         try {
@@ -385,7 +385,7 @@ public class MainController extends Controller {
         return med_auth;
     }
 
-    public List<Medication> searchATC(String lang, String atccode) {
+    private List<Medication> searchATC(String lang, String atccode) {
         List<Medication> med_auth = new ArrayList<>();
 
         try {
@@ -414,7 +414,7 @@ public class MainController extends Controller {
         return med_auth;
     }
 
-    public List<Medication> searchRegnr(String lang, String regnr) {
+    private List<Medication> searchRegnr(String lang, String regnr) {
         List<Medication> med_auth = new ArrayList<>();
 
         try {
@@ -437,7 +437,7 @@ public class MainController extends Controller {
         return med_auth;
     }
 
-    public List<Medication> searchTherapy(String lang, String application) {
+    private List<Medication> searchTherapy(String lang, String application) {
         List<Medication> med_auth = new ArrayList<>();
 
         try {
@@ -466,7 +466,7 @@ public class MainController extends Controller {
         return med_auth;
     }
 
-    public Medication getMedicationWithId(String lang, long rowId) {
+    private Medication getMedicationWithId(String lang, long rowId) {
         try {
             Connection conn = lang.equals("de") ? german_db.getConnection() : french_db.getConnection();
             Statement stat = conn.createStatement();
@@ -482,7 +482,7 @@ public class MainController extends Controller {
         return null;
     }
 
-    public Medication getMedicationWithEan(String lang, String eancode) {
+    private Medication getMedicationWithEan(String lang, String eancode) {
         try {
             Connection conn = lang.equals("de") ? german_db.getConnection() : french_db.getConnection();
             Statement stat = conn.createStatement();

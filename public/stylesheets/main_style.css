@@ -250,10 +250,11 @@ aside {
 
 .language-button {
     position: relative;
-    float: right;
+    float: left;
+    margin-left: 0.3em;
     outline: none;
     border: none;
-    padding-top: 40px;
+    color: #aaaaaa;
     background-color: transparent;
     text-decoration: none;
     cursor: pointer;
@@ -276,9 +277,9 @@ aside {
     position: relative;
     float: right;
     opacity: .9;
-    color:Green;
-    display:none;
-    text-align:right;
+    color: green;
+    display: none;
+    text-align: right;
 
 }
 #download-links p {

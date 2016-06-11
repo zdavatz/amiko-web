@@ -8,11 +8,13 @@
     <header class="nav-down">
         <a href="http://amiko.oddb.org" class="home"><img border="0" alt="Home" src="@routes.Assets.versioned("images/amiko_icon.png")" height="48"></a>
         <button id="download-button" onclick="download_links()"><img border="0" alt="Download" src="@routes.Assets.versioned("images/download_icon.svg")" height="48"></button>
-        <button class="language-button" onclick="set_language()">@Messages("language")</button>
-    </header>
+     </header>
 
     <div id="flex-container">
         <aside id="flex-aside-one">
+            <div>
+                <button class="language-button" onclick="set_language()">@Messages("language")</button>
+            </div>
             <form>
                 <div id="input-form">
                     <div id="num-results" for="input-form" class="badge"></div><input id="search-field" class="twitter-typeahead" type="text" value="@(search_key)" placeholder="@Messages("search_title")" autofocus/>

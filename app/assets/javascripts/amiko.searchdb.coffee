@@ -4,6 +4,7 @@ $ ->
     language = (String) localStorage.getItem 'language'
   else
     language = 'de'   # default language
+    localStorage.setItem 'language', language
 
   # set search type
   if localStorage.getItem 'search-type'

@@ -42,7 +42,10 @@ function createCookie(name, value, days) {
  * Sets language variable and PLAY_LANG cookie
  */
 function set_language() {
-    var lang = localStorage.getItem('language');
+    var lang = String(localStorage.getItem('language'));
+    // If null, the initialize
+    if (!lang || !lang.length)
+        lang = 'de';
     if (lang=='de' || lang=='fr') {
         // Swap language
         if (lang=='de') {

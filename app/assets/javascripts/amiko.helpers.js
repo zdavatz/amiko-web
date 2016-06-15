@@ -39,6 +39,17 @@ function createCookie(name, value, days) {
 }
 
 /**
+ * Sets the initial application specific cookie
+ */
+function set_initial_cookie(url){
+    if (url=='https://amiko.oddb.org/') {
+        createCookie('PLAY_LANG', 'de', 1000);
+    } else if (url=='https://comed.oddb.org/') {
+        createCookie('PLAY_LANG', 'fr', 1000);
+    }
+}
+
+/**
  * Sets language variable and PLAY_LANG cookie
  */
 function set_language() {

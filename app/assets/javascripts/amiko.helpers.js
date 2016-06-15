@@ -69,14 +69,14 @@ function set_language() {
             lang = 'de';
         // Set local storage and cookie
         localStorage.setItem('language', lang);
-        createCookie('PLAY_LANG', lang, 1000);
+        // createCookie('PLAY_LANG', lang, 1000);
         // Assign location
         setTimeout(function () {
             if (lang == 'de')
                 window.location.assign('https://amiko.oddb.org/');
             else if (lang == 'fr')
                 window.location.assign('https://comed.oddb.org/');
-        }, 1000);
+        }, 500);
 
         /*
         jsRoutes.controllers.MainController.setLang(lang).ajax({

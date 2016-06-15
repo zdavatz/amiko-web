@@ -38,13 +38,17 @@ function createCookie(name, value, days) {
     document.cookie = name + "=" + value + expires + "; path=/";
 }
 
+String.prototype.contains = function(it) {
+    return this.indexOf(it) != -1;
+};
+
 /**
  * Sets the initial application specific cookie
  */
 function set_initial_cookie(url){
-    if (url=='https://amiko.oddb.org/') {
+    if (url.contains('amiko')) {
         createCookie('PLAY_LANG', 'de', 1000);
-    } else if (url=='https://comed.oddb.org/') {
+    } else if (url.contains('comed')) {
         createCookie('PLAY_LANG', 'fr', 1000);
     }
 }

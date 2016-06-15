@@ -46,11 +46,13 @@ String.prototype.contains = function(it) {
  * Sets the initial application specific cookie
  */
 function set_initial_cookie(url){
+    /*
     if (url.contains('amiko')) {
         createCookie('PLAY_LANG', 'de', 1000);
     } else if (url.contains('comed')) {
         createCookie('PLAY_LANG', 'fr', 1000);
     }
+    */
 }
 
 /**

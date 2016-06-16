@@ -35,6 +35,7 @@ function createCookie(name, value, days) {
         date.setTime(date.getTime() + (days*24*60*60*1000));
         expires = "; expires=" + date.toUTCString();
     }
+    console.log("setting cookie " + name + " = " + value);
     document.cookie = name + "=" + value + expires + "; path=/";
 }
 
@@ -42,6 +43,7 @@ function createCookie(name, value, days) {
  * Deletes a cookie
  */
 function deleteCookie(name) {
+    console.log("deleting cookie " + name);
     document.cookie = name + "=" + ";expires=Thu, 01 Jan 1970 00:00:01 GMT;";
 }
 
@@ -58,6 +60,7 @@ String.prototype.contains = function(it) {
  * Sets the initial application specific cookie
  */
 function setInitialCookie(url){
+    console.log('setting INITIAL cookie for ' + url);
     deleteCookie('PLAY_LANG');
     if (url.contains('amiko')) {
         createCookie('PLAY_LANG', 'de', 1000);

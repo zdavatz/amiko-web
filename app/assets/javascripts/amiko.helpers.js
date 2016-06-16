@@ -83,22 +83,24 @@ function setLanguage() {
         // Set local storage and cookie
         localStorage.setItem('language', lang);
         deleteCookie('PLAY_LANG');
-        createCookie('PLAY_LANG', lang, 1000);
+        // createCookie('PLAY_LANG', lang, 1000);
         // Assign location
+        /*
         setTimeout(function () {
             if (lang == 'de')
                 window.location.assign('https://amiko.oddb.org/');
             else if (lang == 'fr')
                 window.location.assign('https://comed.oddb.org/');
         }, 500);
-
-        /*
+        */
         jsRoutes.controllers.MainController.setLang(lang).ajax({
             success: function(data) {
-                window.location.assign('/');
+                if (lang=='de')
+                    window.location.assign('https://amiko.oddb.org/');
+                else if (lang=='fr')
+                    window.location.assign('https://comed.oddb.org/');
             }
         });
-        */
     }
 }
 

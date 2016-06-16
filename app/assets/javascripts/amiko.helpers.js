@@ -60,6 +60,7 @@ String.prototype.contains = function(it) {
  * Sets the initial application specific cookie
  */
 function setInitialCookie(url){
+    /*
     console.log('setting INITIAL cookie for ' + url);
     deleteCookie('PLAY_LANG');
     if (url.contains('amiko')) {
@@ -67,6 +68,7 @@ function setInitialCookie(url){
     } else if (url.contains('comed')) {
         createCookie('PLAY_LANG', 'fr', 1000);
     }
+    */
 }
 
 /**
@@ -85,8 +87,8 @@ function setLanguage() {
             lang = 'de';
         // Set local storage and cookie
         localStorage.setItem('language', lang);
-        // deleteCookie('PLAY_LANG');
-        // createCookie('PLAY_LANG', lang, 1000);
+        deleteCookie('PLAY_LANG');
+        createCookie('PLAY_LANG', lang, 1000);
         // Assign location
         /*
         setTimeout(function () {

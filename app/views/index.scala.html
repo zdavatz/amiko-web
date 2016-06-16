@@ -4,7 +4,7 @@
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/typeahead.bundle.corejs.js")"></script>
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.searchdb.js")"></script>
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.helpers.js")"></script>
-    <script>set_initial_cookie('@Messages("web_url")')</script>
+    <script>setInitialCookie('@Messages("web_url")')</script>
 
     <header class="nav-down">
         <a href=@Messages("web_url") class="home"><img border="0" alt="Home" src="@routes.Assets.versioned("images/amiko_icon.png")" height="48"></a>
@@ -14,7 +14,7 @@
     <div id="flex-container">
         <aside id="flex-aside-one">
             <div>
-                <button class="language-button" onclick="set_language()">@Messages("language")</button>
+                <button class="language-button" onclick="setLanguage()">@Messages("language")</button>
             </div>
             <form>
                 <div id="input-form">

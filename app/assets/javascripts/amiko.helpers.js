@@ -38,6 +38,18 @@ function createCookie(name, value, days) {
     document.cookie = name + "=" + value + expires + "; path=/";
 }
 
+/**
+ * Deletes a cookie
+ */
+function deleteCookie(name) {
+    document.cookie = name + "=" + ";expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+}
+
+/**
+ *
+ * @param it
+ * @returns {boolean}
+ */
 String.prototype.contains = function(it) {
     return this.indexOf(it) != -1;
 };
@@ -45,20 +57,19 @@ String.prototype.contains = function(it) {
 /**
  * Sets the initial application specific cookie
  */
-function set_initial_cookie(url){
-    /*
+function setInitialCookie(url){
+    deleteCookie('PLAY_LANG');
     if (url.contains('amiko')) {
         createCookie('PLAY_LANG', 'de', 1000);
     } else if (url.contains('comed')) {
         createCookie('PLAY_LANG', 'fr', 1000);
     }
-    */
 }
 
 /**
  * Sets language variable and PLAY_LANG cookie
  */
-function set_language() {
+function setLanguage() {
     var lang = String(localStorage.getItem('language'));
     // If null, then initialize
     if (!lang || !lang.length)
@@ -71,6 +82,7 @@ function set_language() {
             lang = 'de';
         // Set local storage and cookie
         localStorage.setItem('language', lang);
+        deleteCookie('PLAY_LANG');
         createCookie('PLAY_LANG', lang, 1000);
         // Assign location
         setTimeout(function () {

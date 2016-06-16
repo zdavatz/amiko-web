@@ -87,8 +87,10 @@ function setLanguage() {
             lang = 'de';
         // Set local storage and cookie
         localStorage.setItem('language', lang);
+        /*
         deleteCookie('PLAY_LANG');
         createCookie('PLAY_LANG', lang, 1000);
+        */
         // Assign location
         /*
         setTimeout(function () {

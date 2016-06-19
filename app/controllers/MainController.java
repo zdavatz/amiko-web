@@ -218,8 +218,8 @@ public class MainController extends Controller {
         System.out.println("Request -> " + request().toString());
         /*
         ctx().changeLang(lang);
-        ctx().setTransientLang(lang);
         */
+        ctx().setTransientLang(lang);
         return index();//ok(ctx().lang().code());
     }
 

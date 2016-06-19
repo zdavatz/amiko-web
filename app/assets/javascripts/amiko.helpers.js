@@ -57,26 +57,11 @@ String.prototype.contains = function(it) {
 };
 
 /**
- * Sets the initial application specific cookie
- */
-function setInitialCookie(url){
-    /*
-    console.log('setting INITIAL cookie for ' + url);
-    deleteCookie('PLAY_LANG');
-    if (url.contains('amiko')) {
-        createCookie('PLAY_LANG', 'de', 1000);
-    } else if (url.contains('comed')) {
-        createCookie('PLAY_LANG', 'fr', 1000);
-    }
-    */
-}
-
-/**
  * Sets language variable and PLAY_LANG cookie
  */
 function setLanguage() {
     var lang = String(localStorage.getItem('language'));
-    
+
     // If null, then initialize
     if (!lang || !lang.length)
         lang = 'de';
@@ -89,25 +74,18 @@ function setLanguage() {
         // Set local storage and cookie
         localStorage.setItem('language', lang);
         console.log("set language = " + lang);
-        /*
-        deleteCookie('PLAY_LANG');
-        createCookie('PLAY_LANG', lang, 1000);
-        */
-        // Assign location
-        /*
-        setTimeout(function () {
-            if (lang == 'de')
-                window.location.assign('https://amiko.oddb.org/');
-            else if (lang == 'fr')
-                window.location.assign('https://comed.oddb.org/');
-        }, 500);
-        */
+
         jsRoutes.controllers.MainController.setLang(lang).ajax({
             success: function(data) {
-                if (lang=='de')
+                if (lang=='de') {
+                    deleteCookie('PLAY_LANG');
+                    createCookie('PLAY_LANG', 'de', 1000);
                     window.location.assign('http://amiko.oddb.org/');
-                else if (lang=='fr')
+                } else if (lang=='fr') {
+                    deleteCookie('PLAY_LANG');
+                    createCookie('PLAY_LANG', 'fr', 1000);
                     window.location.assign('http://comed.oddb.org/');
+                }
             }
         });
     }

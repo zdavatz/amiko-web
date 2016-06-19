@@ -19,8 +19,8 @@ public class MyActionCreator implements play.http.ActionCreator {
                 Path path = Paths.get(ctx.request().path());
                 if (path.toString().contains("lang")) {
                     String lang = path.getName(1).toString();
-                    // we detect language only by URL path, cookies does not used
-                    ctx.changeLang(lang);
+                    // we detect language only by URL path, cookies are not used
+                    ctx.setTransientLang(lang);
                 }
                 return delegate.call(ctx);
             }

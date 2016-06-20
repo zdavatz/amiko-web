@@ -212,15 +212,13 @@ public class MainController extends Controller {
     }
 
     public Result setLang(String lang) {
-        System.out.println("Change language to " + ctx().lang().code());
         // response().discardCookie("PLAY_LANG");
         response().setHeader("Accept-Language", lang);
         System.out.println("Request -> " + request().toString());
-        /*
         ctx().changeLang(lang);
-        */
-        ctx().setTransientLang(lang);
-        return index();//ok(ctx().lang().code());
+        // ctx().setTransientLang(lang);
+        System.out.println("Change language to " + ctx().lang().code());
+        return index();
     }
 
     public Result fachinfoId(String lang, long id) {

@@ -57,6 +57,18 @@ String.prototype.contains = function(it) {
 };
 
 /**
+ *
+ */
+function setInitialLanguage(web_url) {
+    console.log(web_url);
+    if (web_url.contains('amiko')) {
+        localStorage.setItem('language', 'de');
+    } else if (web_url.contains('comed')) {
+        localStorage.setItem('language', 'fr');
+    }
+}
+
+/**
  * Sets language variable and PLAY_LANG cookie
  */
 function setLanguage() {
@@ -81,12 +93,14 @@ function setLanguage() {
             createCookie('PLAY_LANG', 'de', 1000);
             */
             window.location.assign('http://amiko.oddb.org');
+            // window.location.assign('/de');
         } else if (lang=='fr') {
             /*
             deleteCookie('PLAY_LANG');
             createCookie('PLAY_LANG', 'fr', 1000);
             */
             window.location.assign('http://comed.oddb.org');
+            // window.location.assign('/fr');
         }
 
         /*

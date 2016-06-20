@@ -100,7 +100,7 @@ $ ->
     $.ajax(jsRoutes.controllers.MainController.getFachinfo(language, selection.id))
     .done (response) ->
       window.location.assign '/' + language + '/fi/gtin/' + selection.eancode
-      console.log selection.id + ' -> ' + selection.title
+      console.log selection.id + ' -> ' + selection.title + ' with language = ' + language
     .fail (jqHXR, textStatus) ->
       alert('ajax error')
 

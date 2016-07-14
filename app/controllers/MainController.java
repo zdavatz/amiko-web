@@ -214,10 +214,8 @@ public class MainController extends Controller {
     public Result setLang(String lang) {
         // response().discardCookie("PLAY_LANG");
         response().setHeader("Accept-Language", lang);
-        System.out.println("Request -> " + request().toString());
         ctx().changeLang(lang);
         // ctx().setTransientLang(lang);
-        System.out.println("Change language to " + ctx().lang().code());
         return index();
     }
 

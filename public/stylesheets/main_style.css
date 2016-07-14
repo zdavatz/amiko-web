@@ -192,7 +192,7 @@ aside {
     float: right;
 }
 
-#input-form{
+#input-form {
     width: 100%;
     display: block;
     position: relative;
@@ -248,7 +248,7 @@ aside {
     border: 1px solid #dddddd;
 }
 
-.language-button {
+#language-button {
     position: relative;
     float: left;
     margin-left: 0.3em;

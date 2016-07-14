@@ -58,7 +58,7 @@ $ ->
   ,
     name: 'articles'
     displayKey: 'name'
-    limit: '40'
+    limit: '300'
     # "ttAdapter" wraps the suggestion engine in an adapter that is compatible with the typeahead jQuery plugin
     source: articles.ttAdapter()
     templates:

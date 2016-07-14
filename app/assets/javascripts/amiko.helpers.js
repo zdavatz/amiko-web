@@ -70,6 +70,7 @@ function setInitialLanguage(web_url) {
 
 /**
  * Sets language variable and PLAY_LANG cookie
+ * NOTE: move to coffee script
  */
 function setLanguage() {
     var lang = String(localStorage.getItem('language'));
@@ -85,8 +86,6 @@ function setLanguage() {
             lang = 'de';
         // Set local storage and cookie
         localStorage.setItem('language', lang);
-        console.log("set language = " + lang);
-
         if (lang=='de') {
             /*
             deleteCookie('PLAY_LANG');

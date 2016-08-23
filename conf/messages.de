@@ -11,6 +11,7 @@ search_regnr = Suche Zulassungsnummer...
 search_therapy = Suche Therapie...
 language = DE
 web_url = http://amiko.oddb.org
+# web_url = http://amiko.zurrose.ch
 windows_url = http://pillbox.oddb.org/amikodesk_setup_32bit.exe
 macos_url = https://itunes.apple.com/ch/app/amiko-desitin/id708142753?mt=12
 ios_url = https://itunes.apple.com/ch/app/amiko-desitin/id687642725?mt=8

@@ -63,8 +63,18 @@ function setInitialLanguage(web_url) {
     console.log(web_url);
     if (web_url.contains('amiko')) {
         localStorage.setItem('language', 'de');
+        if (web_url.contains('rose')) {
+            localStorage.setItem('customid', 'rose');
+        } else {
+            localStorage.setItem('customid', 'oddb');
+        }
     } else if (web_url.contains('comed')) {
         localStorage.setItem('language', 'fr');
+        if (web_url.contains('rose')) {
+            localStorage.setItem('customid', 'rose');
+        } else {
+            localStorage.setItem('customid', 'oddb');
+        }
     }
 }
 
@@ -74,6 +84,7 @@ function setInitialLanguage(web_url) {
  */
 function setLanguage() {
     var lang = String(localStorage.getItem('language'));
+    var customid = String(localStorage.getItem('customid'));
 
     // If null, then initialize
     if (!lang || !lang.length)
@@ -91,14 +102,20 @@ function setLanguage() {
             deleteCookie('PLAY_LANG');
             createCookie('PLAY_LANG', 'de', 1000);
             */
-            window.location.assign('http://amiko.oddb.org');
+            if (customid=='rose')
+                window.location.assign('http://amiko.zurrose.ch');
+            else
+                window.location.assign('http://amiko.oddb.org');
             // window.location.assign('/de');
         } else if (lang=='fr') {
             /*
             deleteCookie('PLAY_LANG');
             createCookie('PLAY_LANG', 'fr', 1000);
             */
-            window.location.assign('http://comed.oddb.org');
+            if (customid=='rose')
+                window.location.assign('http://comed.zurrose.ch');
+            else
+                window.location.assign('http://comed.oddb.org');
             // window.location.assign('/fr');
         }
 

@@ -312,6 +312,8 @@ public class InteractionsData {
             File file = new File(filename);
             if (!file.exists()) {
                 System.out.println("File " + filename + " not found!");
+                final String dir = System.getProperty("user.dir");
+                System.out.println("Current directory is " + dir);
                 return null;
             }
             FileInputStream fis = new FileInputStream(filename);

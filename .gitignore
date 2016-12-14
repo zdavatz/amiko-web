@@ -6,5 +6,5 @@ target
 /.project
 /.settings
 /RUNNING_PID
-dbs/amiko_db_full_idx_de.db
-dbs/amiko_db_full_idx_fr.db
+sqlite/amiko_db_full_idx_de.db
+sqlite/amiko_db_full_idx_fr.db

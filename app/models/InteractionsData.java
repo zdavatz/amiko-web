@@ -41,10 +41,8 @@ public class InteractionsData {
     private static String[] m_section_titles = null;
     private static String[] m_section_anchors = null;
     private static String m_images_dir = "../assets/images/";
-    private static String m_jscripts_str = "";
 
-    private InteractionsData() {
-    }
+    private InteractionsData() {}
 
     /**
      * Get the only instance of this class. Singleton pattern.
@@ -63,7 +61,7 @@ public class InteractionsData {
     }
 
     public void loadAllGermanFiles() {
-        m_interactions_de_map = readFromCsvToMap("./dbs/drug_interactions_csv_de.csv");
+        m_interactions_de_map = readFromCsvToMap("./sqlite/drug_interactions_csv_de.csv");
         int num_entries = 0;
         if (m_interactions_de_map != null)
             num_entries = m_interactions_de_map.size();
@@ -73,7 +71,7 @@ public class InteractionsData {
     }
 
     public void loadAllFrenchFiles() {
-        m_interactions_fr_map = readFromCsvToMap("./dbs/drug_interactions_csv_fr.csv");
+        m_interactions_fr_map = readFromCsvToMap("./sqlite/drug_interactions_csv_fr.csv");
         int num_entries = 0;
         if (m_interactions_fr_map != null)
             num_entries = m_interactions_fr_map.size();

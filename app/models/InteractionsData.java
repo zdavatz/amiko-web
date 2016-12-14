@@ -62,7 +62,7 @@ public class InteractionsData {
 
     public void loadAllGermanFiles() {
         m_interactions_de_map = readFromCsvToMap("./sqlite/drug_interactions_csv_de.csv");
-        int num_entries = 0;
+        int num_entries = -1;
         if (m_interactions_de_map != null)
             num_entries = m_interactions_de_map.size();
         // Default interactions map
@@ -72,7 +72,7 @@ public class InteractionsData {
 
     public void loadAllFrenchFiles() {
         m_interactions_fr_map = readFromCsvToMap("./sqlite/drug_interactions_csv_fr.csv");
-        int num_entries = 0;
+        int num_entries = -1;
         if (m_interactions_fr_map != null)
             num_entries = m_interactions_fr_map.size();
         System.out.println("found " + num_entries + " entries");
@@ -310,8 +310,10 @@ public class InteractionsData {
         Map<String, String> map = new TreeMap<String, String>();
         try {
             File file = new File(filename);
-            if (!file.exists())
+            if (!file.exists()) {
+                System.out.println("File " + filename + " not found!");
                 return null;
+            }
             FileInputStream fis = new FileInputStream(filename);
             BufferedReader br = new BufferedReader(new InputStreamReader(fis, "UTF-8"));
             String line;

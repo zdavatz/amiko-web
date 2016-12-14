@@ -6,11 +6,26 @@ $ ->
     language = 'de'   # default language
     localStorage.setItem 'language', language
 
+  # set search state
+  if localStorage.getItem 'search-state'
+    search_state = (Number) localStorage.getItem 'search-state'
+  else
+    search_state = 1  # default search state is 'compendium'
+    localStorage.setItem 'search-state', search_state
+
   # set search type
   if localStorage.getItem 'search-type'
     search_type = (Number) localStorage.getItem 'search-type'
   else
     search_type = 1   # default search type is 'article'
+    localStorage.setItem 'search-type', search_type
+
+  # set interactions basket
+  if localStorage.getItem 'interactions-basket'
+    interactions_basket = (String) localStorage.getItem 'interactions-basket'
+  else
+    interactions_basket = ''  # default interactions basket is empty!
+    localStorage.setItem 'interactions-basket', interactions_basket
 
   setSearchQuery = (lang, type) ->
     if type == 1
@@ -97,12 +112,30 @@ $ ->
 
   # Retrieves the fachinfo, the URL should be of the form /fi/gtin/
   typeaheadCtrl.on 'typeahead:selected', (event, selection) ->
-    $.ajax(jsRoutes.controllers.MainController.getFachinfo(language, selection.id))
-    .done (response) ->
-      window.location.assign '/' + language + '/fi/gtin/' + selection.eancode
-      console.log selection.id + ' -> ' + selection.title + ' with language = ' + language
-    .fail (jqHXR, textStatus) ->
-      alert('ajax error')
+    console.log search_state
+    if search_state == 1
+      localStorage.setItem 'compendium-selection-id', selection.id
+      localStorage.setItem 'compendium-selection-ean', selection.eancode
+      $.ajax(jsRoutes.controllers.MainController.getFachinfo(language, selection.id))
+      .done (response) ->
+        window.location.assign '/' + language + '/fi/gtin/' + selection.eancode
+        console.log selection.id + ' -> ' + selection.title + ' with language = ' + language
+      .fail (jqHXR, textStatus) ->
+        alert('ajax error')
+    else if search_state == 2
+      # add selection to basket
+      if interactions_basket.length == 0
+        interactions_basket = selection.eancode
+      else
+        interactions_basket += ',' + selection.eancode
+      localStorage.setItem 'interactions-basket', interactions_basket
+      # make ajax request to server -> basket
+      $.ajax(jsRoutes.controllers.MainController.interactionsBasket(language, interactions_basket))
+      .done (response) ->
+        window.location.assign '/interactions/' + interactions_basket
+        console.log 'added to basket: ' + selection.id + ' -> ' + selection.title + ' with language = ' + language
+      .fail (jqHXR, textStatus) ->
+        alert('ajax error')
 
   # Detect list related key up and key down events
   typeaheadCtrl.on 'typeahead:cursorchange', (event, selection) ->
@@ -111,20 +144,61 @@ $ ->
 
   # Detect click on search field
   $('#search-field').on 'click', ->
-    $('search-field').attr 'value', ''
-    $('.twitter-typeahead').typeahead('val', '')
     search_query = setSearchQuery(language, search_type)
     console.log(search_query)
-    $('#fachinfo-id').replaceWith ''
-    $('#section-ids').replaceWith ''
+    if search_state == 1
+      $('search-field').attr 'value', ''
+      $('.twitter-typeahead').typeahead('val', '')
+      # $('#fachinfo-id').replaceWith ''
+      # $('#section-ids').replaceWith ''
+    else if search_state == 2
+      $('search-field').attr 'value', ''
+      $('.twitter-typeahead').typeahead('val', '')
 
+  # Detect click on state buttons
+  setSearchUIState = (state) ->
+    search_state = state;
+    localStorage.setItem 'search-state', state
+    console.log "search state = " + search_state
+
+  # Switch to "compendium" mode
+  $('#compendium-button').on 'click', ->
+    $(this).toggleClass 'nav-button-active'
+    # set search state
+    setSearchUIState(1)
+    #
+    selection_id = (String) localStorage.getItem 'compendium-selection-id'
+    selection_ean = (String) localStorage.getItem 'compendium-selection-ean'
+
+    $.ajax(jsRoutes.controllers.MainController.getFachinfo(language, selection_id))
+    .done (response) ->
+      window.location.assign '/' + language + '/fi/gtin/' + selection_ean
+      console.log selection_id
+
+  # Switch to "interactions" mode
+  $('#interactions-button').on 'click', ->
+    $(this).toggleClass 'nav-button-active'
+    # set search state
+    setSearchUIState(2)
+    # retrieve basket
+    interactions_basket = (String) localStorage.getItem 'interactions-basket'
+    if interactions_basket.length == 0
+      interactions_basket = 'null'
+    # make ajax request to server -> basket
+    $.ajax(jsRoutes.controllers.MainController.interactionsBasket(language, interactions_basket))
+    .done (response) ->
+      window.location.assign '/interactions/' + interactions_basket
+      console.log 'switching to interactions basket -> ' + interactions_basket
+    .fail (jqHXR, textStatus) ->
+      alert('ajax error')
+
+  # Detect click on search buttons
   setSearchType = (type) ->
     search_type = type
     localStorage.setItem 'search-type', type
-    console.log typed_input
+    console.log "search type = " + type + " for " + typed_input
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
 
-  # Detect click events on filters
   $('#article-button').on 'click', ->
     setSearchType(1)
 

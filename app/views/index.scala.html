@@ -1,15 +1,31 @@
-@(fachinfo: String="")(titles: String="")(search_key: String="")
+@(main_content: String="")(titles: String="")(search_key: String="")
 
 @main("AmiKoWeb") {
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/typeahead.bundle.corejs.js")"></script>
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.searchdb.js")"></script>
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.helpers.js")"></script>
+    <script type="text/javascript" src="@routes.Assets.versioned("javascripts/interaction_callbacks.js")"></script>
     <script>setInitialLanguage("@Messages("web_url")")</script>
 
     <header class="nav-down">
-        <a href=@Messages("web_url") class="home"><img border="0" alt="Home" src="@routes.Assets.versioned("images/amiko_icon.png")" height="48"></a>
-        <button id="download-button" onclick="download_links()"><img border="0" alt="Download" src="@routes.Assets.versioned("images/download_icon.svg")" height="48"></button>
-     </header>
+        <div class="nav-button">
+            <a href=@Messages("web_url") class="nav-button"><img border="0" alt="Home" src="@routes.Assets.versioned("images/amiko_icon.png")" height="32"></a>
+            <span style="display:block;">Home</span>
+        </div>
+        <div class="nav-button" id="compendium-button">
+            <button class="state-button">
+                <img border="0" alt="Compendium" src="@routes.Assets.versioned("images/aips32x32_dark.png")" height="32"/>
+            </button>
+            <span style="display:block;">Kompendium</span>
+        </div>
+        <div class="nav-button" id="interactions-button">
+            <button class="state-button">
+                <img border="0" alt="Interactions" src="@routes.Assets.versioned("images/interactions32x32_dark.png")" height="32"/>
+            </button>
+            <span style="display:block;">Interaktionen</span>
+        </div>
+        <button id="download-button" onclick="download_links()"><img border="0" alt="Download" src="@routes.Assets.versioned("images/download_icon.svg")" height="32"></button>
+    </header>
 
     <div id="flex-container">
         <aside id="flex-aside-one">
@@ -33,7 +49,7 @@
         </aside>
 
         <div id="flex-main-content">
-            <article id="fachinfo-id">@Html(fachinfo)</article>
+            <article id="fachinfo-id">@Html(main_content)</article>
         </div>
 
         <aside id="flex-aside-two" class="nav-down">
@@ -61,27 +77,27 @@
             $('#regnr-button').removeClass('active');
             $('#therapy-button').removeClass('active');
         }
-        $('#article-button').click(function(){
+        $('#article-button').click(function() {
             disableButtons();
             $('#search-field').attr('placeholder', '@Messages("search_title")');
             $(this).addClass('active');
         });
-        $('#owner-button').click(function(){
+        $('#owner-button').click(function() {
             disableButtons();
             $('#search-field').attr('placeholder', '@Messages("search_author")');
             $(this).addClass('active');
         });
-        $('#substance-button').click(function(){
+        $('#substance-button').click(function() {
             disableButtons();
             $('#search-field').attr('placeholder', '@Messages("search_substance")');
             $(this).addClass('active');
         });
-        $('#regnr-button').click(function(){
+        $('#regnr-button').click(function() {
             disableButtons();
             $('#search-field').attr('placeholder', '@Messages("search_regnr")');
             $(this).addClass('active');
         });
-        $('#therapy-button').click(function(){
+        $('#therapy-button').click(function() {
             disableButtons();
             $('#search-field').attr('placeholder', '@Messages("search_therapy")');
             $(this).addClass('active');

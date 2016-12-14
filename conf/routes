@@ -17,6 +17,8 @@ GET     /fii                        controllers.MainController.getFachinfo(lang:
 GET     /de/fi/gtin/:gtin           controllers.MainController.fachinfoEan(lang: String="de", gtin: String)
 GET     /fr/fi/gtin/:gtin           controllers.MainController.fachinfoEan(lang: String="fr", gtin: String)
 
+GET     /interactions/:basket       controllers.MainController.interactionsBasket(lang: String?="de", basket: String)
+
 GET     /de                         controllers.MainController.setLang(lang: String="de")
 GET     /fr                         controllers.MainController.setLang(lang: String="fr")
 

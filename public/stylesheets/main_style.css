@@ -60,10 +60,6 @@ header {
     transition: top 0.2s;
 }
 
-header .home {
-    float: left;
-}
-
 header .links {
     float: right;
 }
@@ -121,7 +117,7 @@ aside {
 #flex-aside-one:hover,
 #flex-aside-one:focus,
 #flex-aside-one:active {
-    max-width: 640px;
+    max-width: 640px;   /* enables auto-resize */
 }
 
 #flex-main-content {
@@ -141,7 +137,7 @@ aside {
 
 #flex-aside-two {
     height: 100%;
-    flex: 0 0 200px;
+    flex: 0 0 240px;
     box-orient: vertical;
     box-ordinal-group: 3;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -220,6 +216,44 @@ aside {
 
 #main-result {
     color: #444444;
+}
+
+div.radio input[type="radio"]:checked + img {
+    border: 1px solid red;
+}
+
+.nav-button {
+    font-size: 0.8em;
+    margin-right: 16px;
+    display:inline-block;
+}
+
+.nav-button-active {
+    font-size: 0.8em;
+    margin-right: 16px;
+    background-color: darkgray;
+}
+
+.nav-button:hover {
+    cursor: pointer;
+    background-color: darkgray;
+}
+
+.state-button {
+    float: left;
+    outline: none;
+    border: none;
+    text-align: center;
+    background: transparent;
+}
+
+.state-button-active {
+    outline: none;
+    border: none;
+}
+
+.state-button:hover {
+    cursor: pointer;
 }
 
 .rounded-button {

@@ -20,6 +20,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package controllers;
 
 import models.Constants;
+import models.InteractionsData;
 import models.Medication;
 import play.db.NamedDatabase;
 import play.db.Database;
@@ -27,9 +28,7 @@ import play.mvc.*;
 import views.html.*;
 import play.data.FormFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -205,6 +204,7 @@ public class MainController extends Controller {
     public Result javascriptRoutes() {
         return ok(
                 play.routing.JavaScriptReverseRouter.create("jsRoutes",
+                        controllers.routes.javascript.MainController.interactionsBasket(),
                         controllers.routes.javascript.MainController.getFachinfo(),
                         controllers.routes.javascript.MainController.setLang(),
                         controllers.routes.javascript.MainController.index()))
@@ -239,8 +239,7 @@ public class MainController extends Controller {
             String[] titles = getSectionTitles(lang, m);
             String[] section_ids = m.getSectionIds().split(",");
             String name = m.getTitle();
-            String titles_html;
-            titles_html = "<ul style=\"list-style-type:none;\n\">";
+            String titles_html = "<ul style=\"list-style-type:none;\n\">";
             for (int i = 0; i < titles.length; ++i) {
                 if (i < section_ids.length)
                     titles_html += "<li><a onclick=\"move_to_anchor('" + section_ids[i] + "')\">" + titles[i] + "</a></li>";
@@ -252,6 +251,51 @@ public class MainController extends Controller {
             }
         }
         return ok("Hasta la vista, baby! You just terminated me.");
+    }
+
+    public Result interactionsBasket() {
+        String name = "";
+        String interactions_html = "";
+        String titles_html = "";
+        return ok(index.render(interactions_html, titles_html, name));
+    }
+
+    public Result interactionsBasket(String lang, String basket) {
+        String name = "";
+        String interactions_html = "";
+        String titles_html = "";
+
+        // System.out.println(basket);
+
+        Map<String, Medication> med_basket = new TreeMap<>();
+        if (!basket.isEmpty() && !basket.equals("null")) {
+            // Decompose the basket string
+            String[] eans = basket.split(",", -1);
+            for (String ean : eans) {
+                if (!ean.isEmpty()) {
+                    Medication m = getMedicationWithEan(lang, ean);
+                    if (m != null) {
+                        name = m.getTitle();
+                        med_basket.put(ean, m);
+                    }
+                }
+            }
+        }
+        InteractionsData inter_data = InteractionsData.getInstance();
+        interactions_html = inter_data.updateHtml(med_basket, lang);
+        String[] section_titles = inter_data.sectionTitles();
+        String[] section_anchors = inter_data.sectionAnchors();
+        titles_html = "<ul style=\"list-style-type:none;\n\">";
+        for (int i = 0; i < section_titles.length; ++i) {
+            // Spaces before and after of &rarr; are important...
+            String anchor = section_anchors[i]; // section_titles[i].replaceAll("<html>", "").replaceAll("</html>", "").replaceAll(" &rarr; ", "-");
+            titles_html += "<li><a onclick=\"move_to_anchor('" + anchor + "')\">" + section_titles[i] + "</a></li>";
+        }
+        titles_html += "</ul>";
+        if (interactions_html == null)
+            interactions_html = "";
+
+        return ok(index.render(interactions_html, titles_html, name));
     }
 
     private String[] getSectionTitles(String lang, Medication m) {

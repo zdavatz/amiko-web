@@ -61,7 +61,7 @@ public class InteractionsData {
     }
 
     public void loadAllGermanFiles() {
-        m_interactions_de_map = readFromCsvToMap("./sqlite/drug_interactions_csv_de.csv");
+        m_interactions_de_map = readFromCsvToMap("sqlite/drug_interactions_csv_de.csv");
         int num_entries = -1;
         if (m_interactions_de_map != null)
             num_entries = m_interactions_de_map.size();
@@ -71,7 +71,7 @@ public class InteractionsData {
     }
 
     public void loadAllFrenchFiles() {
-        m_interactions_fr_map = readFromCsvToMap("./sqlite/drug_interactions_csv_fr.csv");
+        m_interactions_fr_map = readFromCsvToMap("sqlite/drug_interactions_csv_fr.csv");
         int num_entries = -1;
         if (m_interactions_fr_map != null)
             num_entries = m_interactions_fr_map.size();
@@ -309,11 +309,10 @@ public class InteractionsData {
     private Map<String, String> readFromCsvToMap(String filename) {
         Map<String, String> map = new TreeMap<String, String>();
         try {
+            filename = System.getProperty("user.dir") + "/" + filename;
             File file = new File(filename);
             if (!file.exists()) {
                 System.out.println("File " + filename + " not found!");
-                final String dir = System.getProperty("user.dir");
-                System.out.println("Current directory is " + dir);
                 return null;
             }
             FileInputStream fis = new FileInputStream(filename);

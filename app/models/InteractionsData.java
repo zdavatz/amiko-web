@@ -244,7 +244,9 @@ public class InteractionsData {
     private String shortTitle(String title) {
         String[] t = title.split(" ");
         if (t.length>1)
-            return t[0] + " " + t[1];
+            title = t[0] + " " + t[1];
+        // Remove trailing commas
+        title = title.replaceAll(",\\s*$", "");
         return title;
     }
 

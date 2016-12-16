@@ -102,17 +102,14 @@ public class InteractionsData {
         String atc_code1 = "";
         String atc_code2 = "";
         String name1 = "";
-        String delete_text = "löschen";
         String delete_all_text = "alle löschen";
         String[] m_code1 = null;
         String[] m_code2 = null;
         int med_counter = 1;
 
         if (lang.equals("de")) {
-            delete_text = "löschen";
             delete_all_text = "alle löschen";
         } else if (lang.equals("fr")) {
-            delete_text = "annuler";
             delete_all_text = "tout supprimer";
         }
 
@@ -136,8 +133,8 @@ public class InteractionsData {
                         + "<td>" + entry1.getValue().getTitle() + "</td>"
                         + "<td>" + atc_code1 + "</td>"
                         + "<td>" + name1 + "</td>"
-                        // + "<td align=\"right\">" + "<input type=\"button\" value=\"" + delete_text + "\" onclick=\"deleteRow('Interaktionen',this)\" />" + "</td>";
-                        + "<td style=\"text-align:center;\">" + "<button type=\"button\" style=\"background-color:transparent; border:none;\" onclick=\"deleteRow('Interaktionen',this)\">"
+                        + "<td style=\"text-align:center;\">" + "<button type=\"button\" style=\"background-color:transparent; border:none; cursor: pointer;\""
+                                + " onclick=\"deleteRow('Interaktionen',this)\">"
                         + "<img height=20 src=\"" + m_images_dir + "rubbish-bin.png\" /></button>" + "</td>";
 
                 basket_html_str += "</tr>";
@@ -146,7 +143,7 @@ public class InteractionsData {
             basket_html_str += "</table>";
             // Medikamentenkorb löschen
             delete_all_button_str = "<div id=\"Delete_all\"><input type=\"button\" value=\"" + delete_all_text
-                    + "\" onclick=\"deleteRow('Delete_all',this)\" /></div>";
+                    + "\" style=\"cursor: pointer; background: transparent; border: 1px solid #aaaaaa;\" onclick=\"deleteRow('Delete_all',this)\" /></div>";
         } else {
             // Medikamentenkorb ist leer
             if (lang.equals("de"))
@@ -205,10 +202,13 @@ public class InteractionsData {
 
         if (med_basket.size() > 0 && section_str.size() < 2) {
             // Add note to indicate that there are no interactions
-            if (lang.equals("de"))
-                top_note_html_str = "<div><p class=\"paragraph0\">Zur Zeit sind keine Interaktionen zwischen diesen Medikamenten in der EPha.ch-Datenbank vorhanden. Weitere Informationen finden Sie in der Fachinformation.</p></div><br><br>";
-            else if (lang.equals("fr"))
+            if (lang.equals("de")) {
+                top_note_html_str = "<div><p class=\"paragraph0\">Zur Zeit sind keine Interaktionen zwischen diesen Medikamenten in der EPha.ch-Datenbank vorhanden. "
+                        + "Weitere Informationen finden Sie in der Fachinformation. "
+                        + "<i>Möchten Sie eine Interaktion melden? Senden Sie bitte eine Email an: zdavatz@ywesee.com.</i></p></div><br><br>";
+            } else if (lang.equals("fr")) {
                 top_note_html_str = "<p class=\"paragraph0\">Il n’y a aucune information dans la banque de données EPha.ch à propos d’une interaction entre les médicaments sélectionnés. Veuillez consulter les informations professionelles.</p><br><br>";
+            }
         } else if (med_basket.size() > 0 && section_str.size() > 1) {
             // Add color legend
             legend_html_str = addColorLegend(lang);
@@ -221,13 +221,12 @@ public class InteractionsData {
                 section_anchors.add("Légende");
             }
         }
-        if (lang.equals("de")) {
-            bottom_note_html_str += "<p class=\"footnote\">1. Datenquelle: Public Domain Daten von EPha.ch.</p> " +
-                    "<p class=\"footnote\">2. Unterstützt durch:  IBSA Institut Biochimique SA.</p>";
-        } else if (lang.equals("fr")) {
-            bottom_note_html_str += "<p class=\"footnote\">1. Source des données: données du domaine publique de EPha.ch</p> " +
-                    "<p class=\"footnote\">2. Soutenu par: IBSA Institut Biochimique SA.</p>";
-        }
+
+        if (lang.equals("de"))
+            bottom_note_html_str += "<p class=\"footnote\">1. Datenquelle: Public Domain Daten von EPha.ch.</p>";
+        else if (lang.equals("fr"))
+            bottom_note_html_str += "<p class=\"footnote\">1. Source des données: données du domaine publique de EPha.ch.</p>";
+
         String html_str = "<html><head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\" /></head><body><div id=\"interactions\">"
                 + basket_html_str + delete_all_button_str + "<br><br>" + top_note_html_str
                 + interactions_html_str + "<br>" + legend_html_str + "<br>" + bottom_note_html_str + "</div></body></html>";

@@ -218,29 +218,37 @@ aside {
     color: #444444;
 }
 
-div.radio input[type="radio"]:checked + img {
-    border: 1px solid red;
-}
-
 .nav-button {
     font-size: 0.8em;
-    margin-right: 16px;
+    padding: 6px;
     display:inline-block;
 }
 
 .nav-button-active {
     font-size: 0.8em;
-    margin-right: 16px;
-    background-color: darkgray;
+    padding: 6px;
+    display:inline-block;
+    border: 1px solid #FDE95E;
+    -webkit-border-radius:4px;
+    -moz-border-radius:4px;
+    border-radius:4px;
+    background-color: gainsboro;
 }
 
 .nav-button:hover {
     cursor: pointer;
-    background-color: darkgray;
+    background-color: gainsboro;
+}
+
+.center-image {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .state-button {
     float: left;
+    margin-left: 16px;
     outline: none;
     border: none;
     text-align: center;
@@ -298,6 +306,7 @@ div.radio input[type="radio"]:checked + img {
 
 #download-button {
     float: right;
+    margin-right: 8px;
     outline: none;
     border: none;
     background: transparent;

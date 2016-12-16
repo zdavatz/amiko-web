@@ -26,7 +26,6 @@ import play.db.NamedDatabase;
 import play.db.Database;
 import play.mvc.*;
 import views.html.*;
-import play.data.FormFactory;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -71,7 +70,6 @@ public class MainController extends Controller {
 
     @Inject @NamedDatabase("german") Database german_db;
     @Inject @NamedDatabase("french") Database french_db;
-    @Inject FormFactory formFactory;
 
     private class Article {
         // Private
@@ -233,26 +231,6 @@ public class MainController extends Controller {
         return retrieveFachinfo(lang, m);
     }
 
-    private Result retrieveFachinfo(String lang, Medication m) {
-        if (m!=null) {
-            String content = m.getContent().replaceAll("<html>|</html>|<body>|</body>|<head>|</head>", "");
-            String[] titles = getSectionTitles(lang, m);
-            String[] section_ids = m.getSectionIds().split(",");
-            String name = m.getTitle();
-            String titles_html = "<ul style=\"list-style-type:none;\n\">";
-            for (int i = 0; i < titles.length; ++i) {
-                if (i < section_ids.length)
-                    titles_html += "<li><a onclick=\"move_to_anchor('" + section_ids[i] + "')\">" + titles[i] + "</a></li>";
-            }
-            titles_html += "</ul>";
-            // Text-based HTTP response, default encoding: utf-8
-            if (content != null) {
-                return ok(index.render(content, titles_html, name));
-            }
-        }
-        return ok("Hasta la vista, baby! You just terminated me.");
-    }
-
     public Result interactionsBasket() {
         String name = "";
         String interactions_html = "";
@@ -261,13 +239,12 @@ public class MainController extends Controller {
     }
 
     public Result interactionsBasket(String lang, String basket) {
-        String name = "";
+        String article_title = "";
         String interactions_html = "";
         String titles_html = "";
 
-        // System.out.println(basket);
-
-        Map<String, Medication> med_basket = new TreeMap<>();
+        // Decompose string coming from client and fill up linkedhashmap
+        Map<String, Medication> med_basket = new LinkedHashMap<>();
         if (!basket.isEmpty() && !basket.equals("null")) {
             // Decompose the basket string
             String[] eans = basket.split(",", -1);
@@ -275,7 +252,7 @@ public class MainController extends Controller {
                 if (!ean.isEmpty()) {
                     Medication m = getMedicationWithEan(lang, ean);
                     if (m != null) {
-                        name = m.getTitle();
+                        article_title = m.getTitle();
                         med_basket.put(ean, m);
                     }
                 }
@@ -283,6 +260,7 @@ public class MainController extends Controller {
         }
         InteractionsData inter_data = InteractionsData.getInstance();
         interactions_html = inter_data.updateHtml(med_basket, lang);
+        // Associate section titles and anchors
         String[] section_titles = inter_data.sectionTitles();
         String[] section_anchors = inter_data.sectionAnchors();
         titles_html = "<ul style=\"list-style-type:none;\n\">";
@@ -295,32 +273,7 @@ public class MainController extends Controller {
         if (interactions_html == null)
             interactions_html = "";
 
-        return ok(index.render(interactions_html, titles_html, name));
-    }
-
-    private String[] getSectionTitles(String lang, Medication m) {
-        // Get section titles from chapters
-        String[] section_titles = m.getSectionTitles().split(";");
-        // Use abbreviations...
-        String[] section_titles_abbr = lang.equals("de") ? models.Constants.SectionTitle_DE : Constants.SectionTitle_FR;
-        for (int i = 0; i < section_titles.length; ++i) {
-            for (String s : section_titles_abbr) {
-                String titleA = section_titles[i].replaceAll(" ", "");
-                String titleB = m.getTitle().replaceAll(" ", "");
-                // Are we analysing the name of the article?
-                if (titleA.toLowerCase().contains(titleB.toLowerCase())) {
-                    if (section_titles[i].contains("®"))
-                        section_titles[i] = section_titles[i].substring(0, section_titles[i].indexOf("®") + 1);
-                    else
-                        section_titles[i] = section_titles[i].split(" ")[0].replaceAll("/-", "");
-                    break;
-                } else if (section_titles[i].toLowerCase().contains(s.toLowerCase())) {
-                    section_titles[i] = s;
-                    break;
-                }
-            }
-        }
-        return section_titles;
+        return ok(index.render(interactions_html, titles_html, article_title));
     }
 
     public Result getName(String lang, String name) {
@@ -361,6 +314,51 @@ public class MainController extends Controller {
                 .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages()))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
+    }
+
+    private Result retrieveFachinfo(String lang, Medication m) {
+        if (m!=null) {
+            String content = m.getContent().replaceAll("<html>|</html>|<body>|</body>|<head>|</head>", "");
+            String[] titles = getSectionTitles(lang, m);
+            String[] section_ids = m.getSectionIds().split(",");
+            String name = m.getTitle();
+            String titles_html = "<ul style=\"list-style-type:none;\n\">";
+            for (int i = 0; i < titles.length; ++i) {
+                if (i < section_ids.length)
+                    titles_html += "<li><a onclick=\"move_to_anchor('" + section_ids[i] + "')\">" + titles[i] + "</a></li>";
+            }
+            titles_html += "</ul>";
+            // Text-based HTTP response, default encoding: utf-8
+            if (content != null) {
+                return ok(index.render(content, titles_html, name));
+            }
+        }
+        return ok("Hasta la vista, baby! You just terminated me.");
+    }
+
+    private String[] getSectionTitles(String lang, Medication m) {
+        // Get section titles from chapters
+        String[] section_titles = m.getSectionTitles().split(";");
+        // Use abbreviations...
+        String[] section_titles_abbr = lang.equals("de") ? models.Constants.SectionTitle_DE : Constants.SectionTitle_FR;
+        for (int i = 0; i < section_titles.length; ++i) {
+            for (String s : section_titles_abbr) {
+                String titleA = section_titles[i].replaceAll(" ", "");
+                String titleB = m.getTitle().replaceAll(" ", "");
+                // Are we analysing the name of the article?
+                if (titleA.toLowerCase().contains(titleB.toLowerCase())) {
+                    if (section_titles[i].contains("®"))
+                        section_titles[i] = section_titles[i].substring(0, section_titles[i].indexOf("®") + 1);
+                    else
+                        section_titles[i] = section_titles[i].split(" ")[0].replaceAll("/-", "");
+                    break;
+                } else if (section_titles[i].toLowerCase().contains(s.toLowerCase())) {
+                    section_titles[i] = s;
+                    break;
+                }
+            }
+        }
+        return section_titles;
     }
 
     private int numRecords(String lang) {

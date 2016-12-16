@@ -7,24 +7,34 @@
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/interaction_callbacks.js")"></script>
     <script>setInitialLanguage("@Messages("web_url")")</script>
 
-    <header class="nav-down">
-        <div class="nav-button">
-            <a href=@Messages("web_url") class="nav-button"><img border="0" alt="Home" src="@routes.Assets.versioned("images/amiko_icon.png")" height="32"></a>
-            <span style="display:block;">Home</span>
-        </div>
+    <header>
+        <!-- COMPENDIUM BUTTON -->
         <div class="nav-button" id="compendium-button">
-            <button class="state-button">
-                <img border="0" alt="Compendium" src="@routes.Assets.versioned("images/aips32x32_dark.png")" height="32"/>
-            </button>
-            <span style="display:block;">Kompendium</span>
+            <div class="center-image">
+                <button class="state-button">
+                    <img border="0" alt="Compendium" src="@routes.Assets.versioned("images/aips32x32_dark.png")" height="28"/>
+                </button>
+                <span style="display: block;">Kompendium</span>
+            </div>
         </div>
+        <!-- INTERACTIONS BUTTON -->
         <div class="nav-button" id="interactions-button">
-            <button class="state-button">
-                <img border="0" alt="Interactions" src="@routes.Assets.versioned("images/interactions32x32_dark.png")" height="32"/>
-            </button>
-            <span style="display:block;">Interaktionen</span>
+            <div class="center-image">
+                <button class="state-button">
+                    <img border="0" alt="Interactions" src="@routes.Assets.versioned("images/interactions32x32_dark.png")" height="28"/>
+                </button>
+                <span style="display: block;">Interaktionen</span>
+            </div>
         </div>
-        <button id="download-button" onclick="download_links()"><img border="0" alt="Download" src="@routes.Assets.versioned("images/download_icon.svg")" height="32"></button>
+        <!-- DOWNLOAD BUTTON -->
+        <div class="nav-button" id="download-button">
+            <div class="center-image">
+                <button id="download-button" onclick="download_links()">
+                    <img border="0" alt="Download" src="@routes.Assets.versioned("images/download_icon.svg")" height="28">
+                </button>
+                <span style="display: block;">Download</span>
+            </div>
+        </div>
     </header>
 
     <div id="flex-container">

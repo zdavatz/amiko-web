@@ -1,4 +1,16 @@
 $ ->
+  # Enum-equivalent, singleton
+  SearchState =
+    Compendium: 1
+    Interactions: 2
+
+  SearchType =
+    Title: 1
+    Owner: 2
+    Atc: 3
+    Regnr: 4
+    Therapie: 5
+
   # set language
   if localStorage.getItem 'language'
     language = (String) localStorage.getItem 'language'
@@ -9,15 +21,21 @@ $ ->
   # set search state
   if localStorage.getItem 'search-state'
     search_state = (Number) localStorage.getItem 'search-state'
+    # make sure to toggle the activity state of the nav-button
+    if search_state == SearchState.Compendium
+      $('#compendium-button').toggleClass 'nav-button-active'
+    else if search_state == SearchState.Interactions
+      $('#interactions-button').toggleClass 'nav-button-active'
   else
     search_state = 1  # default search state is 'compendium'
+    $('#compendium-button').toggleClass 'nav-button-active'
     localStorage.setItem 'search-state', search_state
 
   # set search type
   if localStorage.getItem 'search-type'
     search_type = (Number) localStorage.getItem 'search-type'
   else
-    search_type = 1   # default search type is 'article'
+    search_type = SearchType.Title   # default search type is 'article'
     localStorage.setItem 'search-type', search_type
 
   # set interactions basket
@@ -28,20 +46,20 @@ $ ->
     localStorage.setItem 'interactions-basket', interactions_basket
 
   setSearchQuery = (lang, type) ->
-    if type == 1
+    if type == SearchType.Title
       return '/name?lang=' + lang + '&name='
-    else if type == 2
+    else if type == SearchType.Owner
       return '/owner?lang=' + lang + '&owner='
-    else if type == 3
+    else if type == SearchType.Atc
       return '/atc?lang=' + lang + '&atc='
-    else if type == 4
+    else if type == SearchType.Regnr
       return '/regnr?lang=' + lang + '&regnr='
-    else if type == 5
+    else if type == SearchType.Therapie
       return '/therapy?lang=' + lang + '&therapy='
     return '/name?lang=' + lang + '&name='
 
   # default value
-  search_query = setSearchQuery(language, 1)
+  search_query = setSearchQuery(language, SearchType.Title)
 
   start_time = new Date().getTime()
 
@@ -78,23 +96,23 @@ $ ->
     source: articles.ttAdapter()
     templates:
       suggestion: (data) ->
-        if search_type == 1
+        if search_type == SearchType.Title
           "<div style='display:table;vertical-align:middle;'>\
           <p style='color:#444444;font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='font-size:0.85em;'>#{data.packinfo}</span></div>"
-        else if search_type == 2
+        else if search_type == SearchType.Owner
           "<div style='display:table;vertical-align:middle;'>\
           <p style='color:#444444;font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:#8888cc;font-size:1.0em;'><p>#{data.author}</p></span></div>"
-        else if search_type == 3
+        else if search_type == SearchType.Atc
           "<div style='display:table;vertical-align:middle;'>\
           <p style='color:#444444;font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:gray;font-size:0.85em;'>#{data.atccode}</span></div>"
-        else if search_type == 4
+        else if search_type == SearchType.Regnr
           "<div style='display:table;vertical-align:middle;'>\
           <p style='color:#444444;font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:#8888cc;font-size:1.0em;'><p>#{data.regnrs}</p></span></div>"
-        else if search_type == 5
+        else if search_type == SearchType.Therapie
           "<div style='display:table;vertical-align:middle;'>\
           <p style='color:#444444;font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:gray;font-size:0.85em;'>#{data.therapy}</span></div>"
@@ -113,7 +131,7 @@ $ ->
   # Retrieves the fachinfo, the URL should be of the form /fi/gtin/
   typeaheadCtrl.on 'typeahead:selected', (event, selection) ->
     console.log search_state
-    if search_state == 1
+    if search_state == SearchState.Compendium
       localStorage.setItem 'compendium-selection-id', selection.id
       localStorage.setItem 'compendium-selection-ean', selection.eancode
       $.ajax(jsRoutes.controllers.MainController.getFachinfo(language, selection.id))
@@ -122,12 +140,16 @@ $ ->
         console.log selection.id + ' -> ' + selection.title + ' with language = ' + language
       .fail (jqHXR, textStatus) ->
         alert('ajax error')
-    else if search_state == 2
+    else if search_state == SearchState.Interactions
+      eancode = selection.eancode
       # add selection to basket
       if interactions_basket.length == 0
-        interactions_basket = selection.eancode
+        interactions_basket = eancode
       else
-        interactions_basket += ',' + selection.eancode
+        # add only if not already part of the list
+        found = interactions_basket.search eancode
+        if found < 0
+          interactions_basket += ',' + eancode
       localStorage.setItem 'interactions-basket', interactions_basket
       # make ajax request to server -> basket
       $.ajax(jsRoutes.controllers.MainController.interactionsBasket(language, interactions_basket))
@@ -146,12 +168,12 @@ $ ->
   $('#search-field').on 'click', ->
     search_query = setSearchQuery(language, search_type)
     console.log(search_query)
-    if search_state == 1
+    if search_state == SearchState.Compendium
       $('search-field').attr 'value', ''
       $('.twitter-typeahead').typeahead('val', '')
       # $('#fachinfo-id').replaceWith ''
       # $('#section-ids').replaceWith ''
-    else if search_state == 2
+    else if search_state == SearchState.Interactions
       $('search-field').attr 'value', ''
       $('.twitter-typeahead').typeahead('val', '')
 
@@ -165,7 +187,7 @@ $ ->
   $('#compendium-button').on 'click', ->
     $(this).toggleClass 'nav-button-active'
     # set search state
-    setSearchUIState(1)
+    setSearchUIState(SearchState.Compendium)
     #
     selection_id = (String) localStorage.getItem 'compendium-selection-id'
     selection_ean = (String) localStorage.getItem 'compendium-selection-ean'
@@ -179,7 +201,7 @@ $ ->
   $('#interactions-button').on 'click', ->
     $(this).toggleClass 'nav-button-active'
     # set search state
-    setSearchUIState(2)
+    setSearchUIState(SearchState.Interactions)
     # retrieve basket
     interactions_basket = (String) localStorage.getItem 'interactions-basket'
     if interactions_basket.length == 0
@@ -200,16 +222,16 @@ $ ->
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
 
   $('#article-button').on 'click', ->
-    setSearchType(1)
+    setSearchType(SearchType.Title)
 
   $('#owner-button').on 'click', ->
-    setSearchType(2)
+    setSearchType(SearchType.Owner)
 
   $('#substance-button').on 'click', ->
-    setSearchType(3)
+    setSearchType(SearchType.Atc)
 
   $('#regnr-button').on 'click', ->
-    setSearchType(4)
+    setSearchType(SearchType.Regnr)
 
   $('#therapy-button').on 'click', ->
-    setSearchType(5)
+    setSearchType(SearchType.Therapie)

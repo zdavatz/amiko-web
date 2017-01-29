@@ -116,29 +116,32 @@ public class InteractionsData {
         // Build interaction basket table
         if (med_basket.size() > 0) {
             for (Map.Entry<String, Medication> entry1 : med_basket.entrySet()) {
-                m_code1 = entry1.getValue().getAtcCode().split(";");
-                atc_code1 = "k.A.";
-                name1 = "k.A.";
-                if (m_code1.length > 1) {
-                    atc_code1 = m_code1[0];
-                    name1 = m_code1[1];
-                }
-                basket_html_str += "<tr>";
-                if (med_counter%2 == 0)
-                    basket_html_str += "<tr style=\"background-color:lavender;\">";
-                else
-                    basket_html_str += "<tr style=\"background-color:white;\">";
-                basket_html_str += "<td>" + med_counter + "</td>"
-                        + "<td>" + entry1.getKey() + "</td>"
-                        + "<td>" + entry1.getValue().getTitle() + "</td>"
-                        + "<td>" + atc_code1 + "</td>"
-                        + "<td>" + name1 + "</td>"
-                        + "<td style=\"text-align:center;\">" + "<button type=\"button\" style=\"background-color:transparent; border:none; cursor: pointer;\""
-                                + " onclick=\"deleteRow('Interaktionen',this)\">"
-                        + "<img height=20 src=\"" + m_images_dir + "rubbish-bin.png\" /></button>" + "</td>";
+                String atc = entry1.getValue().getAtcCode();
+                if (atc!=null && !atc.isEmpty()) {
+                    m_code1 = atc.split(";");
+                    atc_code1 = "k.A.";
+                    name1 = "k.A.";
+                    if (m_code1.length > 1) {
+                        atc_code1 = m_code1[0];
+                        name1 = m_code1[1];
+                    }
+                    basket_html_str += "<tr>";
+                    if (med_counter % 2 == 0)
+                        basket_html_str += "<tr style=\"background-color:lavender;\">";
+                    else
+                        basket_html_str += "<tr style=\"background-color:white;\">";
+                    basket_html_str += "<td>" + med_counter + "</td>"
+                            + "<td>" + entry1.getKey() + "</td>"
+                            + "<td>" + entry1.getValue().getTitle() + "</td>"
+                            + "<td>" + atc_code1 + "</td>"
+                            + "<td>" + name1 + "</td>"
+                            + "<td style=\"text-align:center;\">" + "<button type=\"button\" style=\"background-color:transparent; border:none; cursor: pointer;\""
+                            + " onclick=\"deleteRow('Interaktionen',this)\">"
+                            + "<img height=20 src=\"" + m_images_dir + "rubbish-bin.png\" /></button>" + "</td>";
 
-                basket_html_str += "</tr>";
-                med_counter++;
+                    basket_html_str += "</tr>";
+                    med_counter++;
+                }
             }
             basket_html_str += "</table>";
             // Medikamentenkorb löschen
@@ -165,32 +168,38 @@ public class InteractionsData {
         }
         if (med_counter > 1) {
             for (Map.Entry<String, Medication> entry1 : med_basket.entrySet()) {
-                m_code1 = entry1.getValue().getAtcCode().split(";");
-                if (m_code1.length > 1) {
-                    // Get ATC code of first drug, make sure to get the first in the list (the second one is not used)
-                    atc_code1 = m_code1[0].split(",")[0];
-                    for (Map.Entry<String, Medication> entry2 : med_basket.entrySet()) {
-                        m_code2 = entry2.getValue().getAtcCode().split(";");
-                        String title1 = entry1.getValue().getTitle();
-                        String title2 = entry2.getValue().getTitle();
-                        String ean1 = entry1.getKey();
-                        String ean2 = entry2.getKey();
-                        if (m_code2.length > 1) {
-                            // Get ATC code of second drug
-                            atc_code2 = m_code2[0];
-                            if (atc_code1 != null && atc_code2 != null && !atc_code1.equals(atc_code2)) {
-                                // Get html interaction content from drug interactions map
-                                // Anchors: use titles and not eancodes
-                                String inter = m_interactions_map.get(atc_code1 + "-" + atc_code2);
-                                if (inter != null) {
-                                    // This changes the "id" tag
-                                    inter = inter.replaceAll(atc_code1+"-", ean1+"-").replaceAll(atc_code1, shortTitle(title1));
-                                    inter = inter.replaceAll("-"+atc_code2, "-"+ean2).replaceAll(atc_code2, shortTitle(title2));
-                                    interactions_html_str += (inter + "");
-                                    // Add title to section title list
-                                    if (!inter.isEmpty()) {
-                                        section_anchors.add(ean1 + "-" + ean2);
-                                        section_str.add("<html>" + shortTitle(title1) + " &rarr; " + shortTitle(title2) + "</html>");
+                String atc1 = entry1.getValue().getAtcCode();
+                if (atc1!=null && !atc1.isEmpty()) {
+                    m_code1 = atc1.split(";");
+                    if (m_code1.length > 1) {
+                        // Get ATC code of first drug, make sure to get the first in the list (the second one is not used)
+                        atc_code1 = m_code1[0].split(",")[0];
+                        for (Map.Entry<String, Medication> entry2 : med_basket.entrySet()) {
+                            String atc2 = entry2.getValue().getAtcCode();
+                            if (atc2!=null && !atc2.isEmpty()) {
+                                m_code2 = atc2.split(";");
+                                String title1 = entry1.getValue().getTitle();
+                                String title2 = entry2.getValue().getTitle();
+                                String ean1 = entry1.getKey();
+                                String ean2 = entry2.getKey();
+                                if (m_code2.length > 1) {
+                                    // Get ATC code of second drug
+                                    atc_code2 = m_code2[0];
+                                    if (atc_code1 != null && atc_code2 != null && !atc_code1.equals(atc_code2)) {
+                                        // Get html interaction content from drug interactions map
+                                        // Anchors: use titles and not eancodes
+                                        String inter = m_interactions_map.get(atc_code1 + "-" + atc_code2);
+                                        if (inter != null) {
+                                            // This changes the "id" tag
+                                            inter = inter.replaceAll(atc_code1 + "-", ean1 + "-").replaceAll(atc_code1, shortTitle(title1));
+                                            inter = inter.replaceAll("-" + atc_code2, "-" + ean2).replaceAll(atc_code2, shortTitle(title2));
+                                            interactions_html_str += (inter + "");
+                                            // Add title to section title list
+                                            if (!inter.isEmpty()) {
+                                                section_anchors.add(ean1 + "-" + ean2);
+                                                section_str.add("<html>" + shortTitle(title1) + " &rarr; " + shortTitle(title2) + "</html>");
+                                            }
+                                        }
                                     }
                                 }
                             }

@@ -318,16 +318,27 @@ public class MainController extends Controller {
 
     private Result retrieveFachinfo(String lang, Medication m) {
         if (m!=null) {
-            String content = m.getContent().replaceAll("<html>|</html>|<body>|</body>|<head>|</head>", "");
-            String[] titles = getSectionTitles(lang, m);
-            String[] section_ids = m.getSectionIds().split(",");
-            String name = m.getTitle();
-            String titles_html = "<ul style=\"list-style-type:none;\n\">";
-            for (int i = 0; i < titles.length; ++i) {
-                if (i < section_ids.length)
-                    titles_html += "<li><a onclick=\"move_to_anchor('" + section_ids[i] + "')\">" + titles[i] + "</a></li>";
+            String name = "";
+            String titles_html = "";
+            //
+            String content = m.getContent();
+            if (content!=null && !content.isEmpty()) {
+                content = content.replaceAll("<html>|</html>|<body>|</body>|<head>|</head>", "");
+                String[] titles = getSectionTitles(lang, m);
+                String[] section_ids = m.getSectionIds().split(",");
+                name = m.getTitle();
+                titles_html = "<ul style=\"list-style-type:none;\n\">";
+                for (int i = 0; i < titles.length; ++i) {
+                    if (i < section_ids.length)
+                        titles_html += "<li><a onclick=\"move_to_anchor('" + section_ids[i] + "')\">" + titles[i] + "</a></li>";
+                }
+                titles_html += "</ul>";
+            } else {
+                if (lang.equals("de"))
+                    content = "Zu diesem GTIN kann keine Fachinfo gefunden werden.";
+                else if (lang.equals("fr"))
+                    content = "Votre mot clé de recherche n'a abouti à aucun résultat.";
             }
-            titles_html += "</ul>";
             // Text-based HTTP response, default encoding: utf-8
             if (content != null) {
                 return ok(index.render(content, titles_html, name));

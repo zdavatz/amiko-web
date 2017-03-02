@@ -72,8 +72,8 @@ public class MainController extends Controller {
             KEY_ATCCLASS, KEY_THERAPY, KEY_APPLICATION, KEY_INDICATIONS,
             KEY_CUSTOMER_ID, KEY_PACK_INFO, KEY_ADDINFO, KEY_PACKAGES);
 
-    private static final String FT_SEARCH_TABLE = String.format("%s,%s,%s,%s,%s", KEY_ROWID, KEY_TITLE, KEY_REGNRS,
-            KEY_SECTION_IDS, KEY_SECTION_TITLES);
+    private static final String FT_SEARCH_TABLE = String.format("%s,%s,%s,%s,%s,%s", KEY_ROWID, KEY_TITLE, KEY_AUTH,
+            KEY_REGNRS, KEY_SECTION_IDS, KEY_SECTION_TITLES);
 
     @Inject @NamedDatabase("german") Database german_db;
     @Inject @NamedDatabase("french") Database french_db;
@@ -261,7 +261,7 @@ public class MainController extends Controller {
     }
 
     public Result index() {
-        return ok(index.render("", "", ""));
+        return ok(index.render("", "", "", ""));
     }
 
     public Result javascriptRoutes() {
@@ -285,28 +285,28 @@ public class MainController extends Controller {
 
     public Result fachinfoId(String lang, long id) {
         Medication m = getMedicationWithId(lang, id);
-        return retrieveFachinfo(lang, m, "");
+        return retrieveFachinfo(lang, m, "", "");
     }
 
     public Result getFachinfo(String lang, long id) {
         return redirect(controllers.routes.MainController.fachinfoId(lang, id));
     }
 
-    public Result fachinfoEanWithHigh(String lang, String ean, String highlight) {
+    public Result fachinfoEanWithHigh(String lang, String ean, String highlight, String anchor) {
         Medication m = getMedicationWithEan(lang, ean);
-        return retrieveFachinfo(lang, m, highlight);
+        return retrieveFachinfo(lang, m, highlight, anchor);
     }
 
     public Result fachinfoEan(String lang, String ean) {
         Medication m = getMedicationWithEan(lang, ean);
-        return retrieveFachinfo(lang, m, "");
+        return retrieveFachinfo(lang, m, "", "");
     }
 
     public Result interactionsBasket() {
         String name = "";
         String interactions_html = "";
         String titles_html = "";
-        return ok(index.render(interactions_html, titles_html, name));
+        return ok(index.render(interactions_html, titles_html, name, ""));
     }
 
     public Result interactionsBasket(String lang, String basket) {
@@ -342,7 +342,7 @@ public class MainController extends Controller {
         if (interactions_html == null)
             interactions_html = "";
 
-        return ok(index.render(interactions_html, titles_html, article_title));
+        return ok(index.render(interactions_html, titles_html, article_title, ""));
     }
 
     static long ft_row_id;
@@ -371,28 +371,45 @@ public class MainController extends Controller {
             LinkedList<String> list_of_titles = new LinkedList<>();
 
             String content = "<div id=\"fulltext\"><ul>";
+            int counter = 0;
             for (Article a : list_of_articles) {
 
                 String first_letter = a.title.substring(0, 1).toUpperCase();
                 if (!list_of_titles.contains(first_letter)) {
                     list_of_titles.add(first_letter);
-                    content += "<li id=\"" + first_letter + "\">";
+                    if (counter % 2 == 0)
+                        content += "<li style=\"background-color:whitesmoke;\" id=\"" + first_letter + "\">";
+                    else
+                        content += "<li style=\"background-color:white;\" id=\"" + first_letter + "\">";
                 } else {
-                    content += "<li>";
+                    if (counter % 2 == 0)
+                        content += "<li style=\"background-color:whitesmoke;\">";
+                    else
+                        content += "<li style=\"background-color:white;\">";
                 }
+                counter++;
 
-                content += "<a onclick=\"display_fachinfo(" + a.eancode + ",'" + key + "')\"><b><small>" + a.title + "</small></b></a><br>";
+                String anchor = "?";
+                content += "<a onclick=\"display_fachinfo(" + a.eancode + ",'" + key + "','" + anchor + "')\"><small><b>"
+                        + a.title + "</b></small> | <span style=\"font-size:x-small\">" + a.author + "</span></a><br>";
 
                 Map<Integer, String> index_to_titles_map = a.index_to_titles_map();
                 String[] list_of_regs = a.regnrs.split(",");
                 for (String r : list_of_regs) {
                     if (map_of_chapters.containsKey(r)) {
                         String[] chapters = map_of_chapters.get(r).split(",");
+                        // Loop through the list of chapters (these are ints)
                         for (String ch : chapters) {
                             if (!ch.isEmpty()) {
                                 int c = Integer.parseInt(ch.trim());
-                                if (index_to_titles_map.containsKey(c))
-                                    content += "<small>" + index_to_titles_map.get(c) + "</small><br>";
+                                if (index_to_titles_map.containsKey(c)) {
+                                    anchor = "section" + c;
+                                    if (c>30)
+                                        anchor = "Section" + c;
+                                    content += "<span style=\"font-size:small; color:#0099cc\">"
+                                            + "<a onclick=\"display_fachinfo(" + a.eancode + ",'" + key + "','" + anchor + "')\">" + index_to_titles_map.get(c) + "</a>"
+                                            + "</span><br>";
+                                }
                             }
                         }
                     }
@@ -418,7 +435,7 @@ public class MainController extends Controller {
             System.out.println(">> Time for search = " + time_for_search / 1000.0f + "s");
         }
 
-        return ok(index.render(ft_content, ft_titles_html, key));
+        return ok(index.render(ft_content, ft_titles_html, key, ""));
     }
 
     public Result getName(String lang, String name) {
@@ -476,12 +493,12 @@ public class MainController extends Controller {
             list_of_regnrs.add(r);
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchListRegnrs(lang, list_of_regnrs));
         CompletableFuture<List<Article>> list_of_articles = future.thenApplyAsync(a -> a.stream()
-                .map(m -> new Article(m.getId(), m.getTitle(), "", "", "", m.getRegnrs(), "", "", "", m.getSectionTitles(), m.getSectionIds()))
+                .map(m -> new Article(m.getId(), m.getTitle(), m.getAuth(), "", "", m.getRegnrs(), "", "", "", m.getSectionTitles(), m.getSectionIds()))
                 .collect(Collectors.toList()));
         return list_of_articles;
     }
 
-    private Result retrieveFachinfo(String lang, Medication m, String highlight) {
+    private Result retrieveFachinfo(String lang, Medication m, String highlight, String anchor) {
         if (m!=null) {
             String name = "";
             String titles_html = "";
@@ -511,7 +528,7 @@ public class MainController extends Controller {
             }
             // Text-based HTTP response, default encoding: utf-8
             if (content != null) {
-                return ok(index.render(content, titles_html, name));
+                return ok(index.render(content, titles_html, name, "'" + anchor + "'"));
             }
         }
         return ok("Hasta la vista, baby! You just terminated me.");
@@ -781,9 +798,10 @@ public class MainController extends Controller {
         try {
             medi.setId(result.getLong(1));              // KEY_ROWID
             medi.setTitle(result.getString(2));         // KEY_TITLE
-            medi.setRegnrs(result.getString(3));        // KEY_REGNRS
-            medi.setSectionIds(result.getString(4));    // KEY_SECTION_IDS
-            medi.setSectionTitles(result.getString(5)); // KEY_SECTION_TITLES
+            medi.setAuth(result.getString(3));          // KEY_AUTH
+            medi.setRegnrs(result.getString(4));        // KEY_REGNRS
+            medi.setSectionIds(result.getString(5));    // KEY_SECTION_IDS
+            medi.setSectionTitles(result.getString(6)); // KEY_SECTION_TITLES
         } catch (SQLException e) {
             System.err.println(">> SqlDatabase: SQLException in cursorToVeryShortMedi");
         }

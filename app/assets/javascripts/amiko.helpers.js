@@ -9,13 +9,17 @@ Copyright (c) 2016 ML <cybrmx@gmail.com>
  */
 function move_to_anchor(anchor) {
     /* document.getElementById(anchor).scrollIntoView(true); */
-    var id = document.getElementById(anchor).getAttribute('id');
-    $(window).scrollTop($('#'+id).offset().top-120);
-    /*
-    $('html, body').animate({
-        scrollTop: $('#'+id).offset().top-120
-    }, 1000);
-    */
+    if (typeof anchor !== 'undefined') {
+        var id = document.getElementById(anchor);
+        if (id !== null && id.hasAttribute('id')) {
+            id = id.getAttribute('id');
+            $(window).scrollTop($('#' + id).offset().top - 120);
+        }
+    }
+}
+
+function on_load() {
+    move_to_anchor("section20");
 }
 
 /**
@@ -40,15 +44,16 @@ function reset() {
 /**
  * Display fachinfo
  */
-function display_fachinfo(ean, key) {
+function display_fachinfo(ean, key, anchor) {
     var lang = String(localStorage.getItem('language'));
 
-    console.log("EAN = " + ean + " | KEY = " + key);
-
+    console.log("EAN = " + ean + " | KEY = " + key + " | ANCHOR = " + anchor);
+    if (anchor=='undefined')
+        anchor = '';
     if (lang=="de")
-        window.location.assign('/de/fi?gtin=' + ean + "&highlight=" + key);
+        window.location.assign('/de/fi?gtin=' + ean + "&highlight=" + key + "&anchor=" + anchor);
     else if (lang=="fr")
-        window.location.assign('/fr/fi?gtin=' + ean + "&highlight=" + key);
+        window.location.assign('/fr/fi?gtin=' + ean + "&highlight=" + key + "&anchor=" + anchor);
 }
 
 /**

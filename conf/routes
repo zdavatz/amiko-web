@@ -15,8 +15,8 @@ GET     /fulltext                   controllers.MainController.getFullText(lang:
 GET     /fi/id/:id                  controllers.MainController.fachinfoId(lang: String?="de", id: Long)
 GET     /fii                        controllers.MainController.getFachinfo(lang: String?="de", id: Long)
 
-GET     /de/fi                      controllers.MainController.fachinfoEanWithHigh(lang: String="de", gtin: String, highlight: String?="")
-GET     /fr/fi                      controllers.MainController.fachinfoEanWithHigh(lang: String="de", gtin: String, highlight: String?="")
+GET     /de/fi                      controllers.MainController.fachinfoEanWithHigh(lang: String="de", gtin: String, highlight: String?="", anchor: String?="")
+GET     /fr/fi                      controllers.MainController.fachinfoEanWithHigh(lang: String="de", gtin: String, highlight: String?="", anchor: String?="")
 
 GET     /de/fi/gtin/:gtin           controllers.MainController.fachinfoEan(lang: String="de", gtin: String)
 GET     /fr/fi/gtin/:gtin           controllers.MainController.fachinfoEan(lang: String="fr", gtin: String)

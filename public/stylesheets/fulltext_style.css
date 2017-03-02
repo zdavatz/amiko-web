@@ -1,5 +1,7 @@
 #fulltext{margin-left:5px; margin-right:5px; margin-top:20px; margin-bottom:20px; font-family:"Verdana","Arial","Tahoma","Helvetica","Geneva","sans-serif"; color:black;}
 #fulltext div p{font-size: 0.8em;}
+#fulltext p {margin-top:0em;margin-bottom:0em;}
 #fulltext ul{list-style-type: none; padding: 0;}
-#fulltext li{padding: 0.25em 0.25em 0.25em 0.5em; vertical-align: middle;}
-#fulltext li:hover{cursor: pointer; display: block; background-color: #eeeeee;}
+#fulltext li{padding: 0.25em 0.25em 0.25em 0.25em; vertical-align: middle;}
+#fulltext li:hover{cursor: pointer; display: block; background-color: #eeeeee}
+#fulltext li a:hover{text-decoration: underline;}

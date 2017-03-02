@@ -140,7 +140,7 @@ $ ->
       if search_type == SearchType.FullText
         localStorage.setItem 'fulltext-search-id', selection.id
         localStorage.setItem 'fulltext-search-key', selection.title
-        $.ajax(jsRoutes.controllers.MainController.showFullTextSearchResult(language, selection.id, typed_input))
+        $.ajax(jsRoutes.controllers.MainController.showFullTextSearchResult(language, selection.id, selection.title))
         .done (response) ->
           localStorage.setItem 'search-type', SearchType.FullText
           window.location.assign '/showfulltext?id=' + selection.id + "&key=" + selection.title #typed_input

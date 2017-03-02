@@ -1,4 +1,4 @@
-@(title: String)(content: Html)
+@(title: String, anchor: String)(content: Html)
 
 <!DOCTYPE html>
 <html>
@@ -16,7 +16,7 @@
         <meta name="apple-itunes-app" content="app-id=687642725"/>
         <meta charset="UTF-8"/>
     </head>
-    <body>
+    <body onload="move_to_anchor(@anchor)">
         @content
     </body>
 </html>

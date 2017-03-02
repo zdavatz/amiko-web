@@ -94,6 +94,16 @@ aside {
     padding: 1.0em;
 }
 
+#fixed-position {
+    position: fixed;
+    margin-top: 0px;
+    flex: 0 0 320px;
+    max-width: 320px;   /* ensures that box does not RESIZE **/
+}
+
+#special-dropdown {
+}
+
 #flex-container {
     display: -webkit-box;      /* OLD - iOS 6-, Safari 3.1-6 */
     display: -moz-box;         /* OLD - Firefox 19- (buggy but mostly works) */

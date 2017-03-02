@@ -1,6 +1,6 @@
-@(main_content: String="")(titles: String="")(search_key: String="")
+@(main_content: String="")(titles: String="")(search_key: String="")(anchor: String="")
 
-@main("AmiKoWeb") {
+@main("AmiKoWeb", anchor) {
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/typeahead.bundle.corejs.js")"></script>
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.searchdb.js")"></script>
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.helpers.js")"></script>

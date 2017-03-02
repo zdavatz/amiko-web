@@ -17,12 +17,38 @@ function move_to_anchor(anchor) {
     }, 1000);
     */
 }
+
 /**
  * Slide in of the download links on the right side
  */
 function download_links() {
     var options = {direction: 'right'};
     $('#download-links').toggle('slide', options, 250);
+}
+
+/**
+ * Resets fachinfo
+ */
+function reset() {
+    var lang = String(localStorage.getItem('language'));
+    if (lang=="de")
+        window.location.assign('/de');
+    else if (lang=="fr")
+        window.location.assign('/fr');
+}
+
+/**
+ * Display fachinfo
+ */
+function display_fachinfo(ean, key) {
+    var lang = String(localStorage.getItem('language'));
+
+    console.log("EAN = " + ean + " | KEY = " + key);
+
+    if (lang=="de")
+        window.location.assign('/de/fi?gtin=' + ean + "&highlight=" + key);
+    else if (lang=="fr")
+        window.location.assign('/fr/fi?gtin=' + ean + "&highlight=" + key);
 }
 
 /**

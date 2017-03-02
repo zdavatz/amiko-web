@@ -20,6 +20,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package controllers;
 
 import models.Constants;
+import models.FullTextEntry;
 import models.InteractionsData;
 import models.Medication;
 import play.db.NamedDatabase;
@@ -27,12 +28,9 @@ import play.db.Database;
 import play.mvc.*;
 import views.html.*;
 
+import java.sql.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.sql.SQLException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -43,22 +41,28 @@ import static play.libs.Json.*;
 
 public class MainController extends Controller {
 
-    public static final String KEY_ROWID = "_id";
-    public static final String KEY_TITLE = "title";
-    public static final String KEY_AUTH = "auth";
-    public static final String KEY_ATCCODE = "atc";
-    public static final String KEY_SUBSTANCES = "substances";
-    public static final String KEY_REGNRS = "regnrs";
-    public static final String KEY_ATCCLASS = "atc_class";
-    public static final String KEY_THERAPY = "tindex_str";
-    public static final String KEY_APPLICATION = "application_str";
-    public static final String KEY_INDICATIONS = "indications_str";
-    public static final String KEY_CUSTOMER_ID = "customer_id";
-    public static final String KEY_PACK_INFO = "pack_info_str";
-    public static final String KEY_ADDINFO = "add_info_str";
-    public static final String KEY_PACKAGES = "packages";
+    private static final String KEY_ROWID = "_id";
+    private static final String KEY_TITLE = "title";
+    private static final String KEY_AUTH = "auth";
+    private static final String KEY_ATCCODE = "atc";
+    private static final String KEY_SUBSTANCES = "substances";
+    private static final String KEY_REGNRS = "regnrs";
+    private static final String KEY_ATCCLASS = "atc_class";
+    private static final String KEY_THERAPY = "tindex_str";
+    private static final String KEY_APPLICATION = "application_str";
+    private static final String KEY_INDICATIONS = "indications_str";
+    private static final String KEY_CUSTOMER_ID = "customer_id";
+    private static final String KEY_PACK_INFO = "pack_info_str";
+    private static final String KEY_ADDINFO = "add_info_str";
+    private static final String KEY_PACKAGES = "packages";
+    private static final String KEY_SECTION_IDS = "ids_str";
+    private static final String KEY_SECTION_TITLES = "titles_str";
 
     private static final String DATABASE_TABLE = "amikodb";
+    private static final String FREQUENCY_TABLE = "frequency";
+
+    public static boolean ASC = true;
+    public static boolean DESC = false;
 
     /**
      * Table columns used for fast queries
@@ -68,8 +72,46 @@ public class MainController extends Controller {
             KEY_ATCCLASS, KEY_THERAPY, KEY_APPLICATION, KEY_INDICATIONS,
             KEY_CUSTOMER_ID, KEY_PACK_INFO, KEY_ADDINFO, KEY_PACKAGES);
 
+    private static final String FT_SEARCH_TABLE = String.format("%s,%s,%s,%s,%s", KEY_ROWID, KEY_TITLE, KEY_REGNRS,
+            KEY_SECTION_IDS, KEY_SECTION_TITLES);
+
     @Inject @NamedDatabase("german") Database german_db;
     @Inject @NamedDatabase("french") Database french_db;
+    @Inject @NamedDatabase("frequency_ge") Database frequency_db;
+
+
+    private static Map<Integer, String> sortByComparator(Map<Integer, String> unsort_map, final boolean order)
+    {
+        List<Map.Entry<Integer, String>> list = new LinkedList<>(unsort_map.entrySet());
+
+        // Sorting the list based on values
+        Collections.sort(list,
+                (Map.Entry<Integer, String> o1, Map.Entry<Integer, String> o2) -> {
+                    if (order)
+                        return o1.getValue().compareTo(o2.getValue());
+                    else
+                        return o2.getValue().compareTo(o1.getValue());
+                });
+
+        // Maintaining insertion order with the help of LinkedList
+        Map<Integer, String> sort_map = new LinkedHashMap<>();
+        for (Map.Entry<Integer, String> entry : list) {
+            sort_map.put(entry.getKey(), entry.getValue());
+        }
+
+        return sort_map;
+    }
+
+    private static List<Article> sortByComparator(List<Article> list, final boolean order) {
+        Collections.sort(list, (Article a1, Article a2) -> {
+            if (order)
+                return a1.title.compareTo(a2.title);
+            else
+                return a2.title.compareTo(a1.title);
+        });
+
+        return list;
+    }
 
     private class Article {
         // Private
@@ -81,6 +123,8 @@ public class MainController extends Controller {
         private String _packinfo = "";
         private String _atcclass = "";
         private String _packages = "";
+        private String _titles = "";
+        private String _sections = "";
 
         // Interface variables
         public long id = 0;
@@ -91,8 +135,10 @@ public class MainController extends Controller {
         public String therapy = "";
         public String packinfo = "";
         public String eancode = "";
+        public String titles = "";
+        public String sections = "";
 
-        Article(long _id, String _title, String _author, String _atccode, String _atcclass, String _regnrs, String _therapy, String _packinfo, String _packages) {
+        Article(long _id, String _title, String _author, String _atccode, String _atcclass, String _regnrs, String _therapy, String _packinfo, String _packages, String _titles, String _sections) {
             // Private
             this._title = _title;
             this._author = _author;
@@ -102,6 +148,8 @@ public class MainController extends Controller {
             this._packinfo = _packinfo;
             this._atcclass = _atcclass;
             this._packages = _packages;
+            this._titles = _titles;
+            this._sections = _sections;
 
             // Interface
             this.id = _id;
@@ -112,6 +160,8 @@ public class MainController extends Controller {
             this.regnrs = _regnrs;
             this.therapy = therapyStr();
             this.eancode = eancodeStr();
+            this.titles = _titles;
+            this.sections = _sections;
         }
 
         String packinfoStr() {
@@ -193,6 +243,21 @@ public class MainController extends Controller {
             }
             return _regnrs;
         }
+
+        Map<Integer, String> index_to_titles_map() {
+            Map<Integer, String> map = new HashMap<>();
+
+            String[] tt = titles.split(";");
+            String[] ids = sections.split(",");
+            // Assuming both arrays have the same length - they should!
+            int N = tt.length>ids.length ? ids.length : tt.length;
+            for (int i=0; i<N; ++i) {
+                String section_id = ids[i].replaceAll("(s|S)ection", "");
+                map.put(Integer.parseInt(section_id), tt[i]);
+            }
+
+            return map;
+        }
     }
 
     public Result index() {
@@ -202,9 +267,10 @@ public class MainController extends Controller {
     public Result javascriptRoutes() {
         return ok(
                 play.routing.JavaScriptReverseRouter.create("jsRoutes",
-                        controllers.routes.javascript.MainController.interactionsBasket(),
-                        controllers.routes.javascript.MainController.getFachinfo(),
                         controllers.routes.javascript.MainController.setLang(),
+                        controllers.routes.javascript.MainController.getFachinfo(),
+                        controllers.routes.javascript.MainController.interactionsBasket(),
+                        controllers.routes.javascript.MainController.showFullTextSearchResult(),
                         controllers.routes.javascript.MainController.index()))
                 .as("text/javascript");
     }
@@ -219,16 +285,21 @@ public class MainController extends Controller {
 
     public Result fachinfoId(String lang, long id) {
         Medication m = getMedicationWithId(lang, id);
-        return retrieveFachinfo(lang, m);
+        return retrieveFachinfo(lang, m, "");
     }
 
     public Result getFachinfo(String lang, long id) {
         return redirect(controllers.routes.MainController.fachinfoId(lang, id));
     }
 
+    public Result fachinfoEanWithHigh(String lang, String ean, String highlight) {
+        Medication m = getMedicationWithEan(lang, ean);
+        return retrieveFachinfo(lang, m, highlight);
+    }
+
     public Result fachinfoEan(String lang, String ean) {
         Medication m = getMedicationWithEan(lang, ean);
-        return retrieveFachinfo(lang, m);
+        return retrieveFachinfo(lang, m, "");
     }
 
     public Result interactionsBasket() {
@@ -240,8 +311,6 @@ public class MainController extends Controller {
 
     public Result interactionsBasket(String lang, String basket) {
         String article_title = "";
-        String interactions_html = "";
-        String titles_html = "";
 
         // Decompose string coming from client and fill up linkedhashmap
         Map<String, Medication> med_basket = new LinkedHashMap<>();
@@ -259,11 +328,11 @@ public class MainController extends Controller {
             }
         }
         InteractionsData inter_data = InteractionsData.getInstance();
-        interactions_html = inter_data.updateHtml(med_basket, lang);
+        String interactions_html = inter_data.updateHtml(med_basket, lang);
         // Associate section titles and anchors
         String[] section_titles = inter_data.sectionTitles();
         String[] section_anchors = inter_data.sectionAnchors();
-        titles_html = "<ul style=\"list-style-type:none;\n\">";
+        String titles_html = "<ul style=\"list-style-type:none;\n\">";
         for (int i = 0; i < section_titles.length; ++i) {
             // Spaces before and after of &rarr; are important...
             String anchor = section_anchors[i]; // section_titles[i].replaceAll("<html>", "").replaceAll("</html>", "").replaceAll(" &rarr; ", "-");
@@ -276,10 +345,86 @@ public class MainController extends Controller {
         return ok(index.render(interactions_html, titles_html, article_title));
     }
 
+    static long ft_row_id;
+    static String ft_content;
+    static String ft_titles_html;
+
+    public Result showFullTextSearchResult(String lang, String id, String key) {
+        long row_id = 0;
+        if (id!=null)
+            row_id = Long.parseLong(id);
+
+        key = key.replaceAll("\\(.*?\\)", "").trim();
+
+        if (ft_row_id!=row_id) {
+            FullTextEntry entry = getFullTextEntryWithId(lang, row_id);
+
+            long startTime = System.currentTimeMillis();
+
+            List<Article> list_of_articles = getArticlesFromRegnrs(lang, entry.getRegnrs()).join();
+            // Sort list of articles
+            sortByComparator(list_of_articles, ASC);
+
+            Map<String, String> map_of_chapters = entry.getMapOfChapters();
+
+            // List of titles to be displayed in right pane
+            LinkedList<String> list_of_titles = new LinkedList<>();
+
+            String content = "<div id=\"fulltext\"><ul>";
+            for (Article a : list_of_articles) {
+
+                String first_letter = a.title.substring(0, 1).toUpperCase();
+                if (!list_of_titles.contains(first_letter)) {
+                    list_of_titles.add(first_letter);
+                    content += "<li id=\"" + first_letter + "\">";
+                } else {
+                    content += "<li>";
+                }
+
+                content += "<a onclick=\"display_fachinfo(" + a.eancode + ",'" + key + "')\"><b><small>" + a.title + "</small></b></a><br>";
+
+                Map<Integer, String> index_to_titles_map = a.index_to_titles_map();
+                String[] list_of_regs = a.regnrs.split(",");
+                for (String r : list_of_regs) {
+                    if (map_of_chapters.containsKey(r)) {
+                        String[] chapters = map_of_chapters.get(r).split(",");
+                        for (String ch : chapters) {
+                            if (!ch.isEmpty()) {
+                                int c = Integer.parseInt(ch.trim());
+                                if (index_to_titles_map.containsKey(c))
+                                    content += "<small>" + index_to_titles_map.get(c) + "</small><br>";
+                            }
+                        }
+                    }
+                }
+                // Find chapters
+                content += "</li>";
+            }
+            content += "</ul></div>";
+
+            String titles_html = "<ul>";
+            for (String title : list_of_titles) {
+                titles_html += "<li><a onclick=\"move_to_anchor('" + title + "')\">" + title + "</a></li>";
+            }
+            titles_html += "</ul>";
+
+            content = "<html>" + content + "</html>";
+
+            ft_row_id = row_id;
+            ft_titles_html = titles_html;
+            ft_content = content;
+
+            long time_for_search = System.currentTimeMillis() - startTime;
+            System.out.println(">> Time for search = " + time_for_search / 1000.0f + "s");
+        }
+
+        return ok(index.render(ft_content, ft_titles_html, key));
+    }
+
     public Result getName(String lang, String name) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchName(lang, name));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages()))
+                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -287,7 +432,7 @@ public class MainController extends Controller {
     public Result getOwner(String lang, String owner) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchOwner(lang, owner));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages()))
+                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -295,7 +440,7 @@ public class MainController extends Controller {
     public Result getATC(String lang, String atc) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchATC(lang, atc));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages()))
+                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -303,7 +448,7 @@ public class MainController extends Controller {
     public Result getRegnr(String lang, String regnr) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchRegnr(lang, regnr));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages()))
+                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -311,12 +456,32 @@ public class MainController extends Controller {
     public Result getTherapy(String lang, String therapy) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchTherapy(lang, therapy));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages()))
+                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
 
-    private Result retrieveFachinfo(String lang, Medication m) {
+    public Result getFullText(String lang, String key) {
+        CompletableFuture<List<FullTextEntry>> future = CompletableFuture.supplyAsync(()->searchFullText(lang, key));
+        CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
+                .map(n -> new Article(n.getId(), n.getKeyword(), "", "", "", n.getRegnrs(), "", "", "", "", ""))
+                .collect(Collectors.toList()));
+        return names.thenApply(f -> ok(toJson(f))).join();
+    }
+
+    public CompletableFuture<List<Article>> getArticlesFromRegnrs(String lang, String regnrs) {
+        ArrayList<String> list_of_regnrs = new ArrayList<>();
+        String[] regs = regnrs.split(",");
+        for (String r : regs)
+            list_of_regnrs.add(r);
+        CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchListRegnrs(lang, list_of_regnrs));
+        CompletableFuture<List<Article>> list_of_articles = future.thenApplyAsync(a -> a.stream()
+                .map(m -> new Article(m.getId(), m.getTitle(), "", "", "", m.getRegnrs(), "", "", "", m.getSectionTitles(), m.getSectionIds()))
+                .collect(Collectors.toList()));
+        return list_of_articles;
+    }
+
+    private Result retrieveFachinfo(String lang, Medication m, String highlight) {
         if (m!=null) {
             String name = "";
             String titles_html = "";
@@ -324,6 +489,11 @@ public class MainController extends Controller {
             String content = m.getContent();
             if (content!=null && !content.isEmpty()) {
                 content = content.replaceAll("<html>|</html>|<body>|</body>|<head>|</head>", "");
+                if (highlight.length()>3) {
+                    content = content.replaceAll(highlight, "<mark>" + highlight + "</mark>");
+                    String first_upper = highlight.substring(0,1).toUpperCase() + highlight.substring(1, highlight.length());
+                    content = content.replaceAll(first_upper, "<mark>" + first_upper + "</mark>");
+                }
                 String[] titles = getSectionTitles(lang, m);
                 String[] section_ids = m.getSectionIds().split(",");
                 name = m.getTitle();
@@ -412,7 +582,7 @@ public class MainController extends Controller {
             }
             conn.close();
         } catch (SQLException e) {
-            System.err.println(">> SqlDatabase: SQLException in searchName for "+name);
+            System.err.println(">> SqlDatabase: SQLException in searchName for " + name);
         }
 
         return med_titles;
@@ -556,29 +726,6 @@ public class MainController extends Controller {
         return null;
     }
 
-    private Medication cursorToShortMedi(ResultSet result) {
-        Medication medi = new Medication();
-        try {
-            medi.setId(result.getLong(1));              // KEY_ROWID
-            medi.setTitle(result.getString(2));         // KEY_TITLE
-            medi.setAuth(result.getString(3));          // KEY_AUTH
-            medi.setAtcCode(result.getString(4));       // KEY_ATCCODE
-            medi.setSubstances(result.getString(5));    // KEY_SUBSTANCES
-            medi.setRegnrs(result.getString(6));        // KEY_REGNRS
-            medi.setAtcClass(result.getString(7));      // KEY_ATCCLASS
-            medi.setTherapy(result.getString(8));       // KEY_THERAPY
-            medi.setApplication(result.getString(9));   // KEY_APPLICATION
-            medi.setIndications(result.getString(10));  // KEY_INDICATIONS
-            medi.setCustomerId(result.getInt(11));      // KEY_CUSTOMER_ID
-            medi.setPackInfo(result.getString(12));     // KEY_PACK_INFO
-            medi.setAddInfo(result.getString(13));      // KEY_ADD_INFO
-            medi.setPackages(result.getString(14));     // KEY_PACKAGES
-        } catch (SQLException e) {
-            System.err.println(">> SqlDatabase: SQLException in cursorToShortMedi");
-        }
-        return medi;
-    }
-
     private Medication cursorToMedi(ResultSet result) {
         Medication medi = new Medication();
         try {
@@ -604,6 +751,170 @@ public class MainController extends Controller {
             System.err.println(">> SqlDatabase: SQLException in cursorToMedi");
         }
         return medi;
+    }
+
+    private Medication cursorToShortMedi(ResultSet result) {
+        Medication medi = new Medication();
+        try {
+            medi.setId(result.getLong(1));              // KEY_ROWID
+            medi.setTitle(result.getString(2));         // KEY_TITLE
+            medi.setAuth(result.getString(3));          // KEY_AUTH
+            medi.setAtcCode(result.getString(4));       // KEY_ATCCODE
+            medi.setSubstances(result.getString(5));    // KEY_SUBSTANCES
+            medi.setRegnrs(result.getString(6));        // KEY_REGNRS
+            medi.setAtcClass(result.getString(7));      // KEY_ATCCLASS
+            medi.setTherapy(result.getString(8));       // KEY_THERAPY
+            medi.setApplication(result.getString(9));   // KEY_APPLICATION
+            medi.setIndications(result.getString(10));  // KEY_INDICATIONS
+            medi.setCustomerId(result.getInt(11));      // KEY_CUSTOMER_ID
+            medi.setPackInfo(result.getString(12));     // KEY_PACK_INFO
+            medi.setAddInfo(result.getString(13));      // KEY_ADD_INFO
+            medi.setPackages(result.getString(14));     // KEY_PACKAGES
+        } catch (SQLException e) {
+            System.err.println(">> SqlDatabase: SQLException in cursorToShortMedi");
+        }
+        return medi;
+    }
+
+    private Medication cursorToVeryShortMedi(ResultSet result) {
+        Medication medi = new Medication();
+        try {
+            medi.setId(result.getLong(1));              // KEY_ROWID
+            medi.setTitle(result.getString(2));         // KEY_TITLE
+            medi.setRegnrs(result.getString(3));        // KEY_REGNRS
+            medi.setSectionIds(result.getString(4));    // KEY_SECTION_IDS
+            medi.setSectionTitles(result.getString(5)); // KEY_SECTION_TITLES
+        } catch (SQLException e) {
+            System.err.println(">> SqlDatabase: SQLException in cursorToVeryShortMedi");
+        }
+        return medi;
+    }
+
+    /**
+     * The list of registration numbers fed to the function is split in two lists which
+     * are processed separately. We simulate a batch sqlite query by assemblying a long
+     * search query containing N registration numbers. We have to take care of the left
+     * overs, list_B. The speed up substantial.
+     * @param lang
+     * @param list_of_regnrs
+     * @return list of medications (only titles and id)
+     */
+    private List<Medication> searchListRegnrs(String lang, ArrayList<String> list_of_regnrs) {
+        List<Medication> med_auth = new ArrayList<>();
+        int N = 50;
+        int A = (list_of_regnrs.size()/N) * N;
+        List<String> list_A = list_of_regnrs.subList(0, A); // First list, contains most of the articles
+        List<String> list_B = list_of_regnrs.subList(A, list_of_regnrs.size()); // Second list, left overs
+        try {
+            Connection conn = lang.equals("de") ? german_db.getConnection() : french_db.getConnection();
+            Statement stat = conn.createStatement();
+            int count = 0;
+            String sub_query = "";
+            for (String regnr : list_A) {
+                sub_query += KEY_REGNRS + " like " + "'%, " + regnr + "%' or "
+                        + KEY_REGNRS + " like " + "'" + regnr + "%'";
+                count++;
+                if (count%N ==0) {
+                    String query = "select " + FT_SEARCH_TABLE + " from " + DATABASE_TABLE + " where " + sub_query;
+                    ResultSet rs = stat.executeQuery(query);
+                    if (rs != null) {
+                        while (rs.next()) {
+                            med_auth.add(cursorToVeryShortMedi(rs));
+                        }
+                    }
+                    sub_query = "";
+                }
+                else {
+                    sub_query += " or ";
+                }
+            }
+            for (String regnr : list_B) {
+                sub_query += KEY_REGNRS + " like " + "'%, " + regnr + "%' or "
+                        + KEY_REGNRS + " like " + "'" + regnr + "%' or ";
+            }
+            String query = "select " + FT_SEARCH_TABLE + " from " + DATABASE_TABLE + " where " + sub_query.substring(0, sub_query.length()-4);
+            ResultSet rs = stat.executeQuery(query);
+            if (rs != null) {
+                while (rs.next()) {
+                    med_auth.add(cursorToVeryShortMedi(rs));
+                }
+            }
+
+            conn.close();
+        } catch (SQLException e) {
+            System.err.println(">> SqlDatabase: SQLException in searchRegnr!");
+        }
+
+        return med_auth;
+    }
+
+    private FullTextEntry getFullTextEntryWithId(String lang, long rowId) {
+        try {
+            Connection conn = frequency_db.getConnection();
+            Statement stat = conn.createStatement();
+            String query = "select * from " + FREQUENCY_TABLE + " where id=" + rowId;
+            ResultSet rs = stat.executeQuery(query);
+            FullTextEntry full_text_entry = cursorToFullTextEntry(rs);
+            conn.close();
+            if (full_text_entry!=null)
+                return full_text_entry;
+        } catch (SQLException e) {
+            System.err.println(">> Frequency DB: SQLException in getFullTextEntryWithId");
+        }
+        return null;
+    }
+
+    private List<FullTextEntry> searchFullText(String lang, String word) {
+        List<FullTextEntry> search_results = new ArrayList<>();
+
+        try {
+            Connection conn = frequency_db.getConnection();
+            Statement stat = conn.createStatement();
+            ResultSet rs = null;
+            if (word.length()>2) {
+                String query = "select * from " + FREQUENCY_TABLE + " where keyword like " + "'" + word + "%'";
+                rs = stat.executeQuery(query);
+            }
+            if (rs!=null) {
+                while (rs.next()) {
+                    search_results.add(cursorToFullTextEntry(rs));
+                }
+            }
+            conn.close();
+        } catch (SQLException e) {
+            System.err.println(">> Frequency DB: SQLException in searchFullText for " + word);
+        }
+
+        return search_results;
+    }
+
+    private FullTextEntry cursorToFullTextEntry(ResultSet result) {
+        FullTextEntry entry = new FullTextEntry();
+        try {
+            entry.setId(result.getLong(1));         // ID
+            entry.setKeyword(result.getString(2));  // Keyword
+            String regnr = result.getString(3);
+
+            String[] r = regnr.split("\\|", -1);
+            Map<String, String> map = new HashMap<>();
+            for (String reg : r) {
+                String chapters = "";
+                // Extract chapters
+                if (reg.contains("(") && reg.contains(")"))
+                    chapters = reg.substring(reg.indexOf("(")+1, reg.indexOf(")"));
+                // Remove parentheses
+                reg = reg.replaceAll("\\(.*?\\)", "");
+                if (map.containsKey(reg)) {
+                    chapters += ", " + map.get(reg);
+                }
+                map.put(reg, chapters);
+            }
+            entry.setMapOfChapters(map);            // Map of chapters
+            entry.setNumHits(r.length);
+        } catch (SQLException e) {
+            System.err.println(">> Frequency DB: SQLException in cursorToFullTextEntry");
+        }
+        return entry;
     }
 }
 

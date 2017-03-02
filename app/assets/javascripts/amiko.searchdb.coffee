@@ -10,6 +10,7 @@ $ ->
     Atc: 3
     Regnr: 4
     Therapie: 5
+    FullText: 6
 
   # set language
   if localStorage.getItem 'language'
@@ -45,6 +46,8 @@ $ ->
     interactions_basket = ''  # default interactions basket is empty!
     localStorage.setItem 'interactions-basket', interactions_basket
 
+  typed_input = ''
+
   setSearchQuery = (lang, type) ->
     if type == SearchType.Title
       return '/name?lang=' + lang + '&name='
@@ -56,14 +59,14 @@ $ ->
       return '/regnr?lang=' + lang + '&regnr='
     else if type == SearchType.Therapie
       return '/therapy?lang=' + lang + '&therapy='
+    else if type == SearchType.FullText
+      return '/fulltext?lang=' + lang + '&key='
     return '/name?lang=' + lang + '&name='
 
   # default value
-  search_query = setSearchQuery(language, SearchType.Title)
+  search_query = setSearchQuery(language, search_type)
 
   start_time = new Date().getTime()
-
-  typed_input = ''
 
   articles = new Bloodhound(
     datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name')
@@ -116,6 +119,9 @@ $ ->
           "<div style='display:table;vertical-align:middle;'>\
           <p style='color:#444444;font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:gray;font-size:0.85em;'>#{data.therapy}</span></div>"
+        else if search_type == SearchType.FullText
+          "<div style='display:table;vertical-align:middle;'>\
+          <p style='color:#444444;font-size:1.0em;'><b>#{data.title}</b></p>"
 
   typeaheadCtrl.on 'typeahead:asyncrequest', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')
@@ -130,16 +136,27 @@ $ ->
 
   # Retrieves the fachinfo, the URL should be of the form /fi/gtin/
   typeaheadCtrl.on 'typeahead:selected', (event, selection) ->
-    console.log search_state
     if search_state == SearchState.Compendium
-      localStorage.setItem 'compendium-selection-id', selection.id
-      localStorage.setItem 'compendium-selection-ean', selection.eancode
-      $.ajax(jsRoutes.controllers.MainController.getFachinfo(language, selection.id))
-      .done (response) ->
-        window.location.assign '/' + language + '/fi/gtin/' + selection.eancode
-        console.log selection.id + ' -> ' + selection.title + ' with language = ' + language
-      .fail (jqHXR, textStatus) ->
-        alert('ajax error')
+      if search_type == SearchType.FullText
+        localStorage.setItem 'fulltext-search-id', selection.id
+        localStorage.setItem 'fulltext-search-key', selection.title
+        $.ajax(jsRoutes.controllers.MainController.showFullTextSearchResult(language, selection.id, typed_input))
+        .done (response) ->
+          localStorage.setItem 'search-type', SearchType.FullText
+          window.location.assign '/showfulltext?id=' + selection.id + "&key=" + selection.title #typed_input
+          #$('.twitter-typeahead').typeahead('val', selection.title).focus().keyup() # typed_input).focus().keyup()
+          console.log selection.id + ' -> ' + selection.title + ' with language = ' + language
+        .fail (jqHXR, textStatus) ->
+          alert('ajax error')
+      else 
+        localStorage.setItem 'compendium-selection-id', selection.id
+        localStorage.setItem 'compendium-selection-ean', selection.eancode
+        $.ajax(jsRoutes.controllers.MainController.getFachinfo(language, selection.id))
+        .done (response) ->
+          window.location.assign '/' + language + '/fi/gtin/' + selection.eancode
+          console.log selection.id + ' -> ' + selection.title + ' with language = ' + language
+        .fail (jqHXR, textStatus) ->
+          alert('ajax error')
     else if search_state == SearchState.Interactions
       eancode = selection.eancode
       # add selection to basket
@@ -167,7 +184,6 @@ $ ->
   # Detect click on search field
   $('#search-field').on 'click', ->
     search_query = setSearchQuery(language, search_type)
-    console.log(search_query)
     if search_state == SearchState.Compendium
       $('search-field').attr 'value', ''
       $('.twitter-typeahead').typeahead('val', '')
@@ -235,3 +251,6 @@ $ ->
 
   $('#therapy-button').on 'click', ->
     setSearchType(SearchType.Therapie)
+
+  $('#fulltext-button').on 'click', ->
+    setSearchType(SearchType.FullText)

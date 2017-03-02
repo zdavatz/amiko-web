@@ -54,6 +54,7 @@
                 <button id="substance-button" class="rounded-button">@Messages("substance")</button>
                 <button id="regnr-button" class="rounded-button">@Messages("regnr")</button>
                 <button id="therapy-button" class="rounded-button">@Messages("therapy")</button>
+                <button id="fulltext-button" class="rounded-button">@Messages("fulltext")</button>
             </div>
             <div id="special-dropdown" class="twitter-typeahead"></div>
         </aside>
@@ -75,7 +76,7 @@
 
     <footer class="main-footer">
         <div>AmiKo Web</div>
-        <div><a href="https://github.com/zdavatz/amiko-web">Copyright © 2016 ywesee GmbH</a></div>
+        <div><a href="https://github.com/zdavatz/amiko-web">Copyright © 2017 ywesee GmbH</a></div>
     </footer>
 
     <!-- Button related JS -->
@@ -86,6 +87,7 @@
             $('#substance-button').removeClass('active');
             $('#regnr-button').removeClass('active');
             $('#therapy-button').removeClass('active');
+            $('#fulltext-button').removeClass('active');
         }
         $('#article-button').click(function() {
             disableButtons();
@@ -112,6 +114,11 @@
             $('#search-field').attr('placeholder', '@Messages("search_therapy")');
             $(this).addClass('active');
         });
+        $('#fulltext-button').click(function() {
+            disableButtons();
+            $('#search-field').attr('placeholder', '@Messages("search_fulltext")');
+            $(this).addClass('active');
+        });
 
         if (localStorage.getItem('search-type')==1) {
             $('#article-button').addClass('active');
@@ -128,6 +135,9 @@
         } else if (localStorage.getItem('search-type')==5) {
             $('#therapy-button').addClass('active')
             $('#search-field').attr('placeholder', '@Messages("search_therapy")');
+        } else if (localStorage.getItem('search-type')==6) {
+            $('#fulltext-button').addClass('active')
+            $('#search-field').attr('placeholder', '@Messages("search_fulltext")');
         } else {
             $('#article-button').addClass('active');
             $('#search-field').attr('placeholder', '@Messages("search_title")');

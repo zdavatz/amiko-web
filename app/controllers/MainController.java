@@ -391,20 +391,6 @@ public class MainController extends Controller {
                 String content_title = "";
                 String content_chapters = "";
 
-                String first_letter = a.title.substring(0, 1).toUpperCase();
-                if (!list_of_titles.contains(first_letter)) {
-                    list_of_titles.add(first_letter);
-                    if (counter % 2 == 0)
-                        content_style = "<li style=\"background-color:whitesmoke;\" id=\"" + first_letter + "\">";
-                    else
-                        content_style = "<li style=\"background-color:white;\" id=\"" + first_letter + "\">";
-                } else {
-                    if (counter % 2 == 0)
-                        content_style = "<li style=\"background-color:whitesmoke;\">";
-                    else
-                        content_style = "<li style=\"background-color:white;\">";
-                }
-
                 String anchor = "?";
                 String eancode = a.eancode.split(",")[0];
                 content_title = "<a onclick=\"display_fachinfo(" + eancode + ",'" + key + "','" + anchor + "')\"><small><b>"
@@ -433,14 +419,14 @@ public class MainController extends Controller {
                                         content_chapters += "<span style=\"font-size:small; color:#0099cc\">"
                                                 + "<a onclick=\"display_fachinfo(" + eancode + ",'" + key + "','" + anchor + "')\">" + chapter_str + "</a>"
                                                 + "</span><br>";
-
-                                        int count = 0;
-                                        if (chapters_count_map.containsKey(chapter_str)) {
-                                            count = chapters_count_map.get(chapter_str);
-                                        }
-                                        chapters_count_map.put(chapter_str, count + 1);
                                         found_chapter = true;
                                     }
+
+                                    int count = 0;
+                                    if (chapters_count_map.containsKey(chapter_str)) {
+                                        count = chapters_count_map.get(chapter_str);
+                                    }
+                                    chapters_count_map.put(chapter_str, count + 1);
                                 }
                             }
                         }
@@ -448,19 +434,27 @@ public class MainController extends Controller {
                 }
                 // Find chapters
                 if (found_chapter) {
+                    String first_letter = a.title.substring(0, 1).toUpperCase();
+                    if (!list_of_titles.contains(first_letter)) {
+                        list_of_titles.add(first_letter);
+                        if (counter % 2 == 0)
+                            content_style = "<li style=\"background-color:whitesmoke;\" id=\"" + first_letter + "\">";
+                        else
+                            content_style = "<li style=\"background-color:white;\" id=\"" + first_letter + "\">";
+                    } else {
+                        if (counter % 2 == 0)
+                            content_style = "<li style=\"background-color:whitesmoke;\">";
+                        else
+                            content_style = "<li style=\"background-color:white;\">";
+                    }
+
                     content += content_style + content_title + content_chapters + "</li>";
                     counter++;
                 }
             }
             content += "</ul></div>";
 
-            /*
-            String titles_html = "<ul>";
-            for (String title : list_of_titles) {
-                titles_html += "<li><a onclick=\"move_to_anchor('" + title + "')\">" + title + "</a></li>";
-            }
-            */
-
+            // Add the list of alphabetical shortcuts
             int L = 12;
             String titles_html = "<table id=\"fulltext\">";
             for (int i=0; i<list_of_titles.size()-L; i+=L) {
@@ -482,14 +476,21 @@ public class MainController extends Controller {
             titles_html += "</tr>";
             titles_html += "</table>";
 
-            // Add the list of chapters
+            // Add the list of chapters on the right pane
             titles_html += "<hr>";
             titles_html += "<ul>";
             for (Map.Entry<String, Integer> e : chapters_count_map.entrySet()) {
-                titles_html += "<li><span style=\"font-size:small; color:#0099cc\">"
-                        + "<a onclick=\"show_full_text(" + id + ",'" + key + "','" + e.getKey() + "')\">" + e.getKey() + "</a>"
-                        + " (" + e.getValue() + ")"
-                        + "</span></li>";
+                if (e.getKey().equals(filter) || filter.equals("0")) {
+                    titles_html += "<li><span style=\"font-size:small; color:#0099cc\">"
+                            + "<a onclick=\"show_full_text(" + id + ",'" + key + "','" + e.getKey() + "')\">" + e.getKey() + "</a>"
+                            + " (" + e.getValue() + ")"
+                            + "</span></li>";
+                } else {
+                    titles_html += "<li><span style=\"font-size:small; color:#cccccc\">"
+                            + "<a onclick=\"show_full_text(" + id + ",'" + key + "','" + e.getKey() + "')\">" + e.getKey() + "</a>"
+                            + " (" + e.getValue() + ")"
+                            + "</span></li>";
+                }
             }
             titles_html += "</ul>";
 

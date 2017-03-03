@@ -390,7 +390,8 @@ public class MainController extends Controller {
                 counter++;
 
                 String anchor = "?";
-                content += "<a onclick=\"display_fachinfo(" + a.eancode + ",'" + key + "','" + anchor + "')\"><small><b>"
+                String eancode = a.eancode.split(",")[0];
+                content += "<a onclick=\"display_fachinfo(" + eancode + ",'" + key + "','" + anchor + "')\"><small><b>"
                         + a.title + "</b></small> | <span style=\"font-size:x-small\">" + a.author + "</span></a><br>";
 
                 Map<Integer, String> index_to_titles_map = a.index_to_titles_map();
@@ -407,7 +408,7 @@ public class MainController extends Controller {
                                     if (c>30)
                                         anchor = "Section" + c;
                                     content += "<span style=\"font-size:small; color:#0099cc\">"
-                                            + "<a onclick=\"display_fachinfo(" + a.eancode + ",'" + key + "','" + anchor + "')\">" + index_to_titles_map.get(c) + "</a>"
+                                            + "<a onclick=\"display_fachinfo(" + eancode + ",'" + key + "','" + anchor + "')\">" + index_to_titles_map.get(c) + "</a>"
                                             + "</span><br>";
                                 }
                             }

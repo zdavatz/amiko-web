@@ -144,7 +144,6 @@ $ ->
         .done (response) ->
           localStorage.setItem 'search-type', SearchType.FullText
           window.location.assign '/showfulltext?id=' + selection.id + "&key=" + selection.title #typed_input
-          #$('.twitter-typeahead').typeahead('val', selection.title).focus().keyup() # typed_input).focus().keyup()
           console.log selection.id + ' -> ' + selection.title + ' with language = ' + language
         .fail (jqHXR, textStatus) ->
           alert('ajax error')
@@ -180,6 +179,10 @@ $ ->
   typeaheadCtrl.on 'typeahead:cursorchange', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')
     $('.twitter-typeahead').val(typed_input)
+
+  # IMPORTANT: Claim focus!
+  # This "hack" fixes the refresh issue for long lasting queries!
+  $('.twitter-typeahead').focus().keyup()
 
   # Detect click on search field
   $('#search-field').on 'click', ->

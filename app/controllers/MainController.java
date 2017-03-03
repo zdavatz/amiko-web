@@ -247,7 +247,7 @@ public class MainController extends Controller {
         Map<Integer, String> index_to_titles_map() {
             Map<Integer, String> map = new HashMap<>();
 
-            String[] tt = titles.split(";");
+            String[] tt = sectionTitles("de", title, titles);
             String[] ids = sections.split(",");
             // Assuming both arrays have the same length - they should!
             int N = tt.length>ids.length ? ids.length : tt.length;
@@ -292,7 +292,7 @@ public class MainController extends Controller {
         return redirect(controllers.routes.MainController.fachinfoId(lang, id));
     }
 
-    public Result fachinfoEanWithHigh(String lang, String ean, String highlight, String anchor) {
+    public Result fachinfoEanWithHigh(String lang, String ean, String highlight, String anchor, String filter) {
         Medication m = getMedicationWithEan(lang, ean);
         return retrieveFachinfo(lang, m, highlight, anchor);
     }
@@ -353,20 +353,26 @@ public class MainController extends Controller {
     static long ft_row_id;
     static String ft_content;
     static String ft_titles_html;
+    static String ft_filter = "";
 
-    public Result showFullTextSearchResult(String lang, String id, String key) {
+    public Result showFullTextSearchResult(String lang, String id, String key, String filter) {
         long row_id = 0;
         if (id!=null)
             row_id = Long.parseLong(id);
 
         key = key.replaceAll("\\(.*?\\)", "").trim();
 
-        if (ft_row_id!=row_id) {
+        if (ft_row_id!=row_id || !ft_filter.equals(filter)) {
+
+            ft_filter = filter;
+
             FullTextEntry entry = getFullTextEntryWithId(lang, row_id);
 
             long startTime = System.currentTimeMillis();
 
+            // This operation takes time...
             List<Article> list_of_articles = getArticlesFromRegnrs(lang, entry.getRegnrs()).join();
+
             // Sort list of articles
             sortByComparator(list_of_articles, ASC);
 
@@ -374,32 +380,42 @@ public class MainController extends Controller {
 
             // List of titles to be displayed in right pane
             LinkedList<String> list_of_titles = new LinkedList<>();
+            // Sorted set of chapters
+            TreeMap<String, Integer> chapters_count_map = new TreeMap<>();
 
             String content = "<div id=\"fulltext\"><ul>";
             int counter = 0;
+
             for (Article a : list_of_articles) {
+                String content_style = "";
+                String content_title = "";
+                String content_chapters = "";
 
                 String first_letter = a.title.substring(0, 1).toUpperCase();
                 if (!list_of_titles.contains(first_letter)) {
                     list_of_titles.add(first_letter);
                     if (counter % 2 == 0)
-                        content += "<li style=\"background-color:whitesmoke;\" id=\"" + first_letter + "\">";
+                        content_style = "<li style=\"background-color:whitesmoke;\" id=\"" + first_letter + "\">";
                     else
-                        content += "<li style=\"background-color:white;\" id=\"" + first_letter + "\">";
+                        content_style = "<li style=\"background-color:white;\" id=\"" + first_letter + "\">";
                 } else {
                     if (counter % 2 == 0)
-                        content += "<li style=\"background-color:whitesmoke;\">";
+                        content_style = "<li style=\"background-color:whitesmoke;\">";
                     else
-                        content += "<li style=\"background-color:white;\">";
+                        content_style = "<li style=\"background-color:white;\">";
                 }
-                counter++;
 
                 String anchor = "?";
                 String eancode = a.eancode.split(",")[0];
-                content += "<a onclick=\"display_fachinfo(" + eancode + ",'" + key + "','" + anchor + "')\"><small><b>"
+                content_title = "<a onclick=\"display_fachinfo(" + eancode + ",'" + key + "','" + anchor + "')\"><small><b>"
                         + a.title + "</b></small> | <span style=\"font-size:x-small\">" + a.author + "</span></a><br>";
 
                 Map<Integer, String> index_to_titles_map = a.index_to_titles_map();
+
+                boolean found_chapter = false;
+                if (filter.equals("0"))
+                    found_chapter = true;
+
                 String[] list_of_regs = a.regnrs.split(",");
                 for (String r : list_of_regs) {
                     if (map_of_chapters.containsKey(r)) {
@@ -409,19 +425,32 @@ public class MainController extends Controller {
                             if (!ch.isEmpty()) {
                                 int c = Integer.parseInt(ch.trim());
                                 if (index_to_titles_map.containsKey(c)) {
-                                    anchor = "section" + c;
-                                    if (c>30)
-                                        anchor = "Section" + c;
-                                    content += "<span style=\"font-size:small; color:#0099cc\">"
-                                            + "<a onclick=\"display_fachinfo(" + eancode + ",'" + key + "','" + anchor + "')\">" + index_to_titles_map.get(c) + "</a>"
-                                            + "</span><br>";
+                                    String chapter_str = index_to_titles_map.get(c);
+                                    if (filter.equals(chapter_str) || filter.equals("0")) {
+                                        anchor = "section" + c;
+                                        if (c>30)
+                                            anchor = "Section" + c;
+                                        content_chapters += "<span style=\"font-size:small; color:#0099cc\">"
+                                                + "<a onclick=\"display_fachinfo(" + eancode + ",'" + key + "','" + anchor + "')\">" + chapter_str + "</a>"
+                                                + "</span><br>";
+
+                                        int count = 0;
+                                        if (chapters_count_map.containsKey(chapter_str)) {
+                                            count = chapters_count_map.get(chapter_str);
+                                        }
+                                        chapters_count_map.put(chapter_str, count + 1);
+                                        found_chapter = true;
+                                    }
                                 }
                             }
                         }
                     }
                 }
                 // Find chapters
-                content += "</li>";
+                if (found_chapter) {
+                    content += content_style + content_title + content_chapters + "</li>";
+                    counter++;
+                }
             }
             content += "</ul></div>";
 
@@ -431,19 +460,7 @@ public class MainController extends Controller {
                 titles_html += "<li><a onclick=\"move_to_anchor('" + title + "')\">" + title + "</a></li>";
             }
             */
-            /*
-            String titles_html = "<ul>";
-            for (int i=0; i<list_of_titles.size()-8; i+=8) {
-                titles_html += "<li>";
-                for (int j=0; j<8; ++j) {
-                    String t = list_of_titles.get(i+j);
-                    titles_html += "<a onclick=\"move_to_anchor('" + t + "')\">" + t + "</a>";
-                    titles_html += " ";
-                }
-                titles_html += "</li>";
-            }
-            titles_html += "</ul>";
-            */
+
             int L = 12;
             String titles_html = "<table id=\"fulltext\">";
             for (int i=0; i<list_of_titles.size()-L; i+=L) {
@@ -454,7 +471,9 @@ public class MainController extends Controller {
                 }
                 titles_html += "</tr>";
             }
-            int rest = list_of_titles.size() % L;
+            int rest = list_of_titles.size();
+            if (rest>L)
+                rest = list_of_titles.size() % L;
             titles_html += "<tr>";
             for (int i=list_of_titles.size()-rest; i<list_of_titles.size(); ++i) {
                 String t = list_of_titles.get(i);
@@ -462,6 +481,17 @@ public class MainController extends Controller {
             }
             titles_html += "</tr>";
             titles_html += "</table>";
+
+            // Add the list of chapters
+            titles_html += "<hr>";
+            titles_html += "<ul>";
+            for (Map.Entry<String, Integer> e : chapters_count_map.entrySet()) {
+                titles_html += "<li><span style=\"font-size:small; color:#0099cc\">"
+                        + "<a onclick=\"show_full_text(" + id + ",'" + key + "','" + e.getKey() + "')\">" + e.getKey() + "</a>"
+                        + " (" + e.getValue() + ")"
+                        + "</span></li>";
+            }
+            titles_html += "</ul>";
 
             content = "<html>" + content + "</html>";
 
@@ -573,23 +603,27 @@ public class MainController extends Controller {
     }
 
     private String[] getSectionTitles(String lang, Medication m) {
+        return sectionTitles(lang, m.getTitle(), m.getSectionTitles());
+    }
+
+    private String[] sectionTitles(String lang, String name, String titles) {
         // Get section titles from chapters
-        String[] section_titles = m.getSectionTitles().split(";");
+        String[] section_titles = titles.split(";");
         // Use abbreviations...
         String[] section_titles_abbr = lang.equals("de") ? models.Constants.SectionTitle_DE : Constants.SectionTitle_FR;
         for (int i = 0; i < section_titles.length; ++i) {
-            for (String s : section_titles_abbr) {
-                String titleA = section_titles[i].replaceAll(" ", "");
-                String titleB = m.getTitle().replaceAll(" ", "");
+            for (String s_abbr : section_titles_abbr) {
+                String titleA = section_titles[i].replaceAll("\\s*/\\s*", "/").toLowerCase().trim();
+                String titleB = name.replaceAll(" ", "");
                 // Are we analysing the name of the article?
-                if (titleA.toLowerCase().contains(titleB.toLowerCase())) {
+                if (titleA.contains(titleB.toLowerCase())) {
                     if (section_titles[i].contains("®"))
                         section_titles[i] = section_titles[i].substring(0, section_titles[i].indexOf("®") + 1);
                     else
                         section_titles[i] = section_titles[i].split(" ")[0].replaceAll("/-", "");
                     break;
-                } else if (section_titles[i].toLowerCase().contains(s.toLowerCase())) {
-                    section_titles[i] = s;
+                } else if (titleA.contains(s_abbr.toLowerCase())) {
+                    section_titles[i] = s_abbr;
                     break;
                 }
             }

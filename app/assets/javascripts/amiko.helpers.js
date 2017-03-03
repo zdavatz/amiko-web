@@ -46,7 +46,6 @@ function reset() {
  */
 function display_fachinfo(ean, key, anchor) {
     var lang = String(localStorage.getItem('language'));
-
     console.log("EAN = " + ean + " | KEY = " + key + " | ANCHOR = " + anchor);
     if (anchor=='undefined')
         anchor = '';
@@ -54,6 +53,16 @@ function display_fachinfo(ean, key, anchor) {
         window.location.assign('/de/fi?gtin=' + ean + "&highlight=" + key + "&anchor=" + anchor);
     else if (lang=="fr")
         window.location.assign('/fr/fi?gtin=' + ean + "&highlight=" + key + "&anchor=" + anchor);
+}
+
+/**
+ * Filter full text search
+ */
+function show_full_text(id, key, filter) {
+    if (filter=='undefined')
+        filter = "0";
+    console.log("FILTER = " + filter);
+    window.location.assign('/showfulltext?id=' + id + "&key=" + key + "&filter=" + filter);
 }
 
 /**

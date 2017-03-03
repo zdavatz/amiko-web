@@ -18,8 +18,22 @@ function move_to_anchor(anchor) {
     }
 }
 
+/**
+ * Identifies the anchor's id and scrolls to the first mark tag.
+ * Javascript is brilliant :-)
+ * @param anchor
+ */
+function move_to_highlight(anchor) {
+    if (typeof anchor !== 'undefined') {
+        var id = document.getElementById(anchor);
+        if (id !== null && id.hasAttribute('id')) {
+            id = id.getElementsByTagName('mark');
+            $(window).scrollTop($(id).offset().top - 120);
+        }
+    }
+}
+
 function on_load() {
-    move_to_anchor("section20");
 }
 
 /**

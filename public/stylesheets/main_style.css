@@ -160,15 +160,17 @@ aside {
 
 #section-ids {
     position: fixed;
+    color:#0099cc;
 }
 
 #section-ids li:hover {
     width: 100%;
-    margin-left: -3px;
+    /* margin-left: -3px; */
     cursor: pointer;
     display: block;
-    border-left: 3px solid #cccccc;
-    background-color: #FDE95E;
+    /* border-left: 3px solid #cccccc; */
+    background-color: #eeeeee;
+    color:#0099cc;
     font-weight: bold;
 }
 

@@ -393,8 +393,8 @@ public class MainController extends Controller {
 
                 String anchor = "?";
                 String eancode = a.eancode.split(",")[0];
-                content_title = "<a onclick=\"display_fachinfo(" + eancode + ",'" + key + "','" + anchor + "')\"><small><b>"
-                        + a.title + "</b></small> | <span style=\"font-size:x-small\">" + a.author + "</span></a><br>";
+                content_title = "<a onclick=\"display_fachinfo(" + eancode + ",'" + key + "','" + anchor + "')\">"
+                        + "<span style=\"font-size:medium\"><b>" + a.title + "</b></span></a><span style=\"font-size:x-small\"> | " + a.author + "</span><br>";
 
                 Map<Integer, String> index_to_titles_map = a.index_to_titles_map();
 
@@ -427,8 +427,6 @@ public class MainController extends Controller {
                                         count = chapters_count_map.get(chapter_str);
                                     }
                                     chapters_count_map.put(chapter_str, count + 1);
-
-                                    break;
                                 }
                             }
                         }
@@ -483,7 +481,7 @@ public class MainController extends Controller {
             titles_html += "<ul>";
             for (Map.Entry<String, Integer> e : chapters_count_map.entrySet()) {
                 if (e.getKey().equals(filter)) {
-                    titles_html += "<li style=\"background-color:#FDE95E\"><span style=\"font-size:small\">"
+                    titles_html += "<li style=\"background-color:#eeeeee\"><span style=\"font-size:small\">"
                             + "<a onclick=\"show_full_text(" + id + ",'" + key + "','" + e.getKey() + "')\">" + e.getKey() + "</a>"
                             + " (" + e.getValue() + ")"
                             + "</span></li>";
@@ -578,6 +576,7 @@ public class MainController extends Controller {
             if (content!=null && !content.isEmpty()) {
                 content = content.replaceAll("<html>|</html>|<body>|</body>|<head>|</head>", "");
                 if (highlight.length()>3) {
+                    // Marks the keyword in the html
                     content = content.replaceAll(highlight, "<mark>" + highlight + "</mark>");
                     String first_upper = highlight.substring(0,1).toUpperCase() + highlight.substring(1, highlight.length());
                     content = content.replaceAll(first_upper, "<mark>" + first_upper + "</mark>");

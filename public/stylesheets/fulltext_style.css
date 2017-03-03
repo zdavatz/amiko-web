@@ -5,3 +5,7 @@
 #fulltext li{padding: 0.25em 0.25em 0.25em 0.25em; vertical-align: middle;}
 #fulltext li:hover{cursor: pointer; display: block; background-color: #eeeeee}
 #fulltext li a:hover{text-decoration: underline;}
+#fulltext table{font-size:1.0em;margin-top:1.0em;margin-bottom:1.0em;border-top:solid 1px black;border-bottom:solid 1px black;}
+#fulltext td{font-size:1.0em;}
+#fulltext td p{font-size:1.0em;}
+#fulltext td:hover{cursor: pointer; background-color: #FDE95E}

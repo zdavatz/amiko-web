@@ -345,6 +345,11 @@ public class MainController extends Controller {
         return ok(index.render(interactions_html, titles_html, article_title, ""));
     }
 
+    /**
+     * NOTE: Refactor the following code later on!
+     * Goes in a separate class
+     */
+
     static long ft_row_id;
     static String ft_content;
     static String ft_titles_html;
@@ -420,11 +425,43 @@ public class MainController extends Controller {
             }
             content += "</ul></div>";
 
+            /*
             String titles_html = "<ul>";
             for (String title : list_of_titles) {
                 titles_html += "<li><a onclick=\"move_to_anchor('" + title + "')\">" + title + "</a></li>";
             }
+            */
+            /*
+            String titles_html = "<ul>";
+            for (int i=0; i<list_of_titles.size()-8; i+=8) {
+                titles_html += "<li>";
+                for (int j=0; j<8; ++j) {
+                    String t = list_of_titles.get(i+j);
+                    titles_html += "<a onclick=\"move_to_anchor('" + t + "')\">" + t + "</a>";
+                    titles_html += " ";
+                }
+                titles_html += "</li>";
+            }
             titles_html += "</ul>";
+            */
+            int L = 12;
+            String titles_html = "<table id=\"fulltext\">";
+            for (int i=0; i<list_of_titles.size()-L; i+=L) {
+                titles_html += "<tr>";
+                for (int j=0; j<L; ++j) {
+                    String t = list_of_titles.get(i+j);
+                    titles_html += "<td><a onclick=\"move_to_anchor('" + t + "')\">" + t + "</a></td>";
+                }
+                titles_html += "</tr>";
+            }
+            int rest = list_of_titles.size() % L;
+            titles_html += "<tr>";
+            for (int i=list_of_titles.size()-rest; i<list_of_titles.size(); ++i) {
+                String t = list_of_titles.get(i);
+                titles_html += "<td><a onclick=\"move_to_anchor('" + t + "')\">" + t + "</a></td>";
+            }
+            titles_html += "</tr>";
+            titles_html += "</table>";
 
             content = "<html>" + content + "</html>";
 
@@ -851,7 +888,11 @@ public class MainController extends Controller {
                 sub_query += KEY_REGNRS + " like " + "'%, " + regnr + "%' or "
                         + KEY_REGNRS + " like " + "'" + regnr + "%' or ";
             }
-            String query = "select " + FT_SEARCH_TABLE + " from " + DATABASE_TABLE + " where " + sub_query.substring(0, sub_query.length()-4);
+
+            String query = "";
+            if (sub_query.length()>4) {
+                query = "select " + FT_SEARCH_TABLE + " from " + DATABASE_TABLE + " where " + sub_query.substring(0, sub_query.length() - 4);
+            }
             ResultSet rs = stat.executeQuery(query);
             if (rs != null) {
                 while (rs.next()) {

@@ -427,6 +427,8 @@ public class MainController extends Controller {
                                         count = chapters_count_map.get(chapter_str);
                                     }
                                     chapters_count_map.put(chapter_str, count + 1);
+
+                                    break;
                                 }
                             }
                         }
@@ -480,13 +482,13 @@ public class MainController extends Controller {
             titles_html += "<hr>";
             titles_html += "<ul>";
             for (Map.Entry<String, Integer> e : chapters_count_map.entrySet()) {
-                if (e.getKey().equals(filter) || filter.equals("0")) {
-                    titles_html += "<li><span style=\"font-size:small; color:#0099cc\">"
+                if (e.getKey().equals(filter)) {
+                    titles_html += "<li style=\"background-color:#FDE95E\"><span style=\"font-size:small\">"
                             + "<a onclick=\"show_full_text(" + id + ",'" + key + "','" + e.getKey() + "')\">" + e.getKey() + "</a>"
                             + " (" + e.getValue() + ")"
                             + "</span></li>";
                 } else {
-                    titles_html += "<li><span style=\"font-size:small; color:#cccccc\">"
+                    titles_html += "<li><span style=\"font-size:small\">"
                             + "<a onclick=\"show_full_text(" + id + ",'" + key + "','" + e.getKey() + "')\">" + e.getKey() + "</a>"
                             + " (" + e.getValue() + ")"
                             + "</span></li>";

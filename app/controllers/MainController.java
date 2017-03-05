@@ -113,6 +113,11 @@ public class MainController extends Controller {
         return list;
     }
 
+    /**
+     * REFACTORING!
+     * --> Goes to separate class.
+     * --> Full text search needs own data structure (e.g. FTSearchResult
+     */
     private class Article {
         // Private
         private String _title = "";
@@ -346,7 +351,7 @@ public class MainController extends Controller {
     }
 
     /**
-     * NOTE: Refactor the following code later on!
+     * REFACTORING! Refactor the following code later on!
      * Goes in a separate class
      */
 
@@ -394,7 +399,7 @@ public class MainController extends Controller {
                 String anchor = "?";
                 String eancode = a.eancode.split(",")[0];
                 content_title = "<a onclick=\"display_fachinfo(" + eancode + ",'" + key + "','" + anchor + "')\">"
-                        + "<span style=\"font-size:medium\"><b>" + a.title + "</b></span></a><span style=\"font-size:x-small\"> | " + a.author + "</span><br>";
+                        + "<span style=\"font-size:0.85em\"><b>" + a.title + "</b></span></a><span style=\"font-size:x-small\"> | " + a.author + "</span><br>";
 
                 Map<Integer, String> index_to_titles_map = a.index_to_titles_map();
 
@@ -960,6 +965,12 @@ public class MainController extends Controller {
         return null;
     }
 
+    /**
+     * Retrieve entries in the DB which contain the given word
+     * @param lang
+     * @param word
+     * @return
+     */
     private List<FullTextEntry> searchFullText(String lang, String word) {
         List<FullTextEntry> search_results = new ArrayList<>();
 

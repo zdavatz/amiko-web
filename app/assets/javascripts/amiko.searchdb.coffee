@@ -74,6 +74,8 @@ $ ->
     remote:
       wildcard: '%QUERY'
       url: search_query
+      # This is where the magic happens:
+      # retrieve information from client through a GET request
       replace: (url, query) ->
         return search_query + query
       filter: (list) ->
@@ -133,6 +135,11 @@ $ ->
 
   typeaheadCtrl.on 'typeahead:change', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')
+
+  # Do something when ENTER key is pressed
+  typeaheadCtrl.on 'keypress', (event, selection) ->
+    if event.keyCode == 13
+      event.preventDefault()
 
   # Retrieves the fachinfo, the URL should be of the form /fi/gtin/
   typeaheadCtrl.on 'typeahead:selected', (event, selection) ->

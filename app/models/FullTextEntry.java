@@ -22,7 +22,8 @@ package models;
 import java.util.Map;
 
 public class FullTextEntry {
-    private long id;
+    private long id = 0;
+    private String hash = "";
     private int num_hits;
     private String keyword;
     private Map<String, String> map_of_chapters;
@@ -30,6 +31,10 @@ public class FullTextEntry {
     public long getId() { return this.id; }
 
     public void setId(long id) { this.id = id; }
+
+    public String getHash() { return this.hash; }
+
+    public void setHash(String hash) { this.hash = hash; }
 
     public void setNumHits(int num_hits) { this.num_hits = num_hits; }
 

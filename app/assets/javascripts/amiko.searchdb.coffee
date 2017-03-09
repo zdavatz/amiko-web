@@ -145,13 +145,13 @@ $ ->
   typeaheadCtrl.on 'typeahead:selected', (event, selection) ->
     if search_state == SearchState.Compendium
       if search_type == SearchType.FullText
-        localStorage.setItem 'fulltext-search-id', selection.id
+        localStorage.setItem 'fulltext-search-id', selection.hash
         localStorage.setItem 'fulltext-search-key', selection.title
-        $.ajax(jsRoutes.controllers.MainController.showFullTextSearchResult(language, selection.id, selection.title))
+        $.ajax(jsRoutes.controllers.MainController.showFullTextSearchResult(language, selection.hash, selection.title))
         .done (response) ->
           localStorage.setItem 'search-type', SearchType.FullText
-          window.location.assign '/showfulltext?id=' + selection.id + "&key=" + selection.title #typed_input
-          console.log selection.id + ' -> ' + selection.title + ' with language = ' + language
+          window.location.assign '/showfulltext?id=' + selection.hash + "&key=" + selection.title #typed_input
+          console.log selection.hash + ' -> ' + selection.title + ' with language = ' + language
         .fail (jqHXR, textStatus) ->
           alert('ajax error')
       else 

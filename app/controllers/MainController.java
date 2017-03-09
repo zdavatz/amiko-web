@@ -133,6 +133,7 @@ public class MainController extends Controller {
 
         // Interface variables
         public long id = 0;
+        public String hash = "";
         public String title = "";
         public String author = "";
         public String atccode = "";
@@ -143,7 +144,7 @@ public class MainController extends Controller {
         public String titles = "";
         public String sections = "";
 
-        Article(long _id, String _title, String _author, String _atccode, String _atcclass, String _regnrs, String _therapy, String _packinfo, String _packages, String _titles, String _sections) {
+        Article(long _id, String _hash, String _title, String _author, String _atccode, String _atcclass, String _regnrs, String _therapy, String _packinfo, String _packages, String _titles, String _sections) {
             // Private
             this._title = _title;
             this._author = _author;
@@ -158,6 +159,7 @@ public class MainController extends Controller {
 
             // Interface
             this.id = _id;
+            this.hash = _hash;
             this.title = _title;
             this.packinfo = packinfoStr();
             this.author = _author;
@@ -355,19 +357,17 @@ public class MainController extends Controller {
      * Goes in a separate class
      */
 
-    static long ft_row_id;
-    static String ft_content;
-    static String ft_titles_html;
+    static String ft_row_id = "";
+    static String ft_content = "";
+    static String ft_titles_html = "";
     static String ft_filter = "";
 
     public Result showFullTextSearchResult(String lang, String id, String key, String filter) {
-        long row_id = 0;
-        if (id!=null)
-            row_id = Long.parseLong(id);
+        String row_id = id;
 
         key = key.replaceAll("\\(.*?\\)", "").trim();
 
-        if (ft_row_id!=row_id || !ft_filter.equals(filter)) {
+        if (!ft_row_id.equals(row_id) || !ft_filter.equals(filter)) {
 
             ft_filter = filter;
 
@@ -515,7 +515,7 @@ public class MainController extends Controller {
     public Result getName(String lang, String name) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchName(lang, name));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
+                .map(n -> new Article(n.getId(), "", n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -523,7 +523,7 @@ public class MainController extends Controller {
     public Result getOwner(String lang, String owner) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchOwner(lang, owner));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
+                .map(n -> new Article(n.getId(), "", n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -531,7 +531,7 @@ public class MainController extends Controller {
     public Result getATC(String lang, String atc) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchATC(lang, atc));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
+                .map(n -> new Article(n.getId(), "", n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -539,7 +539,7 @@ public class MainController extends Controller {
     public Result getRegnr(String lang, String regnr) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchRegnr(lang, regnr));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
+                .map(n -> new Article(n.getId(), "", n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -547,7 +547,7 @@ public class MainController extends Controller {
     public Result getTherapy(String lang, String therapy) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchTherapy(lang, therapy));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
+                .map(n -> new Article(n.getId(), "", n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -555,7 +555,7 @@ public class MainController extends Controller {
     public Result getFullText(String lang, String key) {
         CompletableFuture<List<FullTextEntry>> future = CompletableFuture.supplyAsync(()->searchFullText(lang, key));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), n.getKeyword(), "", "", "", n.getRegnrs(), "", "", "", "", ""))
+                .map(n -> new Article(0, n.getHash(), n.getKeyword(), "", "", "", n.getRegnrs(), "", "", "", "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -567,7 +567,7 @@ public class MainController extends Controller {
             list_of_regnrs.add(r);
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchListRegnrs(lang, list_of_regnrs));
         CompletableFuture<List<Article>> list_of_articles = future.thenApplyAsync(a -> a.stream()
-                .map(m -> new Article(m.getId(), m.getTitle(), m.getAuth(), "", "", m.getRegnrs(), "", "", "", m.getSectionTitles(), m.getSectionIds()))
+                .map(m -> new Article(m.getId(), "", m.getTitle(), m.getAuth(), "", "", m.getRegnrs(), "", "", "", m.getSectionTitles(), m.getSectionIds()))
                 .collect(Collectors.toList()));
         return list_of_articles;
     }
@@ -949,11 +949,18 @@ public class MainController extends Controller {
         return med_auth;
     }
 
-    private FullTextEntry getFullTextEntryWithId(String lang, long rowId) {
+    /**
+     * Note: the rowId is a 10 digit hash
+     * @param lang
+     * @param rowId
+     * @return
+     */
+    private FullTextEntry getFullTextEntryWithId(String lang, String rowId) {
         try {
             Connection conn = frequency_db.getConnection();
             Statement stat = conn.createStatement();
-            String query = "select * from " + FREQUENCY_TABLE + " where id=" + rowId;
+            String query = "select * from " + FREQUENCY_TABLE + " where id='" + rowId + "'";
+
             ResultSet rs = stat.executeQuery(query);
             FullTextEntry full_text_entry = cursorToFullTextEntry(rs);
             conn.close();
@@ -998,7 +1005,7 @@ public class MainController extends Controller {
     private FullTextEntry cursorToFullTextEntry(ResultSet result) {
         FullTextEntry entry = new FullTextEntry();
         try {
-            entry.setId(result.getLong(1));         // ID
+            entry.setHash(result.getString(1));     // ID/Hash
             entry.setKeyword(result.getString(2));  // Keyword
             String regnr = result.getString(3);
 

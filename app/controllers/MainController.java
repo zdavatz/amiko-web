@@ -487,12 +487,12 @@ public class MainController extends Controller {
             for (Map.Entry<String, Integer> e : chapters_count_map.entrySet()) {
                 if (e.getKey().equals(filter)) {
                     titles_html += "<li style=\"background-color:#eeeeee\"><span style=\"font-size:small\">"
-                            + "<a onclick=\"show_full_text(" + id + ",'" + key + "','" + e.getKey() + "')\">" + e.getKey() + "</a>"
+                            + "<a onclick=\"show_full_text('" + id + "','" + key + "','" + e.getKey() + "')\">" + e.getKey() + "</a>"
                             + " (" + e.getValue() + ")"
                             + "</span></li>";
                 } else {
                     titles_html += "<li><span style=\"font-size:small\">"
-                            + "<a onclick=\"show_full_text(" + id + ",'" + key + "','" + e.getKey() + "')\">" + e.getKey() + "</a>"
+                            + "<a onclick=\"show_full_text('" + id + "','" + key + "','" + e.getKey() + "')\">" + e.getKey() + "</a>"
                             + " (" + e.getValue() + ")"
                             + "</span></li>";
                 }

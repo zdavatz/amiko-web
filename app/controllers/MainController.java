@@ -419,8 +419,10 @@ public class MainController extends Controller {
                                     String chapter_str = index_to_titles_map.get(c);
                                     if (filter.equals(chapter_str) || filter.equals("0")) {
                                         anchor = "section" + c;
-                                        if (c>30)
+                                        if (c>100) {
+                                            // These are "old" section titles, e.g. Section7900, Section8000, etc.
                                             anchor = "Section" + c;
+                                        }
                                         content_chapters += "<span style=\"font-size:small; color:#0099cc\">"
                                                 + "<a onclick=\"display_fachinfo(" + eancode + ",'" + key + "','" + anchor + "')\">" + chapter_str + "</a>"
                                                 + "</span><br>";
@@ -1010,19 +1012,21 @@ public class MainController extends Controller {
             String regnr = result.getString(3);
 
             String[] r = regnr.split("\\|", -1);
+            HashSet<String> set_of_r = new HashSet<>(Arrays.asList(r));
             Map<String, String> map = new HashMap<>();
-            for (String reg : r) {
+            for (String reg : set_of_r) {
                 String chapters = "";
-                // Extract chapters
+                // Extract chapters from parentheses, format 58444(6,7,8)
                 if (reg.contains("(") && reg.contains(")"))
                     chapters = reg.substring(reg.indexOf("(")+1, reg.indexOf(")"));
-                // Remove parentheses
+                // Remove parentheses, what remains are the comma-separated chapters
                 reg = reg.replaceAll("\\(.*?\\)", "");
                 if (map.containsKey(reg)) {
-                    chapters += ", " + map.get(reg);
+                    chapters += "," + map.get(reg);
                 }
                 map.put(reg, chapters);
             }
+
             entry.setMapOfChapters(map);            // Map of chapters
             entry.setNumHits(r.length);
         } catch (SQLException e) {

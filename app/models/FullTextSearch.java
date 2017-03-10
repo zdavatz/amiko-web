@@ -12,11 +12,6 @@ public class FullTextSearch {
     private static boolean ASC = true;
     private static boolean DESC = false;
 
-    private String ft_row_id = "";
-    private String ft_content = "";
-    private String ft_titles_html = "";
-    private String ft_filter = "";
-
     private static volatile FullTextSearch instance;
 
     private FullTextSearch() {

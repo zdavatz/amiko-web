@@ -16,7 +16,7 @@ GET     /fi/id/:id                  controllers.MainController.fachinfoId(lang: 
 GET     /fii                        controllers.MainController.getFachinfo(lang: String?="de", id: Long)
 
 GET     /de/fi                      controllers.MainController.fachinfoEanWithHigh(lang: String="de", gtin: String, highlight: String?="", anchor: String?="", filter: String?="0")
-GET     /fr/fi                      controllers.MainController.fachinfoEanWithHigh(lang: String="de", gtin: String, highlight: String?="", anchor: String?="", filter: String?="0")
+GET     /fr/fi                      controllers.MainController.fachinfoEanWithHigh(lang: String="fr", gtin: String, highlight: String?="", anchor: String?="", filter: String?="0")
 
 GET     /de/fi/gtin/:gtin           controllers.MainController.fachinfoEan(lang: String="de", gtin: String)
 GET     /fr/fi/gtin/:gtin           controllers.MainController.fachinfoEan(lang: String="fr", gtin: String)
@@ -24,6 +24,8 @@ GET     /fr/fi/gtin/:gtin           controllers.MainController.fachinfoEan(lang:
 GET     /interactions/:basket       controllers.MainController.interactionsBasket(lang: String?="de", basket: String)
 
 GET     /showfulltext               controllers.MainController.showFullTextSearchResult(lang: String?="de", id: String, key: String, filter: String?="0")
+GET     /de/showfulltext            controllers.MainController.showFullTextSearchResult(lang: String?="de", id: String, key: String, filter: String?="0")
+GET     /fr/showfulltext            controllers.MainController.showFullTextSearchResult(lang: String?="fr", id: String, key: String, filter: String?="0")
 
 GET     /de                         controllers.MainController.setLang(lang: String="de")
 GET     /fr                         controllers.MainController.setLang(lang: String="fr")

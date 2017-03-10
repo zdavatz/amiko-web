@@ -60,7 +60,6 @@ function reset() {
  */
 function display_fachinfo(ean, key, anchor) {
     var lang = String(localStorage.getItem('language'));
-    console.log("EAN = " + ean + " | KEY = " + key + " | ANCHOR = " + anchor);
     if (anchor=='undefined')
         anchor = '';
     if (lang=="de")
@@ -73,10 +72,13 @@ function display_fachinfo(ean, key, anchor) {
  * Filter full text search
  */
 function show_full_text(id, key, filter) {
+    var lang = String(localStorage.getItem('language'));
     if (filter=='undefined')
         filter = "0";
-    console.log("FILTER = " + filter);
-    window.location.assign('/showfulltext?id=' + id + "&key=" + key + "&filter=" + filter);
+    if (lang=="de")
+        window.location.assign('/de/showfulltext?id=' + id + "&key=" + key + "&filter=" + filter);
+    else if (lang=="fr")
+        window.location.assign('/fr/showfulltext?id=' + id + "&key=" + key + "&filter=" + filter);
 }
 
 /**

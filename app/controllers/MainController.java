@@ -69,7 +69,8 @@ public class MainController extends Controller {
 
     @Inject @NamedDatabase("german") Database german_db;
     @Inject @NamedDatabase("french") Database french_db;
-    @Inject @NamedDatabase("frequency_ge") Database frequency_db;
+    @Inject @NamedDatabase("frequency_de") Database frequency_de_db;
+    @Inject @NamedDatabase("frequency_fr") Database frequency_fr_db;
 
     public Result index() {
         return ok(index.render("", "", "", ""));
@@ -605,7 +606,7 @@ public class MainController extends Controller {
      */
     public FullTextEntry getFullTextEntryWithId(String lang, String rowId) {
         try {
-            Connection conn = frequency_db.getConnection();
+            Connection conn = lang.equals("de") ? frequency_de_db.getConnection() : frequency_fr_db.getConnection();
             Statement stat = conn.createStatement();
             String query = "select * from " + FREQUENCY_TABLE + " where id='" + rowId + "'";
 
@@ -630,7 +631,7 @@ public class MainController extends Controller {
         List<FullTextEntry> search_results = new ArrayList<>();
 
         try {
-            Connection conn = frequency_db.getConnection();
+            Connection conn = lang.equals("de") ? frequency_de_db.getConnection() : frequency_fr_db.getConnection();
             Statement stat = conn.createStatement();
             ResultSet rs = null;
             if (word.length()>2) {

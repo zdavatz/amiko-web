@@ -151,7 +151,8 @@ $ ->
         $.ajax(jsRoutes.controllers.MainController.showFullTextSearchResult(language, selection.hash, fulltext_key))
         .done (response) ->
           localStorage.setItem 'search-type', SearchType.FullText
-          window.location.assign '/showfulltext?id=' + selection.hash + "&key=" + fulltext_key #typed_input
+          # window.location.assign '/showfulltext?id=' + selection.hash + "&key=" + fulltext_key #typed_input
+          window.location.assign '/' + language + '/showfulltext?id=' + selection.hash + "&key=" + fulltext_key #typed_input
           console.log selection.hash + ' -> ' + fulltext_key + ' with language = ' + language
         .fail (jqHXR, textStatus) ->
           alert('ajax error')

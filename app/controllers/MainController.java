@@ -19,10 +19,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 package controllers;
 
-import models.Constants;
-import models.FullTextEntry;
-import models.InteractionsData;
-import models.Medication;
+import models.*;
 import play.db.NamedDatabase;
 import play.db.Database;
 import play.mvc.*;
@@ -31,8 +28,6 @@ import views.html.*;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -61,9 +56,6 @@ public class MainController extends Controller {
     private static final String DATABASE_TABLE = "amikodb";
     private static final String FREQUENCY_TABLE = "frequency";
 
-    public static boolean ASC = true;
-    public static boolean DESC = false;
-
     /**
      * Table columns used for fast queries
      */
@@ -78,194 +70,6 @@ public class MainController extends Controller {
     @Inject @NamedDatabase("german") Database german_db;
     @Inject @NamedDatabase("french") Database french_db;
     @Inject @NamedDatabase("frequency_ge") Database frequency_db;
-
-
-    private static Map<Integer, String> sortByComparator(Map<Integer, String> unsort_map, final boolean order)
-    {
-        List<Map.Entry<Integer, String>> list = new LinkedList<>(unsort_map.entrySet());
-
-        // Sorting the list based on values
-        Collections.sort(list,
-                (Map.Entry<Integer, String> o1, Map.Entry<Integer, String> o2) -> {
-                    if (order)
-                        return o1.getValue().compareTo(o2.getValue());
-                    else
-                        return o2.getValue().compareTo(o1.getValue());
-                });
-
-        // Maintaining insertion order with the help of LinkedList
-        Map<Integer, String> sort_map = new LinkedHashMap<>();
-        for (Map.Entry<Integer, String> entry : list) {
-            sort_map.put(entry.getKey(), entry.getValue());
-        }
-
-        return sort_map;
-    }
-
-    private static List<Article> sortByComparator(List<Article> list, final boolean order) {
-        Collections.sort(list, (Article a1, Article a2) -> {
-            if (order)
-                return a1.title.compareTo(a2.title);
-            else
-                return a2.title.compareTo(a1.title);
-        });
-
-        return list;
-    }
-
-    /**
-     * REFACTORING!
-     * --> Goes to separate class.
-     * --> Full text search needs own data structure (e.g. FTSearchResult
-     */
-    private class Article {
-        // Private
-        private String _title = "";
-        private String _author = "";
-        private String _atccode = "";
-        private String _regnrs = "";
-        private String _therapy = "";
-        private String _packinfo = "";
-        private String _atcclass = "";
-        private String _packages = "";
-        private String _titles = "";
-        private String _sections = "";
-
-        // Interface variables
-        public long id = 0;
-        public String hash = "";
-        public String title = "";
-        public String author = "";
-        public String atccode = "";
-        public String regnrs = "";
-        public String therapy = "";
-        public String packinfo = "";
-        public String eancode = "";
-        public String titles = "";
-        public String sections = "";
-
-        Article(long _id, String _hash, String _title, String _author, String _atccode, String _atcclass, String _regnrs, String _therapy, String _packinfo, String _packages, String _titles, String _sections) {
-            // Private
-            this._title = _title;
-            this._author = _author;
-            this._atccode = _atccode;
-            this._regnrs = _regnrs;
-            this._therapy = _therapy;
-            this._packinfo = _packinfo;
-            this._atcclass = _atcclass;
-            this._packages = _packages;
-            this._titles = _titles;
-            this._sections = _sections;
-
-            // Interface
-            this.id = _id;
-            this.hash = _hash;
-            this.title = _title;
-            this.packinfo = packinfoStr();
-            this.author = _author;
-            this.atccode = atccodeStr();
-            this.regnrs = _regnrs;
-            this.therapy = therapyStr();
-            this.eancode = eancodeStr();
-            this.titles = _titles;
-            this.sections = _sections;
-        }
-
-        String packinfoStr() {
-            String pack_info_str = "";
-            Pattern p_red = Pattern.compile(".*O]");
-            Pattern p_green = Pattern.compile(".*G]");
-            Scanner pack_str_scanner = new Scanner(_packinfo);
-            while (pack_str_scanner.hasNextLine()) {
-                String pack_str_line = pack_str_scanner.nextLine();
-                Matcher m_red = p_red.matcher(pack_str_line);
-                Matcher m_green = p_green.matcher(pack_str_line);
-                if (m_red.find())
-                    pack_info_str += "<p style='color:red;'>" + pack_str_line	+ "</p>";
-                else if (m_green.find())
-                    pack_info_str += "<p style='color:green;'>" + pack_str_line + "</p>";
-                else
-                    pack_info_str += "<p style='color:gray;'>" + pack_str_line + "</p>";
-            }
-            pack_str_scanner.close();
-            return pack_info_str;
-        }
-
-        String atccodeStr() {
-            String atc_code_str = "";
-            String atc_title_str = "";
-
-            if (_atccode != null) {
-                String[] m_code = _atccode.split(";");
-                if (m_code.length > 1) {
-                    atc_code_str = m_code[0];
-                    atc_title_str = m_code[1];
-                }
-                if (_atcclass != null) {
-                    String[] m_class = _atcclass.split(";");
-                    String atc_class_str;
-                    if (m_class.length == 1) {
-                        atc_code_str = "<p>" + atc_code_str + " - " + atc_title_str + "</p><p>" + m_class[0] + "</p>";
-                    } else if (m_class.length == 2) { // *** Ver.<1.2.4
-                        atc_code_str = "<p>" + atc_code_str + " - " + atc_title_str + "</p><p>" + m_class[1] + "</p>";
-                    } else if (m_class.length == 3) { // *** Ver. 1.2.4 and above
-                        atc_class_str = "";
-                        String[] atc_class_l4_and_l5 = m_class[2].split("#");
-                        if (atc_class_l4_and_l5.length > 0)
-                            atc_class_str = atc_class_l4_and_l5[atc_class_l4_and_l5.length - 1];
-                        atc_code_str = "<p>" + atc_code_str + " - " + atc_title_str + "</p><p>" + atc_class_str + "</p><p>" + m_class[1] + "</p>";
-                    }
-                } else {
-                    atc_code_str = "<p>" + atc_code_str + " - " + atc_title_str + "</p><p>k.A.</p>";
-                }
-            }
-            return atc_code_str;
-        }
-
-        String therapyStr() {
-            String application_str = "";
-            if (_therapy != null) {
-                /*  Alternative----
-                    application_str = _therapy.replaceAll(";", "<p>");
-                    application_str = "<font color=gray size=-1>" + application_str + "</font>";
-                */
-                String[] apps = _therapy.split(";");
-                if (apps.length>1)
-                    application_str = "<p>" + apps[0] + "</p><p>" + apps[1] + "</p>";
-                else if(apps.length==1)
-                    application_str = "<p>" + apps[0] + "</p>";
-            }
-            return application_str;
-        }
-
-        String eancodeStr() {
-            if (_packages!=null) {
-                String[] packs = _packages.split("\n");
-                // Extract first ean code
-                if (packs.length>0) {
-                    String p[] = packs[0].split("\\|");
-                    if (p.length>9)
-                        return p[9];
-                }
-            }
-            return _regnrs;
-        }
-
-        Map<Integer, String> index_to_titles_map() {
-            Map<Integer, String> map = new HashMap<>();
-
-            String[] tt = sectionTitles("de", title, titles);
-            String[] ids = sections.split(",");
-            // Assuming both arrays have the same length - they should!
-            int N = tt.length>ids.length ? ids.length : tt.length;
-            for (int i=0; i<N; ++i) {
-                String section_id = ids[i].replaceAll("(s|S)ection", "");
-                map.put(Integer.parseInt(section_id), tt[i]);
-            }
-
-            return map;
-        }
-    }
 
     public Result index() {
         return ok(index.render("", "", "", ""));
@@ -358,160 +162,30 @@ public class MainController extends Controller {
      */
 
     static String ft_row_id = "";
-    static String ft_content = "";
-    static String ft_titles_html = "";
     static String ft_filter = "";
+    static String ft_titles = "";
+    static String ft_content = "";
 
     public Result showFullTextSearchResult(String lang, String id, String key, String filter) {
         String row_id = id;
 
-        key = key.replaceAll("\\(.*?\\)", "").trim();
-
         if (!ft_row_id.equals(row_id) || !ft_filter.equals(filter)) {
-
             ft_filter = filter;
+            ft_row_id = row_id;
 
             FullTextEntry entry = getFullTextEntryWithId(lang, row_id);
-
-            long startTime = System.currentTimeMillis();
 
             // This operation takes time...
             List<Article> list_of_articles = getArticlesFromRegnrs(lang, entry.getRegnrs()).join();
 
-            // Sort list of articles
-            sortByComparator(list_of_articles, ASC);
+            FullTextSearch full_text_search = FullTextSearch.getInstance();
 
-            Map<String, String> map_of_chapters = entry.getMapOfChapters();
-
-            // List of titles to be displayed in right pane
-            LinkedList<String> list_of_titles = new LinkedList<>();
-            // Sorted set of chapters
-            TreeMap<String, Integer> chapters_count_map = new TreeMap<>();
-
-            String content = "<div id=\"fulltext\"><ul>";
-            int counter = 0;
-
-            for (Article a : list_of_articles) {
-                String content_style = "";
-                String content_title = "";
-                String content_chapters = "";
-
-                String anchor = "?";
-                String eancode = a.eancode.split(",")[0];
-                content_title = "<a onclick=\"display_fachinfo(" + eancode + ",'" + key + "','" + anchor + "')\">"
-                        + "<span style=\"font-size:0.85em\"><b>" + a.title + "</b></span></a><span style=\"font-size:x-small\"> | " + a.author + "</span><br>";
-
-                Map<Integer, String> index_to_titles_map = a.index_to_titles_map();
-
-                boolean found_chapter = false;
-                if (filter.equals("0"))
-                    found_chapter = true;
-
-                String[] list_of_regs = a.regnrs.split(",");
-                for (String r : list_of_regs) {
-                    if (map_of_chapters.containsKey(r)) {
-                        String[] chapters = map_of_chapters.get(r).split(",");
-                        // Loop through the list of chapters (these are ints)
-                        for (String ch : chapters) {
-                            if (!ch.isEmpty()) {
-                                int c = Integer.parseInt(ch.trim());
-                                if (index_to_titles_map.containsKey(c)) {
-                                    String chapter_str = index_to_titles_map.get(c);
-                                    if (filter.equals(chapter_str) || filter.equals("0")) {
-                                        anchor = "section" + c;
-                                        if (c>100) {
-                                            // These are "old" section titles, e.g. Section7900, Section8000, etc.
-                                            anchor = "Section" + c;
-                                        }
-                                        content_chapters += "<span style=\"font-size:small; color:#0099cc\">"
-                                                + "<a onclick=\"display_fachinfo(" + eancode + ",'" + key + "','" + anchor + "')\">" + chapter_str + "</a>"
-                                                + "</span><br>";
-                                        found_chapter = true;
-                                    }
-
-                                    int count = 0;
-                                    if (chapters_count_map.containsKey(chapter_str)) {
-                                        count = chapters_count_map.get(chapter_str);
-                                    }
-                                    chapters_count_map.put(chapter_str, count + 1);
-                                }
-                            }
-                        }
-                    }
-                }
-                // Find chapters
-                if (found_chapter) {
-                    String first_letter = a.title.substring(0, 1).toUpperCase();
-                    if (!list_of_titles.contains(first_letter)) {
-                        list_of_titles.add(first_letter);
-                        if (counter % 2 == 0)
-                            content_style = "<li style=\"background-color:whitesmoke;\" id=\"" + first_letter + "\">";
-                        else
-                            content_style = "<li style=\"background-color:white;\" id=\"" + first_letter + "\">";
-                    } else {
-                        if (counter % 2 == 0)
-                            content_style = "<li style=\"background-color:whitesmoke;\">";
-                        else
-                            content_style = "<li style=\"background-color:white;\">";
-                    }
-
-                    content += content_style + content_title + content_chapters + "</li>";
-                    counter++;
-                }
-            }
-            content += "</ul></div>";
-
-            // Add the list of alphabetical shortcuts
-            int L = 12;
-            String titles_html = "<table id=\"fulltext\">";
-            for (int i=0; i<list_of_titles.size()-L; i+=L) {
-                titles_html += "<tr>";
-                for (int j=0; j<L; ++j) {
-                    String t = list_of_titles.get(i+j);
-                    titles_html += "<td><a onclick=\"move_to_anchor('" + t + "')\">" + t + "</a></td>";
-                }
-                titles_html += "</tr>";
-            }
-            int rest = list_of_titles.size();
-            if (rest>L)
-                rest = list_of_titles.size() % L;
-            titles_html += "<tr>";
-            for (int i=list_of_titles.size()-rest; i<list_of_titles.size(); ++i) {
-                String t = list_of_titles.get(i);
-                titles_html += "<td><a onclick=\"move_to_anchor('" + t + "')\">" + t + "</a></td>";
-            }
-            titles_html += "</tr>";
-            titles_html += "</table>";
-
-            // Add the list of chapters on the right pane
-            titles_html += "<hr>";
-            titles_html += "<ul>";
-            for (Map.Entry<String, Integer> e : chapters_count_map.entrySet()) {
-                if (e.getKey().equals(filter)) {
-                    titles_html += "<li style=\"background-color:#eeeeee\"><span style=\"font-size:small\">"
-                            + "<a onclick=\"show_full_text('" + id + "','" + key + "','" + e.getKey() + "')\">" + e.getKey() + "</a>"
-                            + " (" + e.getValue() + ")"
-                            + "</span></li>";
-                } else {
-                    titles_html += "<li><span style=\"font-size:small\">"
-                            + "<a onclick=\"show_full_text('" + id + "','" + key + "','" + e.getKey() + "')\">" + e.getKey() + "</a>"
-                            + " (" + e.getValue() + ")"
-                            + "</span></li>";
-                }
-            }
-            titles_html += "</ul>";
-
-            content = "<html>" + content + "</html>";
-
-            ft_row_id = row_id;
-            ft_titles_html = titles_html;
-            ft_content = content;
-
-            long time_for_search = System.currentTimeMillis() - startTime;
-            System.out.println(">> Time for search = " + time_for_search / 1000.0f + "s");
+            Pair<String, String> fts = full_text_search.updateHtml(lang, list_of_articles, entry.getMapOfChapters(), id, key, filter);
+            ft_content = fts.first;
+            ft_titles = fts.second;
         }
 
-        return ok(index.render(ft_content, ft_titles_html, key, ""));
+        return ok(index.render(ft_content, ft_titles, key, ""));
     }
 
     public Result getName(String lang, String name) {
@@ -588,7 +262,8 @@ public class MainController extends Controller {
                     String first_upper = highlight.substring(0,1).toUpperCase() + highlight.substring(1, highlight.length());
                     content = content.replaceAll(first_upper, "<mark>" + first_upper + "</mark>");
                 }
-                String[] titles = getSectionTitles(lang, m);
+                Article article = new Article(m.getTitle(), m.getSectionTitles());
+                String[] titles = article.sectionTitles(lang);
                 String[] section_ids = m.getSectionIds().split(",");
                 name = m.getTitle();
                 titles_html = "<ul style=\"list-style-type:none;\n\">";
@@ -609,35 +284,6 @@ public class MainController extends Controller {
             }
         }
         return ok("Hasta la vista, baby! You just terminated me.");
-    }
-
-    private String[] getSectionTitles(String lang, Medication m) {
-        return sectionTitles(lang, m.getTitle(), m.getSectionTitles());
-    }
-
-    private String[] sectionTitles(String lang, String name, String titles) {
-        // Get section titles from chapters
-        String[] section_titles = titles.split(";");
-        // Use abbreviations...
-        String[] section_titles_abbr = lang.equals("de") ? models.Constants.SectionTitle_DE : Constants.SectionTitle_FR;
-        for (int i = 0; i < section_titles.length; ++i) {
-            for (String s_abbr : section_titles_abbr) {
-                String titleA = section_titles[i].replaceAll("\\s*/\\s*", "/").toLowerCase().trim();
-                String titleB = name.replaceAll(" ", "");
-                // Are we analysing the name of the article?
-                if (titleA.contains(titleB.toLowerCase())) {
-                    if (section_titles[i].contains("®"))
-                        section_titles[i] = section_titles[i].substring(0, section_titles[i].indexOf("®") + 1);
-                    else
-                        section_titles[i] = section_titles[i].split(" ")[0].replaceAll("/-", "");
-                    break;
-                } else if (titleA.contains(s_abbr.toLowerCase())) {
-                    section_titles[i] = s_abbr;
-                    break;
-                }
-            }
-        }
-        return section_titles;
     }
 
     private int numRecords(String lang) {
@@ -957,7 +603,7 @@ public class MainController extends Controller {
      * @param rowId
      * @return
      */
-    private FullTextEntry getFullTextEntryWithId(String lang, String rowId) {
+    public FullTextEntry getFullTextEntryWithId(String lang, String rowId) {
         try {
             Connection conn = frequency_db.getConnection();
             Statement stat = conn.createStatement();

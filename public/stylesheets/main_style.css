@@ -302,6 +302,7 @@ aside {
 }
 
 #language-button {
+    z-index: 1;
     position: relative;
     top: 6px;
     float: left;
@@ -311,9 +312,13 @@ aside {
     color: #aaaaaa;
     background-color: transparent;
     text-decoration: none;
-    cursor: pointer;
     font-size: 10px;
     font-weight: normal;
+}
+
+#language-button:hover {
+    cursor: pointer;
+    font-weight: bold;
 }
 
 #download-button {

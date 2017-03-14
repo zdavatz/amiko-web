@@ -79,6 +79,7 @@ $ ->
       replace: (url, query) ->
         return search_query + query
       filter: (list) ->
+        # Sets the number of results in search field (on the right)
         document.getElementById('num-results').textContent=list.length
         return list
   )

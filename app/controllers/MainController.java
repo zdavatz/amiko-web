@@ -279,6 +279,7 @@ public class MainController extends Controller {
                 else if (lang.equals("fr"))
                     content = "Votre mot clé de recherche n'a abouti à aucun résultat.";
             }
+
             // Text-based HTTP response, default encoding: utf-8
             if (content != null) {
                 return ok(index.render(content, titles_html, name, "'" + anchor + "'"));

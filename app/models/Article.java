@@ -63,7 +63,8 @@ public class Article {
     }
 
     public Article(String _title, String _titles) {
-        this._titles = _title;
+        // Private
+        this._title = _title;
         this._titles = _titles;
     }
 
@@ -150,20 +151,25 @@ public class Article {
     public String[] sectionTitles(String lang) {
         // Get section titles from chapters
         String[] section_titles = _titles.split(";");
+
         // Use abbreviations...
         String[] section_titles_abbr = lang.equals("de") ? models.Constants.SectionTitle_DE : Constants.SectionTitle_FR;
         for (int i = 0; i < section_titles.length; ++i) {
             for (String s_abbr : section_titles_abbr) {
                 String titleA = section_titles[i].replaceAll("\\s*/\\s*", "/").toLowerCase().trim();
-                String titleB = title.replaceAll(" ", "");
-                // Are we analysing the name of the article?
+                String titleB = _title.replaceAll("\\s*/\\s*", "/").toLowerCase().trim(); // _title.replaceAll(" ", ""); // Removes all spaces
+
                 if (titleA.contains(titleB.toLowerCase())) {
+                    // Are we analysing the name of the article?
                     if (section_titles[i].contains("®"))
                         section_titles[i] = section_titles[i].substring(0, section_titles[i].indexOf("®") + 1);
                     else
                         section_titles[i] = section_titles[i].split(" ")[0].replaceAll("/-", "");
+                    if (section_titles[i].length()>28)
+                        section_titles[i] = section_titles[i].substring(0, 28);
                     break;
                 } else if (titleA.contains(s_abbr.toLowerCase())) {
+                    // These are proper section titles
                     section_titles[i] = s_abbr;
                     break;
                 }

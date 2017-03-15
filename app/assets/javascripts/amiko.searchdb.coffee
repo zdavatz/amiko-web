@@ -1,5 +1,7 @@
 $ ->
-  # Enum-equivalent, singleton
+  #
+  # Enum-equivalents, singletons
+  #
   SearchState =
     Compendium: 1
     Interactions: 2
@@ -12,6 +14,9 @@ $ ->
     Therapie: 5
     FullText: 6
 
+  #
+  # Functions
+  #
   getSearchTypeStr = (type) ->
     if type == SearchType.Title
       return "title"
@@ -40,6 +45,21 @@ $ ->
     else if type == SearchType.FullText
       $('#fulltext-button').removeClass('active')
 
+  setSearchQuery = (lang, type) ->
+    if type == SearchType.Title
+      return '/name?lang=' + lang + '&name='
+    else if type == SearchType.Owner
+      return '/owner?lang=' + lang + '&owner='
+    else if type == SearchType.Atc
+      return '/atc?lang=' + lang + '&atc='
+    else if type == SearchType.Regnr
+      return '/regnr?lang=' + lang + '&regnr='
+    else if type == SearchType.Therapie
+      return '/therapy?lang=' + lang + '&therapy='
+    else if type == SearchType.FullText
+      return '/fulltext?lang=' + lang + '&key='
+    return '/name?lang=' + lang + '&name='
+
   getParams = ->
     # Usage: getSearchTypeInt getParams()['type']
     query = window.location.search.substring(1)
@@ -50,6 +70,9 @@ $ ->
       params[key] = decodeURIComponent(val)
     return params
 
+  #
+  # Local storage handlers
+  #
   # set language
   if localStorage.getItem 'language'
     language = (String) localStorage.getItem 'language'
@@ -89,23 +112,11 @@ $ ->
     interactions_basket = ''  # default interactions basket is empty!
     localStorage.setItem 'interactions-basket', interactions_basket
 
+  #
+  # Variables
+  #
+  # contains whatever we type into the search field
   typed_input = ''
-
-  setSearchQuery = (lang, type) ->
-    if type == SearchType.Title
-      return '/name?lang=' + lang + '&name='
-    else if type == SearchType.Owner
-      return '/owner?lang=' + lang + '&owner='
-    else if type == SearchType.Atc
-      return '/atc?lang=' + lang + '&atc='
-    else if type == SearchType.Regnr
-      return '/regnr?lang=' + lang + '&regnr='
-    else if type == SearchType.Therapie
-      return '/therapy?lang=' + lang + '&therapy='
-    else if type == SearchType.FullText
-      return '/fulltext?lang=' + lang + '&key='
-    return '/name?lang=' + lang + '&name='
-
   # default value
   search_query = setSearchQuery(language, search_type)
 

@@ -1,4 +1,4 @@
-@(main_content: String="")(titles: String="")(search_type: String="")(search_key: String="")(anchor: String="")
+@(main_content: String="")(titles: String="")(search_key: String="")(anchor: String="")
 
 @main("AmiKoWeb", anchor) {
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/typeahead.bundle.corejs.js")"></script>
@@ -182,10 +182,6 @@
         } else {
             $('#article-button').addClass('active');
             $('#search-field').attr('placeholder', '@Messages("search_title")');
-        }
-
-        if (localStorage.getItem('search-state')==2) {
-            $('#fulltext-button').disabled = 'disabled'
         }
     </script>
 

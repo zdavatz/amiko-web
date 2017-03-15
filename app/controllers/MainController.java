@@ -67,15 +67,26 @@ public class MainController extends Controller {
     private static final String FT_SEARCH_TABLE = String.format("%s,%s,%s,%s,%s,%s", KEY_ROWID, KEY_TITLE, KEY_AUTH,
             KEY_REGNRS, KEY_SECTION_IDS, KEY_SECTION_TITLES);
 
+    /**
+     * Inject all databases
+     */
     @Inject @NamedDatabase("german") Database german_db;
     @Inject @NamedDatabase("french") Database french_db;
     @Inject @NamedDatabase("frequency_de") Database frequency_de_db;
     @Inject @NamedDatabase("frequency_fr") Database frequency_fr_db;
 
+    /**
+     * Absolute minimal html-rendering
+     * @return
+     */
     public Result index() {
-        return ok(index.render("", "", "", "", ""));
+        return ok(index.render("", "", "", ""));
     }
 
+    /**
+     * These is the list of functions which are called from javascripts/coffeescripts
+     * @return
+     */
     public Result javascriptRoutes() {
         return ok(
                 play.routing.JavaScriptReverseRouter.create("jsRoutes",
@@ -88,6 +99,11 @@ public class MainController extends Controller {
                 .as("text/javascript");
     }
 
+    /**
+     * Set app language
+     * @param lang
+     * @return
+     */
     public Result setLang(String lang) {
         // response().discardCookie("PLAY_LANG");
         response().setHeader("Accept-Language", lang);
@@ -96,20 +112,53 @@ public class MainController extends Controller {
         return index();
     }
 
+    /**
+     * Given an id, retrieve the corresponding medication instance
+     * Corresponding route: /fi/id/:id
+     * @param lang
+     * @param id
+     * @return
+     */
     public Result fachinfoId(String lang, long id) {
         Medication m = getMedicationWithId(lang, id);
         return retrieveFachinfo(lang, m, "", "", "");
     }
 
+    /**
+     * Simple redirect to fachinfoId
+     * @param lang
+     * @param id
+     * @return
+     */
     public Result getFachinfo(String lang, long id) {
         return redirect(controllers.routes.MainController.fachinfoId(lang, id));
     }
 
+    /**
+     * Given an ean, retrieve corresponding medication instance
+     * Corresponding routes: /de/fi/gtin/:gtin && /fr/fi/gtin/:gtin
+     * Legacy function
+     * @param lang
+     * @param ean
+     * @return
+     */
     public Result fachinfoDirect(String lang, String ean) {
         Medication m = getMedicationWithEan(lang, ean);
         return retrieveFachinfo(lang, m, "", "", "");
     }
 
+    /**
+     * Given an ean and a bunch of other parameters, retrieve corresponding medication instance
+     * Corresponding routes: /de/fi && /fr/fi
+     * @param lang
+     * @param ean
+     * @param type
+     * @param key
+     * @param highlight
+     * @param anchor
+     * @param filter
+     * @return
+     */
     public Result fachinfoRequest(String lang, String ean, String type, String key, String highlight, String anchor, String filter) {
         Medication m = getMedicationWithEan(lang, ean);
         if (key.isEmpty())
@@ -122,9 +171,16 @@ public class MainController extends Controller {
         String interactions_html = "";
         String titles_html = "";
         String name = "";
-        return ok(index.render(interactions_html, titles_html, "", name, ""));
+        return ok(index.render(interactions_html, titles_html, name, ""));
     }
 
+    /**
+     * Renders the interaction basket given a string of comma separated eans or regnrs
+     * Corresponding route: /interactions/:basket
+     * @param lang
+     * @param basket
+     * @return
+     */
     public Result interactionsBasket(String lang, String basket) {
         String article_title = "";
 
@@ -160,22 +216,25 @@ public class MainController extends Controller {
         if (interactions_html == null)
             interactions_html = "";
 
-        return ok(index.render(interactions_html, titles_html, "", article_title, ""));
+        return ok(index.render(interactions_html, titles_html, article_title, ""));
     }
-
-    /**
-     * REFACTORING! Refactor the following code later on!
-     * Goes in a separate class
-     */
 
     static String ft_row_id = "";
     static String ft_filter = "";
     static String ft_titles = "";
     static String ft_content = "";
 
+    /**
+     * Given an id (hash value), retrieve entry in frequency database and display list of related articles
+     * Corresponding routes: /fulltext && /de/fulltext && /fr/fulltext
+     * @param lang
+     * @param id
+     * @param key
+     * @param filter
+     * @return
+     */
     public Result showFullTextSearchResult(String lang, String id, String key, String filter) {
         String row_id = id;
-        String search_type = "";
 
         if (!ft_row_id.equals(row_id) || !ft_filter.equals(filter)) {
             ft_filter = filter;
@@ -193,7 +252,7 @@ public class MainController extends Controller {
             ft_titles = fts.second;
         }
 
-        return ok(index.render(ft_content, ft_titles, search_type, key, ""));
+        return ok(index.render(ft_content, ft_titles, key, ""));
     }
 
     public Result getName(String lang, String name) {
@@ -256,11 +315,19 @@ public class MainController extends Controller {
         return list_of_articles;
     }
 
+    /**
+     * Main html-rendering function in Compendium mode
+     * @param lang
+     * @param m
+     * @param type
+     * @param key
+     * @param highlight
+     * @return
+     */
     private Result retrieveFachinfo(String lang, Medication m, String type, String key, String highlight) {
         if (m!=null) {
             String name = "";
             String titles_html = "";
-            String search_type = type;
             //
             String content = m.getContent();
             if (content!=null && !content.isEmpty()) {
@@ -291,9 +358,9 @@ public class MainController extends Controller {
             // Text-based HTTP response, default encoding: utf-8
             if (content != null) {
                 if (highlight.length() > 3) {
-                    return ok(index.render(content, titles_html, search_type, name, "'" + key + "'"));
+                    return ok(index.render(content, titles_html, name, "'" + key + "'"));
                 } else {
-                    return ok(index.render(content, titles_html, search_type, key, ""));
+                    return ok(index.render(content, titles_html, key, ""));
                 }
             }
         }
@@ -450,19 +517,19 @@ public class MainController extends Controller {
     }
 
     private Medication getMedicationWithId(String lang, long rowId) {
+        Medication m = null;
         try {
             Connection conn = lang.equals("de") ? german_db.getConnection() : french_db.getConnection();
             Statement stat = conn.createStatement();
             String query = "select * from " + DATABASE_TABLE + " where " + KEY_ROWID + "=" + rowId;
             ResultSet rs = stat.executeQuery(query);
-            Medication m = cursorToMedi(rs);
+            if (rs!=null)
+                m = cursorToMedi(rs);
             conn.close();
-            if (m!=null)
-                return m;
         } catch (SQLException e) {
             System.err.println(">> SqlDatabase: SQLException in getContentWithId!");
         }
-        return null;
+        return m;
     }
 
     private Medication getMedicationWithEan(String lang, String eancode) {

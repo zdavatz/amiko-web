@@ -73,7 +73,7 @@ public class MainController extends Controller {
     @Inject @NamedDatabase("frequency_fr") Database frequency_fr_db;
 
     public Result index() {
-        return ok(index.render("", "", "", ""));
+        return ok(index.render("", "", "", "", ""));
     }
 
     public Result javascriptRoutes() {
@@ -82,6 +82,7 @@ public class MainController extends Controller {
                         controllers.routes.javascript.MainController.setLang(),
                         controllers.routes.javascript.MainController.getFachinfo(),
                         controllers.routes.javascript.MainController.interactionsBasket(),
+                        controllers.routes.javascript.MainController.fachinfoRequest(),
                         controllers.routes.javascript.MainController.showFullTextSearchResult(),
                         controllers.routes.javascript.MainController.index()))
                 .as("text/javascript");
@@ -97,44 +98,49 @@ public class MainController extends Controller {
 
     public Result fachinfoId(String lang, long id) {
         Medication m = getMedicationWithId(lang, id);
-        return retrieveFachinfo(lang, m, "", "");
+        return retrieveFachinfo(lang, m, "", "", "");
     }
 
     public Result getFachinfo(String lang, long id) {
         return redirect(controllers.routes.MainController.fachinfoId(lang, id));
     }
 
-    public Result fachinfoEanWithHigh(String lang, String ean, String highlight, String anchor, String filter) {
+    public Result fachinfoDirect(String lang, String ean) {
         Medication m = getMedicationWithEan(lang, ean);
-        return retrieveFachinfo(lang, m, highlight, anchor);
+        return retrieveFachinfo(lang, m, "", "", "");
     }
 
-    public Result fachinfoEan(String lang, String ean) {
+    public Result fachinfoRequest(String lang, String ean, String type, String key, String highlight, String anchor, String filter) {
         Medication m = getMedicationWithEan(lang, ean);
-        return retrieveFachinfo(lang, m, "", "");
+        if (key.isEmpty())
+            return retrieveFachinfo(lang, m, type, anchor, highlight);
+        else
+            return retrieveFachinfo(lang, m, type, key, "");
     }
 
     public Result interactionsBasket() {
-        String name = "";
         String interactions_html = "";
         String titles_html = "";
-        return ok(index.render(interactions_html, titles_html, name, ""));
+        String name = "";
+        return ok(index.render(interactions_html, titles_html, "", name, ""));
     }
 
     public Result interactionsBasket(String lang, String basket) {
         String article_title = "";
 
         // Decompose string coming from client and fill up linkedhashmap
+        // @maxl 15.03.2017: Allow a max of 90 interactions
         Map<String, Medication> med_basket = new LinkedHashMap<>();
         if (!basket.isEmpty() && !basket.equals("null")) {
             // Decompose the basket string
             String[] eans = basket.split(",", -1);
-            for (String ean : eans) {
-                if (!ean.isEmpty()) {
-                    Medication m = getMedicationWithEan(lang, ean);
+            int N = eans.length > 90 ? 90 : eans.length;
+            for (int i=0; i<N; ++i) {
+                if (!eans[i].isEmpty()) {
+                    Medication m = getMedicationWithEan(lang, eans[i]);
                     if (m != null) {
                         article_title = m.getTitle();
-                        med_basket.put(ean, m);
+                        med_basket.put(eans[i], m);
                     }
                 }
             }
@@ -154,7 +160,7 @@ public class MainController extends Controller {
         if (interactions_html == null)
             interactions_html = "";
 
-        return ok(index.render(interactions_html, titles_html, article_title, ""));
+        return ok(index.render(interactions_html, titles_html, "", article_title, ""));
     }
 
     /**
@@ -169,6 +175,7 @@ public class MainController extends Controller {
 
     public Result showFullTextSearchResult(String lang, String id, String key, String filter) {
         String row_id = id;
+        String search_type = "";
 
         if (!ft_row_id.equals(row_id) || !ft_filter.equals(filter)) {
             ft_filter = filter;
@@ -186,7 +193,7 @@ public class MainController extends Controller {
             ft_titles = fts.second;
         }
 
-        return ok(index.render(ft_content, ft_titles, key, ""));
+        return ok(index.render(ft_content, ft_titles, search_type, key, ""));
     }
 
     public Result getName(String lang, String name) {
@@ -249,10 +256,11 @@ public class MainController extends Controller {
         return list_of_articles;
     }
 
-    private Result retrieveFachinfo(String lang, Medication m, String highlight, String anchor) {
+    private Result retrieveFachinfo(String lang, Medication m, String type, String key, String highlight) {
         if (m!=null) {
             String name = "";
             String titles_html = "";
+            String search_type = type;
             //
             String content = m.getContent();
             if (content!=null && !content.isEmpty()) {
@@ -282,7 +290,11 @@ public class MainController extends Controller {
 
             // Text-based HTTP response, default encoding: utf-8
             if (content != null) {
-                return ok(index.render(content, titles_html, name, "'" + anchor + "'"));
+                if (highlight.length() > 3) {
+                    return ok(index.render(content, titles_html, search_type, name, "'" + key + "'"));
+                } else {
+                    return ok(index.render(content, titles_html, search_type, key, ""));
+                }
             }
         }
         return ok("Hasta la vista, baby! You just terminated me.");

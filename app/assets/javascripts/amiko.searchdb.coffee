@@ -12,6 +12,44 @@ $ ->
     Therapie: 5
     FullText: 6
 
+  getSearchTypeStr = (type) ->
+    if type == SearchType.Title
+      return "title"
+    else if type == SearchType.Owner
+      return "author"
+    else if type == SearchType.Atc
+      return "atc"
+    else if type == SearchType.Regnr
+      return "regnr"
+    else if type == SearchType.Therapie
+      return "therapy"
+    else if type == SearchType.FullText
+      return "fulltext"
+
+  disableButton = (type) ->
+    if type == SearchType.Title
+      $('#article-button').removeClass('active')
+    else if type == SearchType.Owner
+      $('#owner-button').removeClass('active')
+    else if type == SearchType.Atc
+      $('#substance-button').removeClass('active')
+    else if type == SearchType.Regnr
+      $('#regnr-button').removeClass('active')
+    else if type == SearchType.Therapie
+      $('#therapy-button').removeClass('active')
+    else if type == SearchType.FullText
+      $('#fulltext-button').removeClass('active')
+
+  getParams = ->
+    # Usage: getSearchTypeInt getParams()['type']
+    query = window.location.search.substring(1)
+    raw_vars = query.split("&")
+    params = {}
+    for v in raw_vars
+      [key, val] = v.split("=")
+      params[key] = decodeURIComponent(val)
+    return params
+
   # set language
   if localStorage.getItem 'language'
     language = (String) localStorage.getItem 'language'
@@ -27,6 +65,7 @@ $ ->
       $('#compendium-button').toggleClass 'nav-button-active'
     else if search_state == SearchState.Interactions
       $('#interactions-button').toggleClass 'nav-button-active'
+      $('#fulltext-button').disabled = 'disabled'
   else
     search_state = 1  # default search state is 'compendium'
     $('#compendium-button').toggleClass 'nav-button-active'
@@ -43,6 +82,10 @@ $ ->
   if localStorage.getItem 'interactions-basket'
     interactions_basket = (String) localStorage.getItem 'interactions-basket'
   else
+    interactions_basket = ''  # default interactions basket is empty!
+    localStorage.setItem 'interactions-basket', interactions_basket
+  # max URI length is 2083, we limit at 90 x (13+1) = 1260
+  if interactions_basket.length > 1260
     interactions_basket = ''  # default interactions basket is empty!
     localStorage.setItem 'interactions-basket', interactions_basket
 
@@ -137,7 +180,7 @@ $ ->
   typeaheadCtrl.on 'typeahead:change', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')
 
-  # Do something when ENTER key is pressed
+  # Capture ENTER key press
   typeaheadCtrl.on 'keypress', (event, selection) ->
     if event.keyCode == 13
       event.preventDefault()
@@ -146,27 +189,30 @@ $ ->
   typeaheadCtrl.on 'typeahead:selected', (event, selection) ->
     if search_state == SearchState.Compendium
       if search_type == SearchType.FullText
+        # FULL TEXT search
         fulltext_key = selection.title.substring(0, selection.title.indexOf('(')).trim();
         localStorage.setItem 'fulltext-search-id', selection.hash
         localStorage.setItem 'fulltext-search-key', fulltext_key
         $.ajax(jsRoutes.controllers.MainController.showFullTextSearchResult(language, selection.hash, fulltext_key))
         .done (response) ->
-          localStorage.setItem 'search-type', SearchType.FullText
           # window.location.assign '/showfulltext?id=' + selection.hash + "&key=" + fulltext_key #typed_input
-          window.location.assign '/' + language + '/showfulltext?id=' + selection.hash + "&key=" + fulltext_key #typed_input
+          window.location.assign '/' + language + '/fulltext?id=' + selection.hash + '&key=' + fulltext_key #typed_input
           console.log selection.hash + ' -> ' + fulltext_key + ' with language = ' + language
         .fail (jqHXR, textStatus) ->
           alert('ajax error')
-      else 
+      else
+        # COMPENDIUM search
         localStorage.setItem 'compendium-selection-id', selection.id
         localStorage.setItem 'compendium-selection-ean', selection.eancode
-        $.ajax(jsRoutes.controllers.MainController.getFachinfo(language, selection.id))
+        _search_type = getSearchTypeStr(search_type)
+        $.ajax(jsRoutes.controllers.MainController.fachinfoRequest(language, selection.id, _search_type, typed_input))
         .done (response) ->
-          window.location.assign '/' + language + '/fi/gtin/' + selection.eancode
-          console.log selection.id + ' -> ' + selection.title + ' with language = ' + language
+          window.location.assign '/' + language + '/fi?gtin=' + selection.eancode + '&type=' + _search_type + '&key=' + typed_input
+          console.log selection.id + ' -> ' + selection.eancode + ' / search_type = ' + _search_type + '/ search_key = ' + typed_input
         .fail (jqHXR, textStatus) ->
           alert('ajax error')
     else if search_state == SearchState.Interactions
+      # INTERACTIONS
       eancode = selection.eancode
       # add selection to basket
       if interactions_basket.length == 0
@@ -174,8 +220,12 @@ $ ->
       else
         # add only if not already part of the list
         found = interactions_basket.search eancode
+        # limit size of search result
+        if eancode.length > 1260
+          eancode = eancode.substring(0, 1260)
         if found < 0
           interactions_basket += ',' + eancode
+
       localStorage.setItem 'interactions-basket', interactions_basket
       # make ajax request to server -> basket
       $.ajax(jsRoutes.controllers.MainController.interactionsBasket(language, interactions_basket))
@@ -229,6 +279,8 @@ $ ->
   # Switch to "interactions" mode
   $('#interactions-button').on 'click', ->
     $(this).toggleClass 'nav-button-active'
+    # disable full text search button
+    disableButton SearchType.FullText
     # set search state
     setSearchUIState(SearchState.Interactions)
     # retrieve basket
@@ -245,9 +297,10 @@ $ ->
 
   # Detect click on search buttons
   setSearchType = (type) ->
+    disableButton(search_type)
     search_type = type
     localStorage.setItem 'search-type', type
-    console.log "search type = " + type + " for " + typed_input
+    console.log "search type = " + getSearchTypeStr(type) + " for " + typed_input
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
 
   $('#article-button').on 'click', ->

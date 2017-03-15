@@ -321,6 +321,18 @@ aside {
     font-weight: bold;
 }
 
+#sponsor-button {
+    float: right;
+    margin-right: 0px;
+    outline: none;
+    border: none;
+    background: transparent;
+}
+
+#sponsor-button:hover {
+    cursor: pointer;
+}
+
 #download-button {
     float: right;
     margin-right: 8px;

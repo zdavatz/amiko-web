@@ -76,9 +76,9 @@ function show_full_text(id, key, filter) {
     if (filter=='undefined')
         filter = "0";
     if (lang=="de")
-        window.location.assign('/de/showfulltext?id=' + id + "&key=" + key + "&filter=" + filter);
+        window.location.assign('/de/fulltext?id=' + id + "&key=" + key + "&filter=" + filter);
     else if (lang=="fr")
-        window.location.assign('/fr/showfulltext?id=' + id + "&key=" + key + "&filter=" + filter);
+        window.location.assign('/fr/fulltext?id=' + id + "&key=" + key + "&filter=" + filter);
 }
 
 /**

@@ -3,6 +3,7 @@ AmiKo auf dem Web mit Play 2.5.2
 ## Install Activator
 ```
 https://www.lightbend.com/activator/download
+wget downloads.typesafe.com/typesafe-activator/1.3.10/typesafe-activator-1.3.10.zip
 Add it to your Path in .bashrc
 export PATH=/usr/local/src/activator-dist-1.3.10/bin:$PATH
 ```

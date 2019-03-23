@@ -77,13 +77,15 @@ cd /usr/local/src
 https://github.com/certbot/certbot.git
 https://github.com/certbot/certbot/blob/master/README.rst
 ```
-## Install Nodejs from source
+## Install Nodejs with [nvm](https://github.com/creationix/nvm)
+see instructions by [creationix](https://github.com/creationix/nvm#install--update-script)
 ```
-cd /usr/local/src
-git clone https://github.com/nodejs/node.git
-cd /usr/local/src/node
-./configure --with-intl=full-icu --download=all --prefix=/usr/local
-make -j17
-sudo make install
+curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.34.0/install.sh | bash
+nvm install 6.9.5
 ```
-make sure you got gcc-4.9.3, mpfr-3.1.4
+this will install 
+* node v6.9.5
+* npm v3.10.10
+
+## Generating amikoweb-1.0-SNAPSHOT.zip
+In the _$SRC_ Dir type `activator`. This will build `amikoweb-1.0-SNAPSHOT.zip`

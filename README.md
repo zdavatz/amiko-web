@@ -34,6 +34,12 @@ unzip amiko_db_full_idx_de.zip
 rm amiko_db_full_idx_de.zip
 svc -h /service/amiko.oddb.org
 ```
+## Update Full-Text-Search
+```
+wget http://pillbox.oddb.org/amiko_frequency_de.db.zip
+unzip amiko_frequency_de.db.zip
+mv amiko_frequency_de.db /var/www/amiko.oddb.org/sqlite
+```
 ## Setup Daemontools in /service/amiko.oddb.org
 ```
 mkdir /var/www/amiko.oddb.org/svc/run

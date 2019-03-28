@@ -186,6 +186,14 @@ public class InteractionsData {
                                     // Get ATC code of second drug
                                     atc_code2 = m_code2[0];
                                     if (atc_code1 != null && atc_code2 != null && !atc_code1.equals(atc_code2)) {
+
+                                        if(lang.equals("fr")){
+                                                m_interactions_map=m_interactions_fr_map;
+                                            }
+                                        else if(lang.equals("de")){
+                                                m_interactions_map=m_interactions_de_map;
+                                        }
+
                                         // Get html interaction content from drug interactions map
                                         // Anchors: use titles and not eancodes
                                         String inter = m_interactions_map.get(atc_code1 + "-" + atc_code2);

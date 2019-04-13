@@ -56,8 +56,6 @@ public class MainController extends Controller {
     private static final String DATABASE_TABLE = "amikodb";
     private static final String FREQUENCY_TABLE = "frequency";
 
-    private String current_lang = "";
-
     /**
      * Table columns used for fast queries
      */
@@ -107,11 +105,8 @@ public class MainController extends Controller {
      * @return
      */
     public Result setLang(String lang) {
-        current_lang = lang;
         // response().discardCookie("PLAY_LANG");
-        response().setHeader("Accept-Language", lang);
         ctx().changeLang(lang);
-        // ctx().setTransientLang(lang);
         return index();
     }
 
@@ -187,7 +182,6 @@ public class MainController extends Controller {
     public Result interactionsBasket(String lang, String basket) {
         String article_title = "";
 
-        lang = current_lang;
 
         // Decompose string coming from client and fill up linkedhashmap
         // @maxl 15.03.2017: Allow a max of 90 interactions

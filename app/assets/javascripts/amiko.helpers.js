@@ -151,8 +151,6 @@ function setLanguage() {
             lang = 'fr';
         else if (lang=='fr')
             lang = 'de';
-        // Set local storage and cookie
-        localStorage.setItem('language', lang);
         if (lang=='de') {
             /*
             deleteCookie('PLAY_LANG');

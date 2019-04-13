@@ -23,6 +23,7 @@ import models.*;
 import play.db.NamedDatabase;
 import play.db.Database;
 import play.mvc.*;
+import play.i18n.Messages;
 import views.html.*;
 
 import java.sql.*;
@@ -55,8 +56,6 @@ public class MainController extends Controller {
 
     private static final String DATABASE_TABLE = "amikodb";
     private static final String FREQUENCY_TABLE = "frequency";
-
-    private String current_lang = "";
 
     /**
      * Table columns used for fast queries
@@ -107,11 +106,8 @@ public class MainController extends Controller {
      * @return
      */
     public Result setLang(String lang) {
-        current_lang = lang;
         // response().discardCookie("PLAY_LANG");
-        response().setHeader("Accept-Language", lang);
         ctx().changeLang(lang);
-        // ctx().setTransientLang(lang);
         return index();
     }
 
@@ -186,8 +182,14 @@ public class MainController extends Controller {
      */
     public Result interactionsBasket(String lang, String basket) {
         String article_title = "";
+        String subdomainLang = ctx().lang().language();
 
-        lang = current_lang;
+        if (!subdomainLang.equals(lang)) {
+            ctx().setTransientLang(lang);
+            Messages mes = ctx().messages();
+            String newUrl = mes.at("web_url") + controllers.routes.MainController.interactionsBasket(lang, basket).path();
+            return redirect(newUrl);
+        }
 
         // Decompose string coming from client and fill up linkedhashmap
         // @maxl 15.03.2017: Allow a max of 90 interactions
@@ -222,6 +224,11 @@ public class MainController extends Controller {
             interactions_html = "";
 
         return ok(index.render(interactions_html, titles_html, article_title, ""));
+    }
+
+    public Result interactionsBasketWithoutLang(String basket) {
+        String lang = ctx().lang().language();
+        return redirect(controllers.routes.MainController.interactionsBasket(lang, basket));
     }
 
     static String ft_row_id = "";

@@ -12,7 +12,9 @@ GET     /therapy                    controllers.MainController.getTherapy(lang: 
 GET     /fulltext                   controllers.MainController.getFullText(lang: String?="de", key: String)
 
 # 2. parameter will appear in URI
-GET     /interactions/:basket       controllers.MainController.interactionsBasket(lang: String?="de", basket: String)
+GET     /interactions/:basket          controllers.MainController.interactionsBasketWithoutLang(basket: String)
+GET     /de/interactions/:basket       controllers.MainController.interactionsBasket(lang: String="de", basket: String)
+GET     /fr/interactions/:basket       controllers.MainController.interactionsBasket(lang: String="fr", basket: String)
 
 GET     /fi/id/:id                  controllers.MainController.fachinfoId(lang: String?="de", id: Long)
 GET     /fii                        controllers.MainController.getFachinfo(lang: String?="de", id: Long)

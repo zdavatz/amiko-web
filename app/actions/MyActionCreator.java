@@ -7,6 +7,7 @@ import play.mvc.Result;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletionStage;
+import play.i18n.Lang;
 
 import java.lang.reflect.Method;
 
@@ -16,11 +17,12 @@ public class MyActionCreator implements play.http.ActionCreator {
         return new Action.Simple() {
             @Override
             public CompletionStage<Result> call(Http.Context ctx) {
-                Path path = Paths.get(ctx.request().path());
-                if (path.toString().contains("lang")) {
-                    String lang = path.getName(1).toString();
-                    // we detect language only by URL path, cookies are not used
-                    ctx.setTransientLang(lang);
+                Http.Request request = ctx.request();
+                String host = request.host();
+                if (host.startsWith("amiko")) {
+                    ctx.changeLang("de");
+                } else if (host.startsWith("comed")) {
+                    ctx.changeLang("fr");
                 }
                 return delegate.call(ctx);
             }

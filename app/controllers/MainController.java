@@ -185,9 +185,13 @@ public class MainController extends Controller {
         String subdomainLang = ctx().lang().language();
 
         if (!subdomainLang.equals(lang)) {
+            // Change lang so message it is another lang
             ctx().setTransientLang(lang);
             Messages mes = ctx().messages();
-            String newUrl = mes.at("web_url") + controllers.routes.MainController.interactionsBasket(lang, basket).path();
+            String baseUrl = mes.at("web_url");
+            String sslUrl = baseUrl.replace("http://", "https://");
+            String path = controllers.routes.MainController.interactionsBasket(lang, basket).path();
+            String newUrl = sslUrl + path;
             return redirect(newUrl);
         }
 

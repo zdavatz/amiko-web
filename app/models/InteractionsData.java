@@ -40,7 +40,7 @@ public class InteractionsData {
 
     private static String[] m_section_titles = null;
     private static String[] m_section_anchors = null;
-    private static String m_images_dir = "../assets/images/";
+    private static String m_images_dir = "../../assets/images/";
 
     private InteractionsData() {}
 

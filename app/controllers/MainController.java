@@ -350,9 +350,9 @@ public class MainController extends Controller {
                 content = content.replaceAll("<html>|</html>|<body>|</body>|<head>|</head>", "");
                 if (highlight.length()>3) {
                     // Marks the keyword in the html
-                    content = content.replaceAll(highlight, "<mark>" + highlight + "</mark>");
                     String first_upper = highlight.substring(0,1).toUpperCase() + highlight.substring(1, highlight.length());
-                    content = content.replaceAll(first_upper, "<mark>" + first_upper + "</mark>");
+                    content += "<script>highlightText(document.body, '" + highlight + "')</script>";
+                    content += "<script>highlightText(document.body, '" + first_upper + "')</script>";
                 }
                 Article article = new Article(m.getTitle(), m.getSectionTitles());
                 String[] titles = article.sectionTitles(lang);

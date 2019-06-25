@@ -33,6 +33,42 @@ function move_to_highlight(anchor) {
     }
 }
 
+function highlightText(node, text) {
+    var i;
+    if (node instanceof Text) {
+        var splitted = node.data.split(text);
+        if (splitted.length === 1) {
+            // Not found, no replace
+            return null;
+        }
+        // Create a new element with text highlighted
+        var wrapper = document.createElement('span');
+        for (i = 0; i < splitted.length; i++) {
+            var thisText = document.createTextNode(splitted[i]);
+            wrapper.appendChild(thisText);
+            if (i !== splitted.length - 1) {
+                var thisElement = document.createElement('mark');
+                thisElement.innerText = text;
+                wrapper.appendChild(thisElement);
+            }
+        }
+        return wrapper;
+    }
+    var nodeName = node.nodeName.toLowerCase();
+    if (nodeName === 'script' || nodeName === 'style') {
+        return null;
+    }
+    var nodes = node.childNodes;
+    for (i = 0; i < nodes.length; i++) {
+        var thisNode = nodes[i];
+        var newNode = highlightText(thisNode, text);
+        if (newNode !== null) {
+            node.replaceChild(newNode, thisNode);
+        }
+    }
+    return null;
+}
+
 function on_load() {
 }
 

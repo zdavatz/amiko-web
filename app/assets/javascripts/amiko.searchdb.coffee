@@ -158,27 +158,27 @@ $ ->
       suggestion: (data) ->
         if search_type == SearchType.Title
           "<div style='display:table;vertical-align:middle;'>\
-          <p style='color:#444444;font-size:1.0em;'><b>#{data.title}</b></p>\
+          <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='font-size:0.85em;'>#{data.packinfo}</span></div>"
         else if search_type == SearchType.Owner
           "<div style='display:table;vertical-align:middle;'>\
-          <p style='color:#444444;font-size:1.0em;'><b>#{data.title}</b></p>\
+          <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:#8888cc;font-size:1.0em;'><p>#{data.author}</p></span></div>"
         else if search_type == SearchType.Atc
           "<div style='display:table;vertical-align:middle;'>\
-          <p style='color:#444444;font-size:1.0em;'><b>#{data.title}</b></p>\
+          <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:gray;font-size:0.85em;'>#{data.atccode}</span></div>"
         else if search_type == SearchType.Regnr
           "<div style='display:table;vertical-align:middle;'>\
-          <p style='color:#444444;font-size:1.0em;'><b>#{data.title}</b></p>\
+          <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:#8888cc;font-size:1.0em;'><p>#{data.regnrs}</p></span></div>"
         else if search_type == SearchType.Therapie
           "<div style='display:table;vertical-align:middle;'>\
-          <p style='color:#444444;font-size:1.0em;'><b>#{data.title}</b></p>\
+          <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:gray;font-size:0.85em;'>#{data.therapy}</span></div>"
         else if search_type == SearchType.FullText
           "<div style='display:table;vertical-align:middle;'>\
-          <p style='color:#444444;font-size:1.0em;'><b>#{data.title}</b></p>"
+          <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>"
 
   typeaheadCtrl.on 'typeahead:asyncrequest', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')

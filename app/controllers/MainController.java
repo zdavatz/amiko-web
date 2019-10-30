@@ -354,6 +354,8 @@ public class MainController extends Controller {
                     content += "<script>highlightText(document.body, '" + highlight + "')</script>";
                     content += "<script>highlightText(document.body, '" + first_upper + "')</script>";
                 }
+                content = content.replaceAll("#EEEEEE", "var(--background-color-gray)");
+                content = content.replaceAll("#eeeeee", "var(--background-color-gray)");
                 Article article = new Article(m.getTitle(), m.getSectionTitles());
                 String[] titles = article.sectionTitles(lang);
                 String[] section_ids = m.getSectionIds().split(",");

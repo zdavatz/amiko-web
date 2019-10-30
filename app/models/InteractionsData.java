@@ -127,15 +127,15 @@ public class InteractionsData {
                     }
                     basket_html_str += "<tr>";
                     if (med_counter % 2 == 0)
-                        basket_html_str += "<tr style=\"background-color:lavender;\">";
+                        basket_html_str += "<tr style=\"background-color:var(--background-color-gray);\">";
                     else
-                        basket_html_str += "<tr style=\"background-color:white;\">";
+                        basket_html_str += "<tr style=\"background-color:var(--background-color-normal);\">";
                     basket_html_str += "<td>" + med_counter + "</td>"
                             + "<td>" + entry1.getKey() + "</td>"
                             + "<td>" + entry1.getValue().getTitle() + "</td>"
                             + "<td>" + atc_code1 + "</td>"
                             + "<td>" + name1 + "</td>"
-                            + "<td style=\"text-align:center;\">" + "<button type=\"button\" style=\"background-color:transparent; border:none; cursor: pointer;\""
+                            + "<td style=\"text-align:center;\">" + "<button type=\"button\" class=\"interaction-delete-button\" style=\"background-color:transparent; border:none; cursor: pointer;\""
                             + " onclick=\"deleteRow('Interaktionen',this)\">"
                             + "<img height=20 src=\"" + m_images_dir + "rubbish-bin.png\" /></button>" + "</td>";
 

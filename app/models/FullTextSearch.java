@@ -134,14 +134,14 @@ public class FullTextSearch {
                 if (!list_of_titles.contains(first_letter)) {
                     list_of_titles.add(first_letter);
                     if (counter % 2 == 0)
-                        content_style = "<li style=\"background-color:whitesmoke;\" id=\"" + first_letter + "\">";
+                        content_style = "<li style=\"background-color:var(--background-color-gray);\" id=\"" + first_letter + "\">";
                     else
-                        content_style = "<li style=\"background-color:white;\" id=\"" + first_letter + "\">";
+                        content_style = "<li style=\"background-color:var(--background-color-normal);\" id=\"" + first_letter + "\">";
                 } else {
                     if (counter % 2 == 0)
-                        content_style = "<li style=\"background-color:whitesmoke;\">";
+                        content_style = "<li style=\"background-color:var(--background-color-gray);\">";
                     else
-                        content_style = "<li style=\"background-color:white;\">";
+                        content_style = "<li style=\"background-color:var(--background-color-normal);\">";
                 }
 
                 content += content_style + content_title + content_chapters + "</li>";

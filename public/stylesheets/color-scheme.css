@@ -1,0 +1,42 @@
+:root {
+    --background-color-normal: white;
+    --background-color-gray: whitesmoke; /* for tables */
+    --background-color-dark-gray: #cccccc;
+    --background-color-highlight: #FDE95E;
+    --text-color-normal: black;
+    --text-color-highlight: yellow;
+    --text-color-light: #555555;
+    --text-color-link: green;
+    --text-color-link-visited: purple;
+    --lines-color: #E5E7E8;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background-color-normal: #111111;
+        --background-color-gray: #444444;
+        --background-color-dark-gray: #333333;
+        --background-color-highlight: #72692F;
+        --text-color-normal: white;
+        --text-color-highlight: blue;
+        --text-color-light: #cccccc;
+        --text-color-link: #008CF7;
+        --text-color-link-visited: #E500FF;
+        --lines-color: orange;
+    }
+}
+
+body {
+    color: var(--text-color-normal);
+    background-color: var(--background-color-normal);
+}
+a {
+    color: var(--text-color-link);
+}
+a:visited {
+    color: var(--text-color-link-visited);
+}
+input[type="button"] {
+    color: var(--text-color-normal);
+    background-color: var(--background-color-normal);
+}

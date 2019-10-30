@@ -16,7 +16,7 @@
 }
 
 .twitter-typeahead .tt-input[disabled] {
-    background-color : #eeeeee
+    background-color : var(--background-color-gray);
 }
 
 /*Added to input that's initialized into a typeahead*/
@@ -26,7 +26,7 @@
     text-align: left;
     padding: 0.0em 1.0em 0.0em 2.1em;
     font-size: 18px;
-    color: #aaaaaa;
+    color: var(--text-color-light);
     line-height: 24px;
     border: 2px solid #dddddd;
     border-radius: 6px;
@@ -45,7 +45,7 @@
 .twitter-typeahead .hint {
     margin-bottom: 0;
     background-color: #337733;
-    color: #FDE95E;
+    color: var(--background-color-highlight);
 }
 
 /*Added to menu element*/
@@ -54,7 +54,7 @@
 
 /*Added to menu element when it contains no content*/
 .twitter-typeahead .tt-empty {
-    background-color: white;
+    background-color: var(--background-color-normal);
 }
 
 /*Added to menu element when it is opened*/
@@ -85,8 +85,8 @@
 .twitter-typeahead .tt-suggestion:focus,
 .twitter-typeahead .tt-cursor {
     cursor: pointer;
-    background-color: #eeeeee;
-    color: white;
+    background-color: var(--background-color-gray);
+    color: var(--text-color);
     width: 100%;
 }
 

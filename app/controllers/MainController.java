@@ -258,6 +258,10 @@ public class MainController extends Controller {
 
             FullTextEntry entry = getFullTextEntryWithId(lang, row_id);
 
+            if (entry == null) {
+                return notFound("Result with this id is not found");
+            }
+
             // This operation takes time...
             List<Article> list_of_articles = getArticlesFromRegnrs(lang, entry.getRegnrs()).join();
 
@@ -705,16 +709,20 @@ public class MainController extends Controller {
     public FullTextEntry getFullTextEntryWithId(String lang, String rowId) {
         try {
             Connection conn = lang.equals("de") ? frequency_de_db.getConnection() : frequency_fr_db.getConnection();
-            Statement stat = conn.createStatement();
-            String query = "select * from " + FREQUENCY_TABLE + " where id='" + rowId + "'";
+            String query = "select * from " + FREQUENCY_TABLE + " where id = ?";
+            PreparedStatement stat = conn.prepareStatement(query);
+            stat.setString(1, rowId);
 
-            ResultSet rs = stat.executeQuery(query);
+            ResultSet rs = stat.executeQuery();
+            if (!rs.next()) {
+                return null;
+            }
             FullTextEntry full_text_entry = cursorToFullTextEntry(rs);
             conn.close();
             if (full_text_entry!=null)
                 return full_text_entry;
         } catch (SQLException e) {
-            System.err.println(">> Frequency DB: SQLException in getFullTextEntryWithId");
+            System.err.println(">> Frequency DB: SQLException in getFullTextEntryWithId: " + e.getMessage());
         }
         return null;
     }

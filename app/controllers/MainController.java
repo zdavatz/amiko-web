@@ -412,14 +412,22 @@ public class MainController extends Controller {
             Statement stat = conn.createStatement();
             ResultSet rs;
             // Allow for search to start inside a word...
+            String replaced = name.toLowerCase()
+                .replaceAll("[aáàäâã]", "\\[aáàäâã\\]")
+                .replaceAll("[eéèëê]", "\\[eéèëê\\]")
+                .replaceAll("[iíìî]", "\\[iíìî\\]")
+                .replaceAll("[oóòöôõ]", "\\[oóòöôõ\\]")
+                .replaceAll("[uúùüû]", "\\[uúùüû\\]")
+                .replace("*", "[*]")
+                .replace("?", "[?]");
+
             if (name.length()>2) {
                 String query = "select " + SHORT_TABLE + " from " + DATABASE_TABLE + " where "
-                        + KEY_TITLE + " like " + "'" + name + "%' or "
-                        + KEY_TITLE + " like " + "'%" + name + "%'";
+                        + "lower(" + KEY_TITLE + ") GLOB " + "'*" + replaced + "*'";
                 rs = stat.executeQuery(query);
             } else {
                 String query = "select " + SHORT_TABLE + " from " + DATABASE_TABLE + " where "
-                        + KEY_TITLE + " like " + "'" + name + "%'";
+                        + "lower(" + KEY_TITLE + ") GLOB " + "'" + replaced + "*'";
                 rs = stat.executeQuery(query);
             }
             if (rs!=null) {

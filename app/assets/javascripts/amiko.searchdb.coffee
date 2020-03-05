@@ -188,6 +188,11 @@ $ ->
     typed_input = $('.twitter-typeahead').typeahead('val')
     request_time = new Date().getTime() - start_time  # request time in [ms]
 
+    $('.atc-code').on 'click', (e)->
+      atcCode = e.currentTarget.innerText
+      setSearchType(SearchType.Atc)
+      typeaheadCtrl.typeahead('val', atcCode)
+
   typeaheadCtrl.on 'typeahead:change', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')
 

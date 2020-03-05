@@ -188,6 +188,10 @@ aside {
     color: var(--text-color-light);
 }
 
+.atc-code:hover {
+    color: var(--text-color-link);
+}
+
 .badge {
     display: table-cell;
     border-left: 1px solid var(--text-color-light);

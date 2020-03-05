@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by maxl on 10.03.2017.
@@ -98,6 +100,10 @@ public class Article {
                 atc_code_str = m_code[0];
                 atc_title_str = m_code[1];
             }
+            atc_code_str = String.join(",",
+                Stream.of(atc_code_str.split(","))
+                    .map(code -> "<span class='atc-code'>" + code + "</span>")
+                    .collect(Collectors.toList()));
             if (_atcclass != null) {
                 String[] m_class = _atcclass.split(";");
                 String atc_class_str;

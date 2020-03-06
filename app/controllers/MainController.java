@@ -80,8 +80,11 @@ public class MainController extends Controller {
      * Absolute minimal html-rendering
      * @return
      */
-    public Result index() {
-        return ok(index.render("", "", "", ""));
+    public Result index(String atc_query) {
+        if (!atc_query.equals("")) {
+            return ok(index.render("", "", atc_query, "atc", ""));
+        }
+        return ok(index.render("", "", "", "", ""));
     }
 
     /**
@@ -108,7 +111,7 @@ public class MainController extends Controller {
     public Result setLang(String lang) {
         // response().discardCookie("PLAY_LANG");
         ctx().changeLang(lang);
-        return index();
+        return index("");
     }
 
     /**
@@ -170,7 +173,7 @@ public class MainController extends Controller {
         String interactions_html = "";
         String titles_html = "";
         String name = "";
-        return ok(index.render(interactions_html, titles_html, name, ""));
+        return ok(index.render(interactions_html, titles_html, name, "", ""));
     }
 
     /**
@@ -227,7 +230,7 @@ public class MainController extends Controller {
         if (interactions_html == null)
             interactions_html = "";
 
-        return ok(index.render(interactions_html, titles_html, article_title, ""));
+        return ok(index.render(interactions_html, titles_html, article_title, "", ""));
     }
 
     public Result interactionsBasketWithoutLang(String basket) {
@@ -272,7 +275,7 @@ public class MainController extends Controller {
             ft_titles = fts.second;
         }
 
-        return ok(index.render(ft_content, ft_titles, key, ""));
+        return ok(index.render(ft_content, ft_titles, key, "", ""));
     }
 
     public Result getName(String lang, String name) {
@@ -380,9 +383,9 @@ public class MainController extends Controller {
             // Text-based HTTP response, default encoding: utf-8
             if (content != null) {
                 if (highlight.length() > 3) {
-                    return ok(index.render(content, titles_html, name, "'" + key + "'"));
+                    return ok(index.render(content, titles_html, name, "", "'" + key + "'"));
                 } else {
-                    return ok(index.render(content, titles_html, key, ""));
+                    return ok(index.render(content, titles_html, key, "", ""));
                 }
             }
         }

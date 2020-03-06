@@ -102,7 +102,7 @@ public class Article {
             }
             atc_code_str = String.join(",",
                 Stream.of(atc_code_str.split(","))
-                    .map(code -> "<span class='atc-code'>" + code + "</span>")
+                    .map(code -> "<a class='atc-code' href='/?atc_query=" + code + "'>" + code + "</a>")
                     .collect(Collectors.toList()));
             if (_atcclass != null) {
                 String[] m_class = _atcclass.split(";");

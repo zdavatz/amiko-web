@@ -189,9 +189,7 @@ $ ->
     request_time = new Date().getTime() - start_time  # request time in [ms]
 
     $('.atc-code').on 'click', (e)->
-      atcCode = e.currentTarget.innerText
-      setSearchType(SearchType.Atc)
-      typeaheadCtrl.typeahead('val', atcCode)
+      e.stopPropagation()
 
   typeaheadCtrl.on 'typeahead:change', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')
@@ -336,3 +334,8 @@ $ ->
 
   $('#fulltext-button').on 'click', ->
     setSearchType(SearchType.FullText)
+
+  window.triggerSearchATC = (atcCode)->
+    setSearchType(SearchType.Atc)
+    typeaheadCtrl.typeahead('val', atcCode)
+    typeaheadCtrl.typeahead('open')

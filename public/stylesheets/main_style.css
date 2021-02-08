@@ -376,7 +376,7 @@ a.atc-code:hover {
 }
 
 #download-links a {
-    color: var(--background-color-normal);
+    color: var(--background-color-green);
 }
 
 /* Removes annoying 'x' from IE, Edge and Chrome */

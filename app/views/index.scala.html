@@ -1,4 +1,4 @@
-@(main_content: String="")(titles: String="")(search_key: String="")(search_mode: String="")(anchor: String="")
+@(main_content: String="")(titles: String="")(search_key: String="")(search_mode: String="")(anchor: String="")(logo: String="DESITIN")
 
 @main("AmiKoWeb", anchor) {
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/typeahead.bundle.corejs.js")"></script>
@@ -37,9 +37,15 @@
         <!-- SPONSORS BUTTONS -->
         <div class="nav-button" id="sponsor-button">
             <div class="center-image">
-                <button id="sponsor-button" onclick="window.open('https://www.zurrose.ch');">
-                    <img border="0" alt="Desitin" src="@routes.Assets.versioned("images/zurrose_logo.svg")" height="40">
-                </button>
+                @if(logo == "DESITIN") {
+                    <a id="sponsor-button" href="http://www.desitin.ch" target="_blank">
+                        <img border="0" alt="Desitin" src="@routes.Assets.versioned("images/desitin_logo.png")" height="40">
+                    </a>
+                } else {
+                    <a id="sponsor-button" href="https://www.zurrose.ch/" target="_blank">
+                        <img border="0" alt="Desitin" src="@routes.Assets.versioned("images/zurrose_logo.svg")" height="40" width="80">
+                    </a>
+                }
             </div>
         </div>
     </header>

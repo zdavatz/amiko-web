@@ -47,6 +47,14 @@ mkdir /var/www/amiko.oddb.org/svc/run
 -> exec /var/www/amiko.oddb.org/bin/amikoweb -java-home /usr/local/src/jdk1.8.0_92/
 ln -s /var/www/amiko.oddb.org/svc/ /service/amiko.oddb.org
 ```
+## Do not show Interactions Tab
+edit the file `/var/www/amiko.oddb.org/svc/run`
+```
+#!/bin/sh
+cd /var/www/amiko.zurrose.ch
+export JAVA_OPTS="-Dfeature.interactions=false"
+exec /var/www/amiko.zurrose.ch/bin/amikoweb -java-home /usr/local/src/jdk1.8.0_92/
+```
 ## Setup Daemontools logging
 ```
 vim /var/www/amiko.oddb.org/svc/log/run

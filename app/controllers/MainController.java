@@ -20,6 +20,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package controllers;
 
 import models.*;
+import play.Configuration;
 import play.db.NamedDatabase;
 import play.db.Database;
 import play.mvc.*;
@@ -57,6 +58,8 @@ public class MainController extends Controller {
     private static final String DATABASE_TABLE = "amikodb";
     private static final String FREQUENCY_TABLE = "frequency";
 
+    @Inject private Configuration configuration;
+
     /**
      * Table columns used for fast queries
      */
@@ -76,15 +79,28 @@ public class MainController extends Controller {
     @Inject @NamedDatabase("frequency_de") Database frequency_de_db;
     @Inject @NamedDatabase("frequency_fr") Database frequency_fr_db;
 
+    String getLogoFromRequest() {
+        String host = ctx().request().host();
+        if (host.contains("zurrose")) {
+            return "ZURROSE";
+        }
+        return "DESITIN";
+    }
+
+    Boolean getShowInteractions() {
+        return configuration.getBoolean("feature.interactions", true);
+    }
+
     /**
      * Absolute minimal html-rendering
      * @return
      */
     public Result index(String atc_query) {
+        boolean showInteraction = getShowInteractions();
         if (!atc_query.equals("")) {
-            return ok(index.render("", "", atc_query, "atc", ""));
+            return ok(index.render("", "", atc_query, "atc", "", getLogoFromRequest(), showInteraction));
         }
-        return ok(index.render("", "", "", "", ""));
+        return ok(index.render("", "", "", "", "", getLogoFromRequest(), showInteraction));
     }
 
     /**
@@ -173,7 +189,8 @@ public class MainController extends Controller {
         String interactions_html = "";
         String titles_html = "";
         String name = "";
-        return ok(index.render(interactions_html, titles_html, name, "", ""));
+        boolean showInteraction = getShowInteractions();
+        return ok(index.render(interactions_html, titles_html, name, "", "", getLogoFromRequest(), showInteraction));
     }
 
     /**
@@ -186,6 +203,10 @@ public class MainController extends Controller {
     public Result interactionsBasket(String lang, String basket) {
         String article_title = "";
         String subdomainLang = ctx().lang().language();
+        boolean showInteraction = getShowInteractions();
+        if (!showInteraction) {
+            return notFound("Interactions is not enabled");
+        }
 
         if (!subdomainLang.equals(lang)) {
             // Change lang so message it is another lang
@@ -229,8 +250,7 @@ public class MainController extends Controller {
         titles_html += "</ul>";
         if (interactions_html == null)
             interactions_html = "";
-
-        return ok(index.render(interactions_html, titles_html, article_title, "", ""));
+        return ok(index.render(interactions_html, titles_html, article_title, "", "", getLogoFromRequest(), showInteraction));
     }
 
     public Result interactionsBasketWithoutLang(String basket) {
@@ -275,7 +295,8 @@ public class MainController extends Controller {
             ft_titles = fts.second;
         }
 
-        return ok(index.render(ft_content, ft_titles, key, "", ""));
+        boolean showInteraction = getShowInteractions();
+        return ok(index.render(ft_content, ft_titles, key, "", "", getLogoFromRequest(), showInteraction));
     }
 
     public Result getName(String lang, String name) {
@@ -380,12 +401,13 @@ public class MainController extends Controller {
                     content = "Votre mot clé de recherche n'a abouti à aucun résultat.";
             }
 
+            boolean showInteraction = getShowInteractions();
             // Text-based HTTP response, default encoding: utf-8
             if (content != null) {
                 if (highlight.length() > 3) {
-                    return ok(index.render(content, titles_html, name, "", "'" + key + "'"));
+                    return ok(index.render(content, titles_html, name, "", "'" + key + "'", getLogoFromRequest(), showInteraction));
                 } else {
-                    return ok(index.render(content, titles_html, key, "", ""));
+                    return ok(index.render(content, titles_html, key, "", "", getLogoFromRequest(), showInteraction));
                 }
             }
         }

@@ -1,4 +1,4 @@
-@(main_content: String="")(titles: String="")(search_key: String="")(search_mode: String="")(anchor: String="")
+@(main_content: String="")(titles: String="")(search_key: String="")(search_mode: String="")(anchor: String="")(logo: String="DESITIN")(show_interaction: Boolean=true)
 
 @main("AmiKoWeb", anchor) {
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/typeahead.bundle.corejs.js")"></script>
@@ -18,14 +18,16 @@
             </div>
         </div>
         <!-- INTERACTIONS BUTTON -->
-        <div class="nav-button" id="interactions-button">
-            <div class="center-image">
-                <button class="state-button">
-                    <img border="0" alt="Interactions" src="@routes.Assets.versioned("images/interactions32x32_dark.png")" height="28"/>
-                </button>
-                <span style="display: block;">@Messages("interactions")</span>
+        @if(show_interaction) {
+            <div class="nav-button" id="interactions-button">
+                <div class="center-image">
+                    <button class="state-button">
+                        <img border="0" alt="Interactions" src="@routes.Assets.versioned("images/interactions32x32_dark.png")" height="28"/>
+                    </button>
+                    <span style="display: block;">@Messages("interactions")</span>
+                </div>
             </div>
-        </div>
+        }
         <!-- DOWNLOAD BUTTON -->
         <div class="nav-button" id="download-button">
             <div class="center-image">
@@ -37,9 +39,15 @@
         <!-- SPONSORS BUTTONS -->
         <div class="nav-button" id="sponsor-button">
             <div class="center-image">
-                <button id="sponsor-button" onclick="window.open('https://www.zurrose.ch');">
-                    <img border="0" alt="Desitin" src="@routes.Assets.versioned("images/zurrose_logo.svg")" height="40">
-                </button>
+                @if(logo == "DESITIN") {
+                    <a id="sponsor-button" href="http://www.desitin.ch" target="_blank">
+                        <img border="0" alt="Desitin" src="@routes.Assets.versioned("images/desitin_logo.png")" height="40">
+                    </a>
+                } else {
+                    <a id="sponsor-button" href="https://www.zurrose.ch/" target="_blank">
+                        <img border="0" alt="Desitin" src="@routes.Assets.versioned("images/zurrose_logo.svg")" height="40" width="80">
+                    </a>
+                }
             </div>
         </div>
     </header>

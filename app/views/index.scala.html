@@ -1,4 +1,5 @@
-@(main_content: String="")(titles: String="")(search_key: String="")(search_mode: String="")(anchor: String="")(logo: String="DESITIN")(show_interaction: Boolean=true)
+@(main_content: String="")(titles: String="")(search_key: String="")(search_mode: String="")(anchor: String="")(vc: ViewContext)
+<!-- (logo: String="DESITIN")(show_interaction: Boolean=true) -->
 
 @main("AmiKoWeb", anchor) {
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/typeahead.bundle.corejs.js")"></script>
@@ -18,7 +19,7 @@
             </div>
         </div>
         <!-- INTERACTIONS BUTTON -->
-        @if(show_interaction) {
+        @if(vc.showInteraction) {
             <div class="nav-button" id="interactions-button">
                 <div class="center-image">
                     <button class="state-button">
@@ -39,7 +40,7 @@
         <!-- SPONSORS BUTTONS -->
         <div class="nav-button" id="sponsor-button">
             <div class="center-image">
-                @if(logo == "DESITIN") {
+                @if(vc.logo == "DESITIN") {
                     <a id="sponsor-button" href="http://www.desitin.ch" target="_blank">
                         <img border="0" alt="Desitin" src="@routes.Assets.versioned("images/desitin_logo.png")" height="40">
                     </a>
@@ -206,7 +207,7 @@
                     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
             })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
 
-            ga('create', 'UA-47115045-2', 'auto');
+            ga('create', '@vc.googleAnalyticsId', 'auto');
             ga('send', 'pageview');
     </script>
     <!-- End Google Analytics -->

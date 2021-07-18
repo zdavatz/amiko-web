@@ -36,3 +36,9 @@ $ ->
       window.location.assign '/interactions/null'
     .fail (jqHXR, textStatus) ->
       alert('ajax error')
+
+  window.callEPhaAPI = (ids) ->
+    console.log ids
+    $.post('/epha', { gtins: ids })
+      .done (response)->
+        console.log response

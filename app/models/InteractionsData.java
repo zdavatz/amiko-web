@@ -95,6 +95,7 @@ public class InteractionsData {
         // Redisplay selected meds
         String basket_html_str = "<table id=\"Interaktionen\" width=\"100%25\">";
         String delete_all_button_str = "";
+        String epha_button_str = "";
         String interactions_html_str = "";
         String top_note_html_str = "";
         String legend_html_str = "";
@@ -146,7 +147,9 @@ public class InteractionsData {
             basket_html_str += "</table>";
             // Medikamentenkorb löschen
             delete_all_button_str = "<div id=\"Delete_all\"><input type=\"button\" value=\"" + delete_all_text
-                    + "\" style=\"cursor: pointer; background: transparent; border: 1px solid #aaaaaa;\" onclick=\"deleteRow('Delete_all',this)\" /></div>";
+                    + "\" style=\"cursor: pointer; background: transparent; border: 1px solid #aaaaaa;\" onclick=\"deleteRow('Delete_all',this)\" />"
+                    + "<input type=\"button\" value=\"EPha API\" style=\"cursor: pointer; background: transparent; border: 1px solid #aaaaaa;float:right;\" onclick=\"callEPhaAPI('" + String.join(", ", med_basket.keySet()) + "')\" />"
+                    + "</div>";
         } else {
             // Medikamentenkorb ist leer
             if (lang.equals("de"))
@@ -245,7 +248,7 @@ public class InteractionsData {
             bottom_note_html_str += "<p class=\"footnote\">1. Source des données: données du domaine publique de EPha.ch.</p>";
 
         String html_str = "<html><head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\" /></head><body><div id=\"interactions\">"
-                + basket_html_str + delete_all_button_str + "<br><br>" + top_note_html_str
+                + basket_html_str + delete_all_button_str + epha_button_str + "<br><br>" + top_note_html_str
                 + interactions_html_str + "<br>" + legend_html_str + "<br>" + bottom_note_html_str + "</div></body></html>";
 
         // Update section titles

@@ -41,4 +41,4 @@ $ ->
     console.log ids
     $.post('/epha', { gtins: ids })
       .done (response)->
-        console.log response
+        window.open response

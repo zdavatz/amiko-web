@@ -21,6 +21,8 @@ package controllers;
 
 import models.*;
 import play.Configuration;
+import play.data.DynamicForm;
+import play.data.FormFactory;
 import play.db.NamedDatabase;
 import play.db.Database;
 import play.mvc.*;
@@ -34,7 +36,12 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
+import play.libs.ws.*;
 import static play.libs.Json.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.concurrent.CompletionStage;
 
 public class MainController extends Controller {
 
@@ -59,6 +66,7 @@ public class MainController extends Controller {
     private static final String FREQUENCY_TABLE = "frequency";
 
     @Inject private Configuration configuration;
+    @Inject WSClient ws;
 
     /**
      * Table columns used for fast queries
@@ -78,6 +86,8 @@ public class MainController extends Controller {
     @Inject @NamedDatabase("french") Database french_db;
     @Inject @NamedDatabase("frequency_de") Database frequency_de_db;
     @Inject @NamedDatabase("frequency_fr") Database frequency_fr_db;
+
+    @Inject FormFactory formFactory;
 
     Boolean getShowInteractions() {
         return configuration.getBoolean("feature.interactions", true);
@@ -189,6 +199,33 @@ public class MainController extends Controller {
             return retrieveFachinfo(lang, m, type, anchor, highlight);
         else
             return retrieveFachinfo(lang, m, type, key, "");
+    }
+
+    /**
+     * Route: /epha
+     * https://github.com/zdavatz/amiko-web/issues/38
+     */
+    public CompletionStage<Result> callEPHA() {
+        DynamicForm dynamicForm = formFactory.form().bindFromRequest();
+        String gtins = dynamicForm.get("gtins");
+        String[] parts = gtins.split(",");
+        ArrayNode arr = newArray();
+        for (String part : parts) {
+            ObjectNode map = newObject();
+            map.put("type", "drug");
+            map.put("gtin", part.trim());
+            arr.add(map);
+        }
+        String postBody = stringify(toJson(arr));
+        CompletionStage<JsonNode> thing = ws
+            .url("https://api.epha.health/clinic/advice/en/")
+            .setContentType("application/json")
+            .post(postBody)
+            .thenApply(WSResponse::asJson);
+
+        return thing.thenApply((res) -> {
+            return ok(res.get("data").get("link"));
+        });
     }
 
     public Result interactionsBasket() {

@@ -39,6 +39,6 @@ $ ->
 
   window.callEPhaAPI = (ids) ->
     console.log ids
-    $.post('/epha', { gtins: ids })
+    $.post('/epha', { gtins: ids, lang: localStorage.getItem('language') })
       .done (response)->
         window.open response

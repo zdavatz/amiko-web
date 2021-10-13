@@ -29,8 +29,6 @@ GET     /fulltext                   controllers.MainController.showFullTextSearc
 GET     /de/fulltext                controllers.MainController.showFullTextSearchResult(lang: String?="de", id: String, key: String, filter: String?="0")
 GET     /fr/fulltext                controllers.MainController.showFullTextSearchResult(lang: String?="fr", id: String, key: String, filter: String?="0")
 
-POST    /epha                       controllers.MainController.callEPHA()
-
 GET     /de                         controllers.MainController.setLang(lang: String="de")
 GET     /fr                         controllers.MainController.setLang(lang: String="fr")
 

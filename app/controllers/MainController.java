@@ -38,9 +38,6 @@ import javax.inject.Inject;
 
 import play.libs.ws.*;
 import static play.libs.Json.*;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.concurrent.CompletionStage;
 
 public class MainController extends Controller {
@@ -205,32 +202,6 @@ public class MainController extends Controller {
      * Route: /epha
      * https://github.com/zdavatz/amiko-web/issues/38
      */
-    public CompletionStage<Result> callEPHA() {
-        DynamicForm dynamicForm = formFactory.form().bindFromRequest();
-        String gtins = dynamicForm.get("gtins");
-        String lang = dynamicForm.get("lang");
-        if (lang == null) {
-            lang = "en";
-        }
-        String[] parts = gtins.split(",");
-        ArrayNode arr = newArray();
-        for (String part : parts) {
-            ObjectNode map = newObject();
-            map.put("type", "drug");
-            map.put("gtin", part.trim());
-            arr.add(map);
-        }
-        String postBody = stringify(toJson(arr));
-        CompletionStage<JsonNode> thing = ws
-            .url("https://api.epha.health/clinic/advice/" + lang + "/")
-            .setContentType("application/json")
-            .post(postBody)
-            .thenApply(WSResponse::asJson);
-
-        return thing.thenApply((res) -> {
-            return ok(res.get("data").get("link"));
-        });
-    }
 
     public Result interactionsBasket() {
         String interactions_html = "";

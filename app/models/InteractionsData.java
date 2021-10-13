@@ -26,6 +26,13 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
+import play.libs.ws.*;
+import static play.libs.Json.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.concurrent.CompletionStage;
 
 /**
  * Created by maxl on 06.12.2016.
@@ -91,124 +98,128 @@ public class InteractionsData {
 
     public String[] sectionAnchors() { return m_section_anchors; }
 
-    public String updateHtml(Map<String, Medication> med_basket, String lang) {
-        // Redisplay selected meds
-        String basket_html_str = "<table id=\"Interaktionen\" width=\"100%25\">";
-        String delete_all_button_str = "";
-        String epha_button_str = "";
-        String interactions_html_str = "";
-        String top_note_html_str = "";
-        String legend_html_str = "";
-        String bottom_note_html_str = "";
-        String atc_code1 = "";
-        String atc_code2 = "";
-        String name1 = "";
-        String delete_all_text = "alle löschen";
-        String[] m_code1 = null;
-        String[] m_code2 = null;
-        int med_counter = 1;
+    public CompletionStage<String> updateHtml(WSClient ws, Map<String, Medication> med_basket, String lang) {
+        return this.dataFromEpha(ws, med_basket, lang).thenApply((ephaRes)-> {
+            // Redisplay selected meds
+            String basket_html_str = "<table id=\"Interaktionen\" width=\"100%25\">";
+            String delete_all_button_str = "";
+            String epha_report_html_str = "";
+            String interactions_html_str = "";
+            String top_note_html_str = "";
+            String legend_html_str = "";
+            String bottom_note_html_str = "";
+            String atc_code1 = "";
+            String atc_code2 = "";
+            String name1 = "";
+            String delete_all_text = "alle löschen";
+            String[] m_code1 = null;
+            String[] m_code2 = null;
+            int med_counter = 1;
 
-        if (lang.equals("de")) {
-            delete_all_text = "alle löschen";
-        } else if (lang.equals("fr")) {
-            delete_all_text = "tout supprimer";
-        }
-
-        // Build interaction basket table
-        if (med_basket.size() > 0) {
-            for (Map.Entry<String, Medication> entry1 : med_basket.entrySet()) {
-                String atc = entry1.getValue().getAtcCode();
-                if (atc!=null && !atc.isEmpty()) {
-                    m_code1 = atc.split(";");
-                    atc_code1 = "k.A.";
-                    name1 = "k.A.";
-                    if (m_code1.length > 1) {
-                        atc_code1 = m_code1[0];
-                        name1 = m_code1[1];
-                    }
-                    basket_html_str += "<tr>";
-                    if (med_counter % 2 == 0)
-                        basket_html_str += "<tr style=\"background-color:var(--background-color-gray);\">";
-                    else
-                        basket_html_str += "<tr style=\"background-color:var(--background-color-normal);\">";
-                    basket_html_str += "<td>" + med_counter + "</td>"
-                            + "<td>" + entry1.getKey() + "</td>"
-                            + "<td>" + entry1.getValue().getTitle() + "</td>"
-                            + "<td>" + atc_code1 + "</td>"
-                            + "<td>" + name1 + "</td>"
-                            + "<td style=\"text-align:center;\">" + "<button type=\"button\" class=\"interaction-delete-button\" style=\"background-color:transparent; border:none; cursor: pointer;\""
-                            + " onclick=\"deleteRow('Interaktionen',this)\">"
-                            + "<img height=20 src=\"" + m_images_dir + "rubbish-bin.png\" /></button>" + "</td>";
-
-                    basket_html_str += "</tr>";
-                    med_counter++;
-                }
+            if (lang.equals("de")) {
+                delete_all_text = "alle löschen";
+            } else if (lang.equals("fr")) {
+                delete_all_text = "tout supprimer";
             }
-            basket_html_str += "</table>";
-            // Medikamentenkorb löschen
-            delete_all_button_str = "<div id=\"Delete_all\"><input type=\"button\" value=\"" + delete_all_text
-                    + "\" style=\"cursor: pointer; background: transparent; border: 1px solid #aaaaaa;\" onclick=\"deleteRow('Delete_all',this)\" />"
-                    + "<input type=\"button\" value=\"EPha API\" style=\"cursor: pointer; background: transparent; border: 1px solid #aaaaaa;float:right;\" onclick=\"callEPhaAPI('" + String.join(", ", med_basket.keySet()) + "')\" />"
-                    + "</div>";
-        } else {
-            // Medikamentenkorb ist leer
-            if (lang.equals("de"))
-                basket_html_str = "<div>Ihr Medikamentenkorb ist leer.<br><br></div>";
-            else if (lang.equals("fr"))
-                basket_html_str = "<div>Votre panier de médicaments est vide.<br><br></div>";
-        }
 
-        // Build list of interactions
-        ArrayList<String> section_str = new ArrayList<>();
-        ArrayList<String> section_anchors = new ArrayList<>();
-        // Add table to section titles
-        if (lang.equals("de")) {
-            section_str.add("Interaktionen");
-            section_anchors.add("Interaktionen");
-        } else if (lang.equals("fr")) {
-            section_str.add("Interactions");
-            section_anchors.add("Interactions");
-        }
-        if (med_counter > 1) {
-            for (Map.Entry<String, Medication> entry1 : med_basket.entrySet()) {
-                String atc1 = entry1.getValue().getAtcCode();
-                if (atc1!=null && !atc1.isEmpty()) {
-                    m_code1 = atc1.split(";");
-                    if (m_code1.length > 1) {
-                        // Get ATC code of first drug, make sure to get the first in the list (the second one is not used)
-                        atc_code1 = m_code1[0].split(",")[0];
-                        for (Map.Entry<String, Medication> entry2 : med_basket.entrySet()) {
-                            String atc2 = entry2.getValue().getAtcCode();
-                            if (atc2!=null && !atc2.isEmpty()) {
-                                m_code2 = atc2.split(";");
-                                String title1 = entry1.getValue().getTitle();
-                                String title2 = entry2.getValue().getTitle();
-                                String ean1 = entry1.getKey();
-                                String ean2 = entry2.getKey();
-                                if (m_code2.length > 1) {
-                                    // Get ATC code of second drug
-                                    atc_code2 = m_code2[0];
-                                    if (atc_code1 != null && atc_code2 != null && !atc_code1.equals(atc_code2)) {
+            // Build interaction basket table
+            if (med_basket.size() > 0) {
+                for (Map.Entry<String, Medication> entry1 : med_basket.entrySet()) {
+                    String atc = entry1.getValue().getAtcCode();
+                    if (atc!=null && !atc.isEmpty()) {
+                        m_code1 = atc.split(";");
+                        atc_code1 = "k.A.";
+                        name1 = "k.A.";
+                        if (m_code1.length > 1) {
+                            atc_code1 = m_code1[0];
+                            name1 = m_code1[1];
+                        }
+                        basket_html_str += "<tr>";
+                        if (med_counter % 2 == 0)
+                            basket_html_str += "<tr style=\"background-color:var(--background-color-gray);\">";
+                        else
+                            basket_html_str += "<tr style=\"background-color:var(--background-color-normal);\">";
+                        basket_html_str += "<td>" + med_counter + "</td>"
+                                + "<td>" + entry1.getKey() + "</td>"
+                                + "<td>" + entry1.getValue().getTitle() + "</td>"
+                                + "<td>" + atc_code1 + "</td>"
+                                + "<td>" + name1 + "</td>"
+                                + "<td style=\"text-align:center;\">" + "<button type=\"button\" class=\"interaction-delete-button\" style=\"background-color:transparent; border:none; cursor: pointer;\""
+                                + " onclick=\"deleteRow('Interaktionen',this)\">"
+                                + "<img height=20 src=\"" + m_images_dir + "rubbish-bin.png\" /></button>" + "</td>";
 
-                                        if(lang.equals("fr")){
-                                                m_interactions_map=m_interactions_fr_map;
+                        basket_html_str += "</tr>";
+                        med_counter++;
+                    }
+                }
+                basket_html_str += "</table>";
+                // Medikamentenkorb löschen
+                delete_all_button_str = "<div id=\"Delete_all\"><input type=\"button\" value=\"" + delete_all_text
+                        + "\" style=\"cursor: pointer; background: transparent; border: 1px solid #aaaaaa;\" onclick=\"deleteRow('Delete_all',this)\" />"
+                        + "<input type=\"button\" value=\"EPha API\" style=\"cursor: pointer; background: transparent; border: 1px solid #aaaaaa;float:right;\" onclick=\"window.open('" + ephaRes.get("link").asText() + "')\" />"
+                        + "</div>";
+
+                epha_report_html_str = htmlForEpha(ephaRes);
+            } else {
+                // Medikamentenkorb ist leer
+                if (lang.equals("de"))
+                    basket_html_str = "<div>Ihr Medikamentenkorb ist leer.<br><br></div>";
+                else if (lang.equals("fr"))
+                    basket_html_str = "<div>Votre panier de médicaments est vide.<br><br></div>";
+            }
+
+            // Build list of interactions
+            ArrayList<String> section_str = new ArrayList<>();
+            ArrayList<String> section_anchors = new ArrayList<>();
+            // Add table to section titles
+            if (lang.equals("de")) {
+                section_str.add("Interaktionen");
+                section_anchors.add("Interaktionen");
+            } else if (lang.equals("fr")) {
+                section_str.add("Interactions");
+                section_anchors.add("Interactions");
+            }
+            if (med_counter > 1) {
+                for (Map.Entry<String, Medication> entry1 : med_basket.entrySet()) {
+                    String atc1 = entry1.getValue().getAtcCode();
+                    if (atc1!=null && !atc1.isEmpty()) {
+                        m_code1 = atc1.split(";");
+                        if (m_code1.length > 1) {
+                            // Get ATC code of first drug, make sure to get the first in the list (the second one is not used)
+                            atc_code1 = m_code1[0].split(",")[0];
+                            for (Map.Entry<String, Medication> entry2 : med_basket.entrySet()) {
+                                String atc2 = entry2.getValue().getAtcCode();
+                                if (atc2!=null && !atc2.isEmpty()) {
+                                    m_code2 = atc2.split(";");
+                                    String title1 = entry1.getValue().getTitle();
+                                    String title2 = entry2.getValue().getTitle();
+                                    String ean1 = entry1.getKey();
+                                    String ean2 = entry2.getKey();
+                                    if (m_code2.length > 1) {
+                                        // Get ATC code of second drug
+                                        atc_code2 = m_code2[0];
+                                        if (atc_code1 != null && atc_code2 != null && !atc_code1.equals(atc_code2)) {
+
+                                            if(lang.equals("fr")){
+                                                    m_interactions_map=m_interactions_fr_map;
+                                                }
+                                            else if(lang.equals("de")){
+                                                    m_interactions_map=m_interactions_de_map;
                                             }
-                                        else if(lang.equals("de")){
-                                                m_interactions_map=m_interactions_de_map;
-                                        }
 
-                                        // Get html interaction content from drug interactions map
-                                        // Anchors: use titles and not eancodes
-                                        String inter = m_interactions_map.get(atc_code1 + "-" + atc_code2);
-                                        if (inter != null) {
-                                            // This changes the "id" tag
-                                            inter = inter.replaceAll(atc_code1 + "-", ean1 + "-").replaceAll(atc_code1, shortTitle(title1));
-                                            inter = inter.replaceAll("-" + atc_code2, "-" + ean2).replaceAll(atc_code2, shortTitle(title2));
-                                            interactions_html_str += (inter + "");
-                                            // Add title to section title list
-                                            if (!inter.isEmpty()) {
-                                                section_anchors.add(ean1 + "-" + ean2);
-                                                section_str.add("<html>" + shortTitle(title1) + " &rarr; " + shortTitle(title2) + "</html>");
+                                            // Get html interaction content from drug interactions map
+                                            // Anchors: use titles and not eancodes
+                                            String inter = m_interactions_map.get(atc_code1 + "-" + atc_code2);
+                                            if (inter != null) {
+                                                // This changes the "id" tag
+                                                inter = inter.replaceAll(atc_code1 + "-", ean1 + "-").replaceAll(atc_code1, shortTitle(title1));
+                                                inter = inter.replaceAll("-" + atc_code2, "-" + ean2).replaceAll(atc_code2, shortTitle(title2));
+                                                interactions_html_str += (inter + "");
+                                                // Add title to section title list
+                                                if (!inter.isEmpty()) {
+                                                    section_anchors.add(ean1 + "-" + ean2);
+                                                    section_str.add("<html>" + shortTitle(title1) + " &rarr; " + shortTitle(title2) + "</html>");
+                                                }
                                             }
                                         }
                                     }
@@ -218,44 +229,83 @@ public class InteractionsData {
                     }
                 }
             }
-        }
 
-        if (med_basket.size() > 0 && section_str.size() < 2) {
-            // Add note to indicate that there are no interactions
-            if (lang.equals("de")) {
-                top_note_html_str = "<div><p class=\"paragraph0\">Zur Zeit sind keine Interaktionen zwischen diesen Medikamenten in der EPha.ch-Datenbank vorhanden. "
-                        + "Weitere Informationen finden Sie in der Fachinformation. "
-                        + "<i>Möchten Sie eine Interaktion melden? Senden Sie bitte eine Email an: zdavatz@ywesee.com.</i></p></div><br><br>";
-            } else if (lang.equals("fr")) {
-                top_note_html_str = "<p class=\"paragraph0\">Il n’y a aucune information dans la banque de données EPha.ch à propos d’une interaction entre les médicaments sélectionnés. Veuillez consulter les informations professionelles.</p><br><br>";
+            if (med_basket.size() > 0 && section_str.size() < 2) {
+                // Add note to indicate that there are no interactions
+                if (lang.equals("de")) {
+                    top_note_html_str = "<div><p class=\"paragraph0\">Zur Zeit sind keine Interaktionen zwischen diesen Medikamenten in der EPha.ch-Datenbank vorhanden. "
+                            + "Weitere Informationen finden Sie in der Fachinformation. "
+                            + "<i>Möchten Sie eine Interaktion melden? Senden Sie bitte eine Email an: zdavatz@ywesee.com.</i></p></div><br><br>";
+                } else if (lang.equals("fr")) {
+                    top_note_html_str = "<p class=\"paragraph0\">Il n’y a aucune information dans la banque de données EPha.ch à propos d’une interaction entre les médicaments sélectionnés. Veuillez consulter les informations professionelles.</p><br><br>";
+                }
+            } else if (med_basket.size() > 0 && section_str.size() > 1) {
+                // Add color legend
+                legend_html_str = addColorLegend(lang);
+                // Add legend to section titles
+                if (lang.equals("de")) {
+                    section_str.add("Legende");
+                    section_anchors.add("Legende");
+                } else if (lang.equals("fr")) {
+                    section_str.add("Légende");
+                    section_anchors.add("Légende");
+                }
             }
-        } else if (med_basket.size() > 0 && section_str.size() > 1) {
-            // Add color legend
-            legend_html_str = addColorLegend(lang);
-            // Add legend to section titles
-            if (lang.equals("de")) {
-                section_str.add("Legende");
-                section_anchors.add("Legende");
-            } else if (lang.equals("fr")) {
-                section_str.add("Légende");
-                section_anchors.add("Légende");
+
+            if (lang.equals("de"))
+                bottom_note_html_str += "<p class=\"footnote\">1. Datenquelle: Public Domain Daten von EPha.ch.</p>";
+            else if (lang.equals("fr"))
+                bottom_note_html_str += "<p class=\"footnote\">1. Source des données: données du domaine publique de EPha.ch.</p>";
+
+            String html_str = "<html><head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\" /></head><body><div id=\"interactions\">"
+                    + basket_html_str + delete_all_button_str + epha_report_html_str + "<br><br>" + top_note_html_str
+                    + interactions_html_str + "<br>" + legend_html_str + "<br>" + bottom_note_html_str + "</div></body></html>";
+
+            // Update section titles
+            m_section_titles = section_str.toArray(new String[section_str.size()]);
+            m_section_anchors = section_anchors.toArray(new String[section_anchors.size()]);
+
+            return html_str;
+        });
+    }
+
+    private CompletionStage<JsonNode> dataFromEpha(WSClient ws, Map<String, Medication> med_basket, String lang) {
+        if (med_basket.size() == 0) {
+            return CompletableFuture.completedFuture(null);
+        }
+        ArrayNode arr = newArray();
+        for (Map.Entry<String, Medication> entry1 : med_basket.entrySet()) {
+            String atc = entry1.getValue().getAtcCode();
+            if (atc!=null && !atc.isEmpty()) {
+                ObjectNode map = newObject();
+                map.put("type", "drug");
+                map.put("gtin", entry1.getKey());
+                arr.add(map);
             }
         }
+        if (lang == null) {
+            lang = "en";
+        }
+        String postBody = stringify(toJson(arr));
+        CompletionStage<JsonNode> response = ws
+            .url("https://api.epha.health/clinic/advice/" + lang + "/")
+            .setContentType("application/json")
+            .post(postBody)
+            .thenApply(WSResponse::asJson);
 
-        if (lang.equals("de"))
-            bottom_note_html_str += "<p class=\"footnote\">1. Datenquelle: Public Domain Daten von EPha.ch.</p>";
-        else if (lang.equals("fr"))
-            bottom_note_html_str += "<p class=\"footnote\">1. Source des données: données du domaine publique de EPha.ch.</p>";
+        return response.thenApply((res) -> {
+            return res.get("data");
+        });
+    }
 
-        String html_str = "<html><head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\" /></head><body><div id=\"interactions\">"
-                + basket_html_str + delete_all_button_str + epha_button_str + "<br><br>" + top_note_html_str
-                + interactions_html_str + "<br>" + legend_html_str + "<br>" + bottom_note_html_str + "</div></body></html>";
-
-        // Update section titles
-        m_section_titles = section_str.toArray(new String[section_str.size()]);
-        m_section_anchors = section_anchors.toArray(new String[section_anchors.size()]);
-
-        return html_str;
+    private String htmlForEpha(JsonNode j) {
+        return "safety: " + j.get("safety") + "<BR>" +
+            "kinetic" + j.get("risk").get("kinetic") + "<BR>" +
+            "qtc" + j.get("risk").get("qtc") + "<BR>" +
+            "warning" + j.get("risk").get("warning") + "<BR>" +
+            "serotonerg" + j.get("risk").get("serotonerg") + "<BR>" +
+            "anticholinergic" + j.get("risk").get("anticholinergic") + "<BR>" +
+            "adverse" + j.get("risk").get("adverse") + "<BR>";
     }
 
     private String shortTitle(String title) {

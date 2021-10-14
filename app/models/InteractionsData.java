@@ -154,12 +154,15 @@ public class InteractionsData {
                 }
                 basket_html_str += "</table>";
                 // Medikamentenkorb löschen
+                String show_epha_button_name = lang.equals("de")
+                    ? "EPha API Details anzeigen"
+                    : "Afficher les détails de l'API EPha";
                 delete_all_button_str = "<div id=\"Delete_all\"><input type=\"button\" value=\"" + delete_all_text
                         + "\" style=\"cursor: pointer; background: transparent; border: 1px solid #aaaaaa;\" onclick=\"deleteRow('Delete_all',this)\" />"
-                        + "<input type=\"button\" value=\"EPha API\" style=\"cursor: pointer; background: transparent; border: 1px solid #aaaaaa;float:right;\" onclick=\"window.open('" + ephaRes.get("link").asText() + "')\" />"
+                        + "<input type=\"button\" value=\"" + show_epha_button_name + "\" style=\"cursor: pointer; background: transparent; border: 1px solid #aaaaaa;float:right;\" onclick=\"window.open('" + ephaRes.get("link").asText() + "')\" />"
                         + "</div>";
 
-                epha_report_html_str = htmlForEpha(ephaRes);
+                epha_report_html_str = htmlForEpha(ephaRes, lang);
             } else {
                 // Medikamentenkorb ist leer
                 if (lang.equals("de"))
@@ -258,7 +261,7 @@ public class InteractionsData {
                 bottom_note_html_str += "<p class=\"footnote\">1. Source des données: données du domaine publique de EPha.ch.</p>";
 
             String html_str = "<html><head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\" /></head><body><div id=\"interactions\">"
-                    + basket_html_str + delete_all_button_str + epha_report_html_str + "<br><br>" + top_note_html_str
+                    + basket_html_str + epha_report_html_str + delete_all_button_str + "<br><br>" + top_note_html_str
                     + interactions_html_str + "<br>" + legend_html_str + "<br>" + bottom_note_html_str + "</div></body></html>";
 
             // Update section titles
@@ -298,14 +301,144 @@ public class InteractionsData {
         });
     }
 
-    private String htmlForEpha(JsonNode j) {
-        return "safety: " + j.get("safety") + "<BR>" +
-            "kinetic" + j.get("risk").get("kinetic") + "<BR>" +
-            "qtc" + j.get("risk").get("qtc") + "<BR>" +
-            "warning" + j.get("risk").get("warning") + "<BR>" +
-            "serotonerg" + j.get("risk").get("serotonerg") + "<BR>" +
-            "anticholinergic" + j.get("risk").get("anticholinergic") + "<BR>" +
-            "adverse" + j.get("risk").get("adverse") + "<BR>";
+    private String htmlForEpha(JsonNode j, String lang) {
+        int safety = j.get("safety").asInt();
+        int kinetic = j.get("risk").get("kinetic").asInt();
+        int qtc = j.get("risk").get("qtc").asInt();
+        int warning = j.get("risk").get("warning").asInt();
+        int serotonerg = j.get("risk").get("serotonerg").asInt();
+        int anticholinergic = j.get("risk").get("anticholinergic").asInt();
+        int adverse = j.get("risk").get("adverse").asInt();
+
+        String html_str = "";
+        
+        if (lang.equals("de")) {
+            html_str += "Sicherheit<BR>";
+            html_str += "<p class='risk-description'>Je höher die Sicherheit, desto sicherer die Kombination.</p>";
+        } else {
+            html_str += "Sécurité<BR>";
+            html_str += "<p class='risk-description'>Plus la sécurité est élevée, plus la combinaison est sûre.</p>";
+        }
+
+        html_str += "<div class='risk'>100";
+        html_str += "<div class='gradient'>" + 
+                "<div class='pin' style='left: " + (100-safety) + "%'>" + safety + "</div>" +
+            "</div><BR>";
+        html_str += "0</div><BR><BR>";
+
+        if (lang.equals("de")) {
+            html_str += "Risikofaktoren<BR>";
+            html_str += "<p class='risk-description'>Je tiefer das Risiko, desto sicherer die Kombination.</p>";
+        } else {
+            html_str += "Facteurs de risque<BR>";
+            html_str += "<p class='risk-description'>Plus le risque est faible, plus la combinaison est sûre.</p>";
+        }
+
+        if (lang.equals("de")) {
+            html_str += "<table class='risk-table'>";
+            html_str += "<tr><td class='risk-name'>";
+            html_str += "Pharmakokinetik";
+            html_str += "</td>";
+            html_str += "<td>";
+            html_str += "<div class='risk'>0";
+            html_str += "<div class='gradient'><div class='pin' style='left: " + kinetic + "%'>" + kinetic + "</div></div>";
+            html_str += "100</div>";
+            html_str += "</td></tr>";
+            html_str += "<tr><td class='risk-name'>";
+            html_str += "Verlängerung der QT-Zeit";
+            html_str += "</td>";
+            html_str += "<td>";
+            html_str += "<div class='risk'>0";
+            html_str += "<div class='gradient'><div class='pin' style='left: " + qtc + "%'>" + qtc + "</div></div>";
+            html_str += "100</div>";
+            html_str += "</td></tr>";
+            html_str += "<tr><td class='risk-name'>";
+            html_str += "Warnhinweise";
+            html_str += "</td>";
+            html_str += "<td>";
+            html_str += "<div class='risk'>0";
+            html_str += "<div class='gradient'><div class='pin' style='left: " + warning + "%'>" + warning + "</div></div>";
+            html_str += "100</div>";
+            html_str += "</td></tr>";
+            html_str += "<tr><td class='risk-name'>";
+            html_str += "Serotonerge Effekte";
+            html_str += "</td>";
+            html_str += "<td>";
+            html_str += "<div class='risk'>0";
+            html_str += "<div class='gradient'><div class='pin' style='left: " + serotonerg + "%'>" + serotonerg + "</div></div>";
+            html_str += "100</div>";
+            html_str += "</td></tr>";
+            html_str += "<tr><td class='risk-name'>";
+            html_str += "Anticholinerge Effekte";
+            html_str += "</td>";
+            html_str += "<td>";
+            html_str += "<div class='risk'>0";
+            html_str += "<div class='gradient'><div class='pin' style='left: " + anticholinergic + "%'>" + anticholinergic + "</div></div>";
+            html_str += "100</div>";
+            html_str += "</td></tr>";
+            html_str += "<tr><td class='risk-name'>";
+            html_str += "Allgemeine Nebenwirkungen";
+            html_str += "</td>";
+            html_str += "<td>";
+            html_str += "<div class='risk'>0";
+            html_str += "<div class='gradient'><div class='pin' style='left: " + adverse + "%'>" + adverse + "</div></div>";
+            html_str += "100</div>";
+            html_str += "</td></tr>";
+            html_str += "</table>";
+        } else {
+            html_str += "<table class='risk-table'>";
+            html_str += "<tr><td class='risk-name'>";
+            html_str += "Pharmacocinétique";
+            html_str += "</td>";
+            html_str += "<td>";
+            html_str += "<div class='risk'>0";
+            html_str += "<div class='gradient'><div class='pin' style='left: " + kinetic + "%'>" + kinetic + "</div></div>";
+            html_str += "100</div>";
+            html_str += "</td></tr>";
+            html_str += "<tr><td class='risk-name'>";
+            html_str += "Allongement du temps QT";
+            html_str += "</td>";
+            html_str += "<td>";
+            html_str += "<div class='risk'>0";
+            html_str += "<div class='gradient'><div class='pin' style='left: " + qtc + "%'>" + qtc + "</div></div>";
+            html_str += "100</div>";
+            html_str += "</td></tr>";
+            html_str += "<tr><td class='risk-name'>";
+            html_str += "Avertissements";
+            html_str += "</td>";
+            html_str += "<td>";
+            html_str += "<div class='risk'>0";
+            html_str += "<div class='gradient'><div class='pin' style='left: " + warning + "%'>" + warning + "</div></div>";
+            html_str += "100</div>";
+            html_str += "</td></tr>";
+            html_str += "<tr><td class='risk-name'>";
+            html_str += "Effets sérotoninergiques";
+            html_str += "</td>";
+            html_str += "<td>";
+            html_str += "<div class='risk'>0";
+            html_str += "<div class='gradient'><div class='pin' style='left: " + serotonerg + "%'>" + serotonerg + "</div></div>";
+            html_str += "100</div>";
+            html_str += "</td></tr>";
+            html_str += "<tr><td class='risk-name'>";
+            html_str += "Effets anticholinergiques";
+            html_str += "</td>";
+            html_str += "<td>";
+            html_str += "<div class='risk'>0";
+            html_str += "<div class='gradient'><div class='pin' style='left: " + anticholinergic + "%'>" + anticholinergic + "</div></div>";
+            html_str += "100</div>";
+            html_str += "</td></tr>";
+            html_str += "<tr><td class='risk-name'>";
+            html_str += "Effets secondaires généraux";
+            html_str += "</td>";
+            html_str += "<td>";
+            html_str += "<div class='risk'>0";
+            html_str += "<div class='gradient'><div class='pin' style='left: " + adverse + "%'>" + adverse + "</div></div>";
+            html_str += "100</div>";
+            html_str += "</td></tr>";
+            html_str += "</table>";
+        }
+
+        return html_str;
     }
 
     private String shortTitle(String title) {

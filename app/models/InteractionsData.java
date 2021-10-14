@@ -157,12 +157,15 @@ public class InteractionsData {
                 String show_epha_button_name = lang.equals("de")
                     ? "EPha API Details anzeigen"
                     : "Afficher les détails de l'API EPha";
+                String ephaResLink = ephaRes == null ? "" : ephaRes.get("link").asText();
                 delete_all_button_str = "<div id=\"Delete_all\"><input type=\"button\" value=\"" + delete_all_text
                         + "\" style=\"cursor: pointer; background: transparent; border: 1px solid #aaaaaa;\" onclick=\"deleteRow('Delete_all',this)\" />"
-                        + "<input type=\"button\" value=\"" + show_epha_button_name + "\" style=\"cursor: pointer; background: transparent; border: 1px solid #aaaaaa;float:right;\" onclick=\"window.open('" + ephaRes.get("link").asText() + "')\" />"
+                        + "<input type=\"button\" value=\"" + show_epha_button_name + "\" style=\"cursor: pointer; background: transparent; border: 1px solid #aaaaaa;float:right;\" onclick=\"window.open('" + ephaResLink + "')\" />"
                         + "</div>";
 
-                epha_report_html_str = htmlForEpha(ephaRes, lang);
+                if (ephaRes != null) {
+                    epha_report_html_str = htmlForEpha(ephaRes, lang);
+                }
             } else {
                 // Medikamentenkorb ist leer
                 if (lang.equals("de"))
@@ -296,8 +299,16 @@ public class InteractionsData {
             .post(postBody)
             .thenApply(WSResponse::asJson);
 
-        return response.thenApply((res) -> {
-            return res.get("data");
+        return response.thenCompose((res) -> {
+            int code = res.get("meta").get("code").asInt();
+            if (code >= 200 && code < 300) {
+                return CompletableFuture.completedFuture(res.get("data"));
+            }
+            throw new RuntimeException(res.toString());
+        })
+        .exceptionally((ex)-> {
+            ex.printStackTrace();
+            return null;
         });
     }
 

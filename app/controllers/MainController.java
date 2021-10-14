@@ -38,9 +38,6 @@ import javax.inject.Inject;
 
 import play.libs.ws.*;
 import static play.libs.Json.*;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.concurrent.CompletionStage;
 
 public class MainController extends Controller {
@@ -205,32 +202,6 @@ public class MainController extends Controller {
      * Route: /epha
      * https://github.com/zdavatz/amiko-web/issues/38
      */
-    public CompletionStage<Result> callEPHA() {
-        DynamicForm dynamicForm = formFactory.form().bindFromRequest();
-        String gtins = dynamicForm.get("gtins");
-        String lang = dynamicForm.get("lang");
-        if (lang == null) {
-            lang = "en";
-        }
-        String[] parts = gtins.split(",");
-        ArrayNode arr = newArray();
-        for (String part : parts) {
-            ObjectNode map = newObject();
-            map.put("type", "drug");
-            map.put("gtin", part.trim());
-            arr.add(map);
-        }
-        String postBody = stringify(toJson(arr));
-        CompletionStage<JsonNode> thing = ws
-            .url("https://api.epha.health/clinic/advice/" + lang + "/")
-            .setContentType("application/json")
-            .post(postBody)
-            .thenApply(WSResponse::asJson);
-
-        return thing.thenApply((res) -> {
-            return ok(res.get("data").get("link"));
-        });
-    }
 
     public Result interactionsBasket() {
         String interactions_html = "";
@@ -247,13 +218,12 @@ public class MainController extends Controller {
      * @param basket
      * @return
      */
-    public Result interactionsBasket(String lang, String basket) {
-        String article_title = "";
+    public CompletionStage<Result> interactionsBasket(String lang, String basket) {
         String subdomainLang = ctx().lang().language();
         boolean showInteraction = getShowInteractions();
-        ViewContext vc = getViewContext();
+        final ViewContext vc = getViewContext();
         if (!showInteraction) {
-            return notFound("Interactions is not enabled");
+            return CompletableFuture.completedFuture(notFound("Interactions is not enabled"));
         }
 
         if (!subdomainLang.equals(lang)) {
@@ -264,11 +234,12 @@ public class MainController extends Controller {
             String sslUrl = baseUrl.replace("http://", "https://");
             String path = controllers.routes.MainController.interactionsBasket(lang, basket).path();
             String newUrl = sslUrl + path;
-            return redirect(newUrl);
+            return CompletableFuture.completedFuture(redirect(newUrl));
         }
 
         // Decompose string coming from client and fill up linkedhashmap
         // @maxl 15.03.2017: Allow a max of 90 interactions
+        String article_title = "";
         Map<String, Medication> med_basket = new LinkedHashMap<>();
         if (!basket.isEmpty() && !basket.equals("null")) {
             // Decompose the basket string
@@ -284,21 +255,23 @@ public class MainController extends Controller {
                 }
             }
         }
+        final String final_article_title = article_title;
         InteractionsData inter_data = InteractionsData.getInstance();
-        String interactions_html = inter_data.updateHtml(med_basket, lang);
-        // Associate section titles and anchors
-        String[] section_titles = inter_data.sectionTitles();
-        String[] section_anchors = inter_data.sectionAnchors();
-        String titles_html = "<ul style=\"list-style-type:none;\n\">";
-        for (int i = 0; i < section_titles.length; ++i) {
-            // Spaces before and after of &rarr; are important...
-            String anchor = section_anchors[i]; // section_titles[i].replaceAll("<html>", "").replaceAll("</html>", "").replaceAll(" &rarr; ", "-");
-            titles_html += "<li><a onclick=\"move_to_anchor('" + anchor + "')\">" + section_titles[i] + "</a></li>";
-        }
-        titles_html += "</ul>";
-        if (interactions_html == null)
-            interactions_html = "";
-        return ok(index.render(interactions_html, titles_html, article_title, "", "", vc));
+        return inter_data.updateHtml(ws, med_basket, lang).thenApply((interactions_html)-> {
+            // Associate section titles and anchors
+            String[] section_titles = inter_data.sectionTitles();
+            String[] section_anchors = inter_data.sectionAnchors();
+            String titles_html = "<ul style=\"list-style-type:none;\n\">";
+            for (int i = 0; i < section_titles.length; ++i) {
+                // Spaces before and after of &rarr; are important...
+                String anchor = section_anchors[i]; // section_titles[i].replaceAll("<html>", "").replaceAll("</html>", "").replaceAll(" &rarr; ", "-");
+                titles_html += "<li><a onclick=\"move_to_anchor('" + anchor + "')\">" + section_titles[i] + "</a></li>";
+            }
+            titles_html += "</ul>";
+            if (interactions_html == null)
+                interactions_html = "";
+            return ok(index.render(interactions_html, titles_html, final_article_title, "", "", vc));
+        });
     }
 
     public Result interactionsBasketWithoutLang(String basket) {

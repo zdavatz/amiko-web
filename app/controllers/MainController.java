@@ -279,45 +279,31 @@ public class MainController extends Controller {
         return redirect(controllers.routes.MainController.interactionsBasket(lang, basket));
     }
 
-    static String ft_row_id = "";
-    static String ft_filter = "";
-    static String ft_titles = "";
-    static String ft_content = "";
-
     /**
      * Given an id (hash value), retrieve entry in frequency database and display list of related articles
      * Corresponding routes: /fulltext && /de/fulltext && /fr/fulltext
      * @param lang
-     * @param id
+     * @param keyword
      * @param key
      * @param filter
      * @return
      */
-    public Result showFullTextSearchResult(String lang, String id, String key, String filter) {
-        String row_id = id;
+    public Result showFullTextSearchResult(String lang, String keyword, String key, String filter) {
+        FullTextEntry entry = getFullTextEntryWithKeyword(lang, keyword);
 
-        if (!ft_row_id.equals(row_id) || !ft_filter.equals(filter)) {
-            ft_filter = filter;
-            ft_row_id = row_id;
-
-            FullTextEntry entry = getFullTextEntryWithId(lang, row_id);
-
-            if (entry == null) {
-                return notFound("Result with this id is not found");
-            }
-
-            // This operation takes time...
-            List<Article> list_of_articles = getArticlesFromRegnrs(lang, entry.getRegnrs()).join();
-
-            FullTextSearch full_text_search = FullTextSearch.getInstance();
-
-            Pair<String, String> fts = full_text_search.updateHtml(lang, list_of_articles, entry.getMapOfChapters(), id, key, filter);
-            ft_content = fts.first;
-            ft_titles = fts.second;
+        if (entry == null) {
+            return notFound("Result with this id is not found");
         }
 
+        // This operation takes time...
+        List<Article> list_of_articles = getArticlesFromRegnrs(lang, entry.getRegnrs()).join();
+
+        FullTextSearch full_text_search = FullTextSearch.getInstance();
+
+        Pair<String, String> fts = full_text_search.updateHtml(lang, list_of_articles, entry.getMapOfChapters(), keyword, key, filter);
+
         ViewContext vc = getViewContext();
-        return ok(index.render(ft_content, ft_titles, key, "", "", vc));
+        return ok(index.render(fts.first, fts.second, key, "", "", vc));
     }
 
     public Result getName(String lang, String name) {
@@ -755,17 +741,16 @@ public class MainController extends Controller {
     }
 
     /**
-     * Note: the rowId is a 10 digit hash
      * @param lang
-     * @param rowId
+     * @param keyword
      * @return
      */
-    public FullTextEntry getFullTextEntryWithId(String lang, String rowId) {
+    public FullTextEntry getFullTextEntryWithKeyword(String lang, String keyword) {
         try {
             Connection conn = lang.equals("de") ? frequency_de_db.getConnection() : frequency_fr_db.getConnection();
-            String query = "select * from " + FREQUENCY_TABLE + " where id = ?";
+            String query = "select * from " + FREQUENCY_TABLE + " where keyword = ?";
             PreparedStatement stat = conn.prepareStatement(query);
-            stat.setString(1, rowId);
+            stat.setString(1, keyword);
 
             ResultSet rs = stat.executeQuery();
             if (!rs.next()) {
@@ -776,7 +761,7 @@ public class MainController extends Controller {
             if (full_text_entry!=null)
                 return full_text_entry;
         } catch (SQLException e) {
-            System.err.println(">> Frequency DB: SQLException in getFullTextEntryWithId: " + e.getMessage());
+            System.err.println(">> Frequency DB: SQLException in getFullTextEntryWithKeyword: " + e.getMessage());
         }
         return null;
     }

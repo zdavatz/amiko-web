@@ -66,7 +66,7 @@ public class FullTextSearch {
         return list;
     }
 
-    public Pair<String, String> updateHtml(String lang, List<Article> list_of_articles, Map<String, String> map_of_chapters, String id, String key, String filter) {
+    public Pair<String, String> updateHtml(String lang, List<Article> list_of_articles, Map<String, String> map_of_chapters, String keyword, String key, String filter) {
         // Remove unnecessary parentheses
         key = key.replaceAll("\\(.*?\\)", "").trim();
         // Sort list of articles
@@ -178,12 +178,12 @@ public class FullTextSearch {
         for (Map.Entry<String, Integer> e : chapters_count_map.entrySet()) {
             if (e.getKey().equals(filter)) {
                 titles_html += "<li style=\"background-color:#eeeeee\"><span style=\"font-size:small\">"
-                        + "<a onclick=\"show_full_text('" + id + "','" + key + "','" + e.getKey() + "')\">" + e.getKey() + "</a>"
+                        + "<a onclick=\"show_full_text('" + keyword + "','" + key + "','" + e.getKey() + "')\">" + e.getKey() + "</a>"
                         + " (" + e.getValue() + ")"
                         + "</span></li>";
             } else {
                 titles_html += "<li><span style=\"font-size:small\">"
-                        + "<a onclick=\"show_full_text('" + id + "','" + key + "','" + e.getKey() + "')\">" + e.getKey() + "</a>"
+                        + "<a onclick=\"show_full_text('" + keyword + "','" + key + "','" + e.getKey() + "')\">" + e.getKey() + "</a>"
                         + " (" + e.getValue() + ")"
                         + "</span></li>";
             }

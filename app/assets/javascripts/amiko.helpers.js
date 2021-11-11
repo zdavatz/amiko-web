@@ -107,14 +107,14 @@ function display_fachinfo(ean, key, anchor) {
 /**
  * Filter full text search
  */
-function show_full_text(id, key, filter) {
+function show_full_text(keyword, key, filter) {
     var lang = String(localStorage.getItem('language'));
     if (filter=='undefined')
         filter = "0";
     if (lang=="de")
-        window.location.assign('/de/fulltext?id=' + id + "&key=" + key + "&filter=" + filter);
+        window.location.assign('/de/fulltext?keyword=' + keyword + "&key=" + key + "&filter=" + filter);
     else if (lang=="fr")
-        window.location.assign('/fr/fulltext?id=' + id + "&key=" + key + "&filter=" + filter);
+        window.location.assign('/fr/fulltext?keyword=' + keyword + "&key=" + key + "&filter=" + filter);
 }
 
 /**

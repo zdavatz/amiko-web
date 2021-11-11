@@ -279,51 +279,37 @@ public class MainController extends Controller {
         return redirect(controllers.routes.MainController.interactionsBasket(lang, basket));
     }
 
-    static String ft_row_id = "";
-    static String ft_filter = "";
-    static String ft_titles = "";
-    static String ft_content = "";
-
     /**
      * Given an id (hash value), retrieve entry in frequency database and display list of related articles
      * Corresponding routes: /fulltext && /de/fulltext && /fr/fulltext
      * @param lang
-     * @param id
+     * @param keyword
      * @param key
      * @param filter
      * @return
      */
-    public Result showFullTextSearchResult(String lang, String id, String key, String filter) {
-        String row_id = id;
+    public Result showFullTextSearchResult(String lang, String keyword, String key, String filter) {
+        FullTextEntry entry = getFullTextEntryWithKeyword(lang, keyword);
 
-        if (!ft_row_id.equals(row_id) || !ft_filter.equals(filter)) {
-            ft_filter = filter;
-            ft_row_id = row_id;
-
-            FullTextEntry entry = getFullTextEntryWithId(lang, row_id);
-
-            if (entry == null) {
-                return notFound("Result with this id is not found");
-            }
-
-            // This operation takes time...
-            List<Article> list_of_articles = getArticlesFromRegnrs(lang, entry.getRegnrs()).join();
-
-            FullTextSearch full_text_search = FullTextSearch.getInstance();
-
-            Pair<String, String> fts = full_text_search.updateHtml(lang, list_of_articles, entry.getMapOfChapters(), id, key, filter);
-            ft_content = fts.first;
-            ft_titles = fts.second;
+        if (entry == null) {
+            return notFound("Result with this id is not found");
         }
 
+        // This operation takes time...
+        List<Article> list_of_articles = getArticlesFromRegnrs(lang, entry.getRegnrs()).join();
+
+        FullTextSearch full_text_search = FullTextSearch.getInstance();
+
+        Pair<String, String> fts = full_text_search.updateHtml(lang, list_of_articles, entry.getMapOfChapters(), keyword, key, filter);
+
         ViewContext vc = getViewContext();
-        return ok(index.render(ft_content, ft_titles, key, "", "", vc));
+        return ok(index.render(fts.first, fts.second, key, "", "", vc));
     }
 
     public Result getName(String lang, String name) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchName(lang, name));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), "", n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
+                .map(n -> new Article(n.getId(), "", n.getTitle(), "", n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -331,7 +317,7 @@ public class MainController extends Controller {
     public Result getOwner(String lang, String owner) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchOwner(lang, owner));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), "", n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
+                .map(n -> new Article(n.getId(), "", n.getTitle(), "", n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -339,7 +325,7 @@ public class MainController extends Controller {
     public Result getATC(String lang, String atc) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchATC(lang, atc));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), "", n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
+                .map(n -> new Article(n.getId(), "", n.getTitle(), "", n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -347,7 +333,7 @@ public class MainController extends Controller {
     public Result getRegnr(String lang, String regnr) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchRegnr(lang, regnr));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), "", n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
+                .map(n -> new Article(n.getId(), "", n.getTitle(), "", n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -355,7 +341,7 @@ public class MainController extends Controller {
     public Result getTherapy(String lang, String therapy) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchTherapy(lang, therapy));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), "", n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
+                .map(n -> new Article(n.getId(), "", n.getTitle(), "", n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -363,7 +349,7 @@ public class MainController extends Controller {
     public Result getFullText(String lang, String key) {
         CompletableFuture<List<FullTextEntry>> future = CompletableFuture.supplyAsync(()->searchFullText(lang, key));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(0, n.getHash(), n.getKeyword(), "", "", "", n.getRegnrs(), "", "", "", "", ""))
+                .map(n -> new Article(0, n.getHash(), n.getTitle(), n.getKeyword(), "", "", "", n.getRegnrs(), "", "", "", "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -375,7 +361,7 @@ public class MainController extends Controller {
             list_of_regnrs.add(r);
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchListRegnrs(lang, list_of_regnrs));
         CompletableFuture<List<Article>> list_of_articles = future.thenApplyAsync(a -> a.stream()
-                .map(m -> new Article(m.getId(), "", m.getTitle(), m.getAuth(), "", "", m.getRegnrs(), "", "", "", m.getSectionTitles(), m.getSectionIds()))
+                .map(m -> new Article(m.getId(), "", m.getTitle(), "", m.getAuth(), "", "", m.getRegnrs(), "", "", "", m.getSectionTitles(), m.getSectionIds()))
                 .collect(Collectors.toList()));
         return list_of_articles;
     }
@@ -755,17 +741,16 @@ public class MainController extends Controller {
     }
 
     /**
-     * Note: the rowId is a 10 digit hash
      * @param lang
-     * @param rowId
+     * @param keyword
      * @return
      */
-    public FullTextEntry getFullTextEntryWithId(String lang, String rowId) {
+    public FullTextEntry getFullTextEntryWithKeyword(String lang, String keyword) {
         try {
             Connection conn = lang.equals("de") ? frequency_de_db.getConnection() : frequency_fr_db.getConnection();
-            String query = "select * from " + FREQUENCY_TABLE + " where id = ?";
+            String query = "select * from " + FREQUENCY_TABLE + " where keyword = ?";
             PreparedStatement stat = conn.prepareStatement(query);
-            stat.setString(1, rowId);
+            stat.setString(1, keyword);
 
             ResultSet rs = stat.executeQuery();
             if (!rs.next()) {
@@ -776,7 +761,7 @@ public class MainController extends Controller {
             if (full_text_entry!=null)
                 return full_text_entry;
         } catch (SQLException e) {
-            System.err.println(">> Frequency DB: SQLException in getFullTextEntryWithId: " + e.getMessage());
+            System.err.println(">> Frequency DB: SQLException in getFullTextEntryWithKeyword: " + e.getMessage());
         }
         return null;
     }

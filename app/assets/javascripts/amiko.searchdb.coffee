@@ -204,13 +204,12 @@ $ ->
     if search_state == SearchState.Compendium
       if search_type == SearchType.FullText
         # FULL TEXT search
-        fulltext_key = selection.title.substring(0, selection.title.indexOf('(')).trim();
+        fulltext_key = selection.keyword
         localStorage.setItem 'fulltext-search-id', selection.hash
         localStorage.setItem 'fulltext-search-key', fulltext_key
         $.ajax(jsRoutes.controllers.MainController.showFullTextSearchResult(language, selection.hash, fulltext_key))
         .done (response) ->
-          # window.location.assign '/showfulltext?id=' + selection.hash + "&key=" + fulltext_key #typed_input
-          window.location.assign '/' + language + '/fulltext?id=' + selection.hash + '&key=' + fulltext_key #typed_input
+          window.location.assign '/' + language + '/fulltext?keyword=' + selection.keyword + '&key=' + typed_input
           console.log selection.hash + ' -> ' + fulltext_key + ' with language = ' + language
         .fail (jqHXR, textStatus) ->
           alert('ajax error')

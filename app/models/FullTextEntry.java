@@ -38,9 +38,11 @@ public class FullTextEntry {
 
     public void setNumHits(int num_hits) { this.num_hits = num_hits; }
 
-    public String getKeyword() { return this.keyword + " (" + this.num_hits + ")"; }
+    public String getKeyword() { return this.keyword; }
 
     public void setKeyword(String keyword) { this.keyword = keyword; }
+
+    public String getTitle() { return this.keyword + " (" + this.num_hits + ")"; }
 
     public String getRegnrs() {
         String regnrs_str = "";

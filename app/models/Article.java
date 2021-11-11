@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 public class Article {
     // Private
     private String _title = "";
+    private String _keyword = "";
     private String _author = "";
     private String _atccode = "";
     private String _regnrs = "";
@@ -28,6 +29,7 @@ public class Article {
     public long id = 0;
     public String hash = "";
     public String title = "";
+    public String keyword = "";
     public String author = "";
     public String atccode = "";
     public String regnrs = "";
@@ -37,9 +39,10 @@ public class Article {
     public String titles = "";
     public String sections = "";
 
-    public Article(long _id, String _hash, String _title, String _author, String _atccode, String _atcclass, String _regnrs, String _therapy, String _packinfo, String _packages, String _titles, String _sections) {
+    public Article(long _id, String _hash, String _title, String _keyword, String _author, String _atccode, String _atcclass, String _regnrs, String _therapy, String _packinfo, String _packages, String _titles, String _sections) {
         // Private
         this._title = _title;
+        this._keyword = _keyword;
         this._author = _author;
         this._atccode = _atccode;
         this._regnrs = _regnrs;
@@ -54,6 +57,7 @@ public class Article {
         this.id = _id;
         this.hash = _hash;
         this.title = _title;
+        this.keyword = _keyword;;
         this.packinfo = packinfoStr();
         this.author = _author;
         this.atccode = atccodeStr();

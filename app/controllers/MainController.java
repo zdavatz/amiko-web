@@ -323,7 +323,7 @@ public class MainController extends Controller {
     public Result getName(String lang, String name) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchName(lang, name));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), "", n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
+                .map(n -> new Article(n.getId(), "", n.getTitle(), "", n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -331,7 +331,7 @@ public class MainController extends Controller {
     public Result getOwner(String lang, String owner) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchOwner(lang, owner));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), "", n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
+                .map(n -> new Article(n.getId(), "", n.getTitle(), "", n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -339,7 +339,7 @@ public class MainController extends Controller {
     public Result getATC(String lang, String atc) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchATC(lang, atc));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), "", n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
+                .map(n -> new Article(n.getId(), "", n.getTitle(), "", n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -347,7 +347,7 @@ public class MainController extends Controller {
     public Result getRegnr(String lang, String regnr) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchRegnr(lang, regnr));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), "", n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
+                .map(n -> new Article(n.getId(), "", n.getTitle(), "", n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -355,7 +355,7 @@ public class MainController extends Controller {
     public Result getTherapy(String lang, String therapy) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchTherapy(lang, therapy));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(n.getId(), "", n.getTitle(), n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
+                .map(n -> new Article(n.getId(), "", n.getTitle(), "", n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -363,7 +363,7 @@ public class MainController extends Controller {
     public Result getFullText(String lang, String key) {
         CompletableFuture<List<FullTextEntry>> future = CompletableFuture.supplyAsync(()->searchFullText(lang, key));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
-                .map(n -> new Article(0, n.getHash(), n.getKeyword(), "", "", "", n.getRegnrs(), "", "", "", "", ""))
+                .map(n -> new Article(0, n.getHash(), n.getTitle(), n.getKeyword(), "", "", "", n.getRegnrs(), "", "", "", "", ""))
                 .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
@@ -375,7 +375,7 @@ public class MainController extends Controller {
             list_of_regnrs.add(r);
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchListRegnrs(lang, list_of_regnrs));
         CompletableFuture<List<Article>> list_of_articles = future.thenApplyAsync(a -> a.stream()
-                .map(m -> new Article(m.getId(), "", m.getTitle(), m.getAuth(), "", "", m.getRegnrs(), "", "", "", m.getSectionTitles(), m.getSectionIds()))
+                .map(m -> new Article(m.getId(), "", m.getTitle(), "", m.getAuth(), "", "", m.getRegnrs(), "", "", "", m.getSectionTitles(), m.getSectionIds()))
                 .collect(Collectors.toList()));
         return list_of_articles;
     }

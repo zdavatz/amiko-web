@@ -87,7 +87,7 @@ public class FullTextSearch {
 
             String anchor = "?";
             String eancode = a.eancode.split(",")[0];
-            content_title = "<a onclick=\"display_fachinfo('" + eancode + "','" + key + "','" + anchor + "')\">"
+            content_title = "<a onclick=\"display_fachinfo('" + eancode + "','" + keyword + "','" + anchor + "')\">"
                     + "<span style=\"font-size:0.85em\"><b>" + a.title + "</b></span></a><span style=\"font-size:x-small\"> | " + a.author + "</span><br>";
 
             Map<Integer, String> index_to_titles_map = a.index_to_titles_map(lang);
@@ -113,7 +113,7 @@ public class FullTextSearch {
                                         anchor = "Section" + c;
                                     }
                                     content_chapters += "<span style=\"font-size:small; color:#0099cc\">"
-                                            + "<a onclick=\"display_fachinfo('" + eancode + "','" + key + "','" + anchor + "')\">" + chapter_str + "</a>"
+                                            + "<a onclick=\"display_fachinfo('" + eancode + "','" + keyword + "','" + anchor + "')\">" + chapter_str + "</a>"
                                             + "</span><br>";
                                     found_chapter = true;
                                 }

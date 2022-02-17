@@ -87,7 +87,10 @@ public class FullTextSearch {
 
             String anchor = "?";
             String eancode = a.eancode.split(",")[0];
-            content_title = "<a onclick=\"display_fachinfo('" + eancode + "','" + keyword + "','" + anchor + "')\">"
+
+            String display_fachinfo_link = "/" + lang + "/fi?gtin=" + eancode + "&highlight=" + keyword + "&anchor=" + anchor;;
+
+            content_title = "<a href=\"" + display_fachinfo_link + "\">"
                     + "<span style=\"font-size:0.85em\"><b>" + a.title + "</b></span></a><span style=\"font-size:x-small\"> | " + a.author + "</span><br>";
 
             Map<Integer, String> index_to_titles_map = a.index_to_titles_map(lang);
@@ -112,8 +115,9 @@ public class FullTextSearch {
                                         // These are "old" section titles, e.g. Section7900, Section8000, etc.
                                         anchor = "Section" + c;
                                     }
+                                    String this_display_fachinfo_link = "/" + lang + "/fi?gtin=" + eancode + "&highlight=" + keyword + "&anchor=" + anchor;;
                                     content_chapters += "<span style=\"font-size:small; color:#0099cc\">"
-                                            + "<a onclick=\"display_fachinfo('" + eancode + "','" + keyword + "','" + anchor + "')\">" + chapter_str + "</a>"
+                                            + "<a href=\"" + this_display_fachinfo_link + "\">" + chapter_str + "</a>"
                                             + "</span><br>";
                                     found_chapter = true;
                                 }
@@ -176,14 +180,15 @@ public class FullTextSearch {
         titles_html += "<hr>";
         titles_html += "<ul>";
         for (Map.Entry<String, Integer> e : chapters_count_map.entrySet()) {
+            String show_full_text_link = "/" + lang + "/fulltext?keyword=" + keyword + "&key=" + key + "&filter=" + e.getKey();
             if (e.getKey().equals(filter)) {
                 titles_html += "<li style=\"background-color:#eeeeee\"><span style=\"font-size:small\">"
-                        + "<a onclick=\"show_full_text('" + keyword + "','" + key + "','" + e.getKey() + "')\">" + e.getKey() + "</a>"
+                        + "<a href=\"" + show_full_text_link + "\">" + e.getKey() + "</a>"
                         + " (" + e.getValue() + ")"
                         + "</span></li>";
             } else {
                 titles_html += "<li><span style=\"font-size:small\">"
-                        + "<a onclick=\"show_full_text('" + keyword + "','" + key + "','" + e.getKey() + "')\">" + e.getKey() + "</a>"
+                        + "<a href=\"" + show_full_text_link + "\">" + e.getKey() + "</a>"
                         + " (" + e.getValue() + ")"
                         + "</span></li>";
             }

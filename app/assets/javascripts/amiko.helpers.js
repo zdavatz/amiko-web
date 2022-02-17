@@ -92,32 +92,6 @@ function reset() {
 }
 
 /**
- * Display fachinfo
- */
-function display_fachinfo(ean, key, anchor) {
-    var lang = String(localStorage.getItem('language'));
-    if (anchor=='undefined')
-        anchor = '';
-    if (lang=="de")
-        window.location.assign('/de/fi?gtin=' + ean + "&highlight=" + key + "&anchor=" + anchor);
-    else if (lang=="fr")
-        window.location.assign('/fr/fi?gtin=' + ean + "&highlight=" + key + "&anchor=" + anchor);
-}
-
-/**
- * Filter full text search
- */
-function show_full_text(keyword, key, filter) {
-    var lang = String(localStorage.getItem('language'));
-    if (filter=='undefined')
-        filter = "0";
-    if (lang=="de")
-        window.location.assign('/de/fulltext?keyword=' + keyword + "&key=" + key + "&filter=" + filter);
-    else if (lang=="fr")
-        window.location.assign('/fr/fulltext?keyword=' + keyword + "&key=" + key + "&filter=" + filter);
-}
-
-/**
  * Creates a cookie with a given name and value and expiring in days from now
  */
 function createCookie(name, value, days) {

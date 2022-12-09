@@ -56,6 +56,7 @@ export JAVA_OPTS="-Dfeature.interactions=false"
 exec /var/www/amiko.zurrose.ch/bin/amikoweb -java-home /usr/local/src/jdk1.8.0_92/
 ```
 ## Setup Daemontools logging
+* sudo apt-get install daemontools-run
 ```
 vim /var/www/amiko.oddb.org/svc/log/run
 -> #!/bin/sh

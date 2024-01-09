@@ -375,6 +375,96 @@ a.atc-code:hover {
     color: var(--background-color-green);
 }
 
+.prescription-header {
+    display: flex;
+    flex-direction: row;
+}
+
+.prescription-patent, .prescription-doctor {
+    width: 50%;
+}
+
+.prescription-items {
+    border-top: solid 1px gray;
+    margin-top: 20px;
+    padding-top: 20px;
+}
+
+.prescription-item {
+    padding-bottom: 20px;
+}
+
+.prescription-item-actions {
+    float: right;
+}
+
+.prescription-item-note {
+    width: 100%;
+    background: var(--background-color-gray);
+    border: 0;
+}
+
+.prescriptions dialog {
+    z-index: 1;
+    background: var(--background-color-gray);
+    color: var(--text-color-normal);
+    width: 40%;
+    top: 100px;
+    border-radius: 8px;
+    border: none;
+    outline-color: #757575c9;
+    outline-style: solid;
+    outline-width: 8px;
+}
+
+.prescriptions dialog form[method="dialog"] {
+    color: var(--text-color-normal);
+}
+
+.prescriptions dialog form[method="dialog"] button, .prescriptions dialog form[method="dialog"] input {
+    border: solid 1px var(--lines-color);
+    color: var(--text-color-normal);
+    background-color: var(--background-color-normal);
+    padding: 5px 20px;
+}
+
+dialog.prescriptions-doctor {
+    width: 500px;
+}
+
+.prescriptions-doctor-content table {
+    width: 100%;
+}
+
+.prescriptions-doctor .-field .-name {
+    text-align: right;
+    width: 150px;
+    padding-right: 10px;
+}
+
+.prescriptions-doctor .-field input {
+    width: 100%;
+}
+
+.prescriptions-address-book-content {
+    display: flex;
+}
+
+.prescriptions-address-book-form {
+    width: 70%;
+}
+
+.prescriptions-address-book-form .-field {
+    width: 150px;
+    padding-right: 10px;
+    text-align: right;
+}
+
+.prescriptions-address-book-patients {
+    width: 30%;
+    overflow-x:y: scroll;
+}
+
 /* Removes annoying 'x' from IE, Edge and Chrome */
 input[type=text]::-ms-clear {
     display: none; width : 0; height: 0;

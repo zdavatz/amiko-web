@@ -126,6 +126,12 @@ public class MainController extends Controller {
         return ok(index.render("", "", "", "", "", vc, messages));
     }
 
+    public Result prescription(Http.Request request, String lang, String key) {
+        ViewContext vc = getViewContext();
+        String html = prescriptions.render("the name").toString();
+        return ok(index.render(html, "titles", "", "", "", vc));
+    }
+
     /**
      * These is the list of functions which are called from javascripts/coffeescripts
      * @return

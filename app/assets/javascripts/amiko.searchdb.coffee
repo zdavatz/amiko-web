@@ -5,6 +5,7 @@ $ ->
   SearchState =
     Compendium: 1
     Interactions: 2
+    Prescriptions: 3
 
   SearchType =
     Title: 1
@@ -89,8 +90,11 @@ $ ->
     else if search_state == SearchState.Interactions
       $('#interactions-button').toggleClass 'nav-button-active'
       $('#fulltext-button').disabled = 'disabled'
+    else if search_state == SearchState.Prescriptions
+      $('#prescriptions-button').toggleClass 'nav-button-active'
+      $('#fulltext-button').disabled = 'disabled'
   else
-    search_state = 1  # default search state is 'compendium'
+    search_state = SearchState.Compendium  # default search state is 'compendium'
     $('#compendium-button').toggleClass 'nav-button-active'
     localStorage.setItem 'search-state', search_state
 
@@ -307,6 +311,14 @@ $ ->
       console.log 'switching to interactions basket -> ' + interactions_basket
     .fail (jqHXR, textStatus) ->
       alert('ajax error')
+
+  $('#prescriptions-button').on 'click', ->
+    $(this).toggleClass 'nav-button-active'
+    # disable full text search button
+    disableButton SearchType.FullText
+    # set search state
+    setSearchUIState(SearchState.Prescriptions)
+    window.location.assign '/prescriptions'
 
   # Detect click on search buttons
   setSearchType = (type) ->

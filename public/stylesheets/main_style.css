@@ -258,16 +258,12 @@ a.atc-code:hover {
 
 .center-image {
     display: block;
-    margin-left: auto;
-    margin-right: auto;
+    text-align: center;
 }
 
 .state-button {
-    float: left;
-    margin-left: 16px;
     outline: none;
     border: none;
-    text-align: center;
     background: transparent;
 }
 

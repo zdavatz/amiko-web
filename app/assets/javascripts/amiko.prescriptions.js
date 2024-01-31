@@ -206,6 +206,27 @@ function readPatient(id) {
     });
 }
 
+function newPatient() {
+    document.getElementsByName('address-book-field-surname')[0].value = '';
+    document.getElementsByName('address-book-field-name')[0].value = '';
+    document.getElementsByName('address-book-field-street')[0].value = '';
+    document.getElementsByName('address-book-field-city')[0].value = '';
+    document.getElementsByName('address-book-field-zip')[0].value = '';
+    document.getElementsByName('address-book-field-country')[0].value = '';
+    document.getElementsByName('address-book-field-birthday')[0].value = '';
+    document.querySelector('input[name=address-book-field-sex][value=m]').checked =
+    document.querySelector('input[name=address-book-field-sex][value=f]').checked = false;
+    document.getElementsByName('address-book-field-weight')[0].value = '';
+    document.getElementsByName('address-book-field-height')[0].value = '';
+    document.getElementsByName('address-book-field-phone')[0].value = '';
+    document.getElementsByName('address-book-field-email')[0].value = '';
+    document.getElementsByName('address-book-field-bagnumber')[0].value = '';
+    document.getElementsByName('address-book-field-cardnumber')[0].value = '';
+    document.getElementsByName('address-book-field-cardexpiry')[0].value = '';
+    document.getElementsByName('address-book-field-gln')[0].value = '';
+    currentPatientId = null;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('doctor-save').addEventListener('click', function() {
         saveDoctor();
@@ -214,5 +235,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('patient-save').addEventListener('click', function() {
         savePatient();
         listPatients();
+    });
+    document.getElementById('patient-create').addEventListener('click', function() {
+        newPatient();
     });
 });

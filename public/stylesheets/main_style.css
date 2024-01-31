@@ -465,6 +465,10 @@ dialog.prescriptions-doctor {
     overflow-x:y: scroll;
 }
 
+#patient-create {
+    float: right;
+}
+
 /* Removes annoying 'x' from IE, Edge and Chrome */
 input[type=text]::-ms-clear {
     display: none; width : 0; height: 0;

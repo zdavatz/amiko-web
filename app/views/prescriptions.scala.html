@@ -36,7 +36,7 @@
         </div>
     </div>
 
-    <dialog class="prescriptions-address-book" open>
+    <dialog class="prescriptions-address-book">
         <h2>Address book</h2>
         <div class="prescriptions-address-book-content">
             <table class="prescriptions-address-book-form">
@@ -70,7 +70,7 @@
                 </tr>
                 <tr>
                     <td class="-field">Sex:</td>
-                    <td><input type="radio" value="m" title="M">M <input type="radio" value="f" title="F"> F</td>
+                    <td><input name="address-book-field-sex" type="radio" value="m" title="M">M <input name="address-book-field-sex" type="radio" value="f" title="F"> F</td>
                 </tr>
                 <tr>
                     <td class="-field">Weight(kg):</td>
@@ -115,7 +115,7 @@
             </div>
         </div>
         <form class="dialog-action" method="dialog">
-            <input type="button" value="Save">
+            <input id="patient-save" type="button" value="Save">
             <button>close</button>
         </form>
     </dialog>

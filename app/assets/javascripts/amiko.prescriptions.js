@@ -165,6 +165,14 @@ function listPatients() {
             div.onclick = function () {
                 readPatient(id);
             };
+            var deleteButton = document.createElement('div');
+            deleteButton.className = 'prescriptions-address-book-patient-delete';
+            deleteButton.innerText = 'delete';
+            div.appendChild(deleteButton);
+            deleteButton.onclick = function(e) {
+                e.stopPropagation();
+                deletePatient(id);
+            };
             container.appendChild(div);
         });
     });
@@ -225,6 +233,21 @@ function newPatient() {
     document.getElementsByName('address-book-field-cardexpiry')[0].value = '';
     document.getElementsByName('address-book-field-gln')[0].value = '';
     currentPatientId = null;
+}
+
+function deletePatient(id) {
+    return getPrescriptionDatabase().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var req = db
+                .transaction("patients", "readwrite")
+                .objectStore("patients")
+                .delete(id);
+            req.onsuccess = resolve;
+            req.onerror = reject;
+        });
+    })
+    .then(listPatients)
+    .then(newPatient);
 }
 
 document.addEventListener('DOMContentLoaded', function() {

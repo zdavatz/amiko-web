@@ -462,7 +462,40 @@ dialog.prescriptions-doctor {
 
 .prescriptions-address-book-patients {
     width: 30%;
-    overflow-x:y: scroll;
+    overflow-x: auto;
+    overflow-y: scroll;
+    border-left: solid 1px #dddddd;
+    padding-left: 10px;
+}
+
+.prescriptions-address-book-patient {
+    margin-bottom: 5px;
+}
+
+.prescriptions-address-book-patient:hover {
+    cursor: pointer;
+    background: var(--background-color-highlight);
+}
+
+.prescriptions-address-book-patient.--selected {
+    color: var(--lines-color);
+}
+
+.prescriptions-address-book-patient-delete {
+    display: none;
+    width: 20px;
+    height: 20px;
+    background-color: var(--text-color-normal);
+    mask: url('/assets/images/rubbish-bin.png') center/contain;
+    float: right;
+}
+
+.prescriptions-address-book-patient:hover .prescriptions-address-book-patient-delete {
+    display: inline;
+}
+
+.prescriptions-address-book-patient-delete:hover {
+    background-color: var(--text-color-light);
 }
 
 #patient-create {

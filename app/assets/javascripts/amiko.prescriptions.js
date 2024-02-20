@@ -1,7 +1,29 @@
+// The info section where we show the current selected patient and doctor info
+function reloadPrescriptionInfo() {
+    readDoctor().then(function(profile) {
+        var div = document.getElementsByClassName('prescription-doctor-info')[0];
+        if (!profile) {
+            div.innerText = '';
+        } else {
+            div.innerText = profile.title + ' ' + profile.name + ' ' + profile.surname;
+        }
+    });
+    var patientInfo = document.getElementsByClassName('prescription-patent-info')[0];
+    if (currentPatientId === null) {
+        patientInfo.innerText = '';
+    } else {
+        readPatient(currentPatientId).then(function(patient) {
+            if (patient) {
+                patientInfo.innerText = patient.name + ' ' + patient.surname;
+            }
+        });
+    }
+}
+
 function showDoctorModal() {
     var modal = document.querySelector('dialog.prescriptions-doctor');
     modal.showModal();
-    readDoctor();
+    readAndFillDoctorModal();
 }
 
 function closeDoctorModal() {
@@ -67,7 +89,8 @@ function saveDoctor() {
             req.onsuccess = resolve;
             req.onerror = reject;
         });
-    });
+    })
+    .then(reloadPrescriptionInfo);
 }
 
 function readDoctor() {
@@ -81,7 +104,11 @@ function readDoctor() {
             };
             req.onerror = reject;
         });
-    }).then(function (profile) {
+    });
+}
+
+function readAndFillDoctorModal() {
+    return readDoctor().then(function (profile) {
         document.getElementsByName('doctor-field-title')[0].value = profile.title;
         document.getElementsByName('doctor-field-zsrnumber')[0].value = profile.zsrnumber;
         document.getElementsByName('doctor-field-gln')[0].value = profile.gln;
@@ -133,7 +160,8 @@ function savePatient() {
             };
             req.onerror = reject;
         });
-    });
+    })
+    .then(reloadPrescriptionInfo);
 }
 
 function listPatients() {
@@ -158,16 +186,18 @@ function listPatients() {
         var container = document.getElementsByClassName('prescriptions-address-book-patients')[0];
         container.innerHTML = '';
         patients.forEach(function (patient) {
-            var div = document.createElement('div');
-            div.className = 'prescriptions-address-book-patient';
-            div.innerText = patient.name + ' ' + patient.surname;
             var id = patient.id;
+            var div = document.createElement('div');
+            div.className = 'prescriptions-address-book-patient ' + (id === currentPatientId ? '--selected' : '');
+            div.innerText = patient.name + ' ' + patient.surname;
             div.onclick = function () {
-                readPatient(id);
+                readAndFillPatientModal(id);
             };
             var deleteButton = document.createElement('div');
             deleteButton.className = 'prescriptions-address-book-patient-delete';
-            deleteButton.innerText = 'delete';
+            var deleteButtonImage = document.createElement('img');
+            deleteButtonImage.src = '/assets/images/rubbish-bin.png';
+            // deleteButton.appendChild(deleteButtonImage);
             div.appendChild(deleteButton);
             deleteButton.onclick = function(e) {
                 e.stopPropagation();
@@ -189,7 +219,12 @@ function readPatient(id) {
             };
             req.onerror = reject;
         });
-    }).then(function (patient) {
+    });
+}
+
+function readAndFillPatientModal(id) {
+    return readPatient(id)
+    .then(function (patient) {
         currentPatientId = patient.id;
         document.getElementsByName('address-book-field-surname')[0].value = patient.surname;
         document.getElementsByName('address-book-field-name')[0].value = patient.name;
@@ -211,7 +246,9 @@ function readPatient(id) {
         document.getElementsByName('address-book-field-cardnumber')[0].value = patient.cardnumber;
         document.getElementsByName('address-book-field-cardexpiry')[0].value = patient.cardexpiry;
         document.getElementsByName('address-book-field-gln')[0].value = patient.gln;
-    });
+        return listPatients();
+    })
+    .then(reloadPrescriptionInfo);
 }
 
 function newPatient() {
@@ -262,4 +299,5 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('patient-create').addEventListener('click', function() {
         newPatient();
     });
+    reloadPrescriptionInfo();
 });

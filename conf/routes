@@ -3,7 +3,7 @@
 # ~~~~
 
 # Home page
-GET     /                           controllers.MainController.index(atc_query: String?="")
+GET     /                           controllers.MainController.index(request: Request, atc_query: String?="")
 GET     /name                       controllers.MainController.getName(lang: String?="de", name: String)
 GET     /owner                      controllers.MainController.getOwner(lang: String?="de", owner: String)
 GET     /atc                        controllers.MainController.getATC(lang: String?="de", atc: String)
@@ -12,29 +12,29 @@ GET     /therapy                    controllers.MainController.getTherapy(lang: 
 GET     /fulltext                   controllers.MainController.getFullText(lang: String?="de", key: String)
 
 # 2. parameter will appear in URI
-GET     /interactions/:basket          controllers.MainController.interactionsBasketWithoutLang(basket: String)
-GET     /de/interactions/:basket       controllers.MainController.interactionsBasket(lang: String="de", basket: String)
-GET     /fr/interactions/:basket       controllers.MainController.interactionsBasket(lang: String="fr", basket: String)
+GET     /interactions/:basket          controllers.MainController.interactionsBasketWithoutLang(request: Request, basket: String)
+GET     /de/interactions/:basket       controllers.MainController.interactionsBasket(request: Request, lang: String="de", basket: String)
+GET     /fr/interactions/:basket       controllers.MainController.interactionsBasket(request: Request, lang: String="fr", basket: String)
 
-GET     /fi/id/:id                  controllers.MainController.fachinfoId(lang: String?="de", id: Long)
+GET     /fi/id/:id                  controllers.MainController.fachinfoId(request: Request, lang: String?="de", id: Long)
 GET     /fii                        controllers.MainController.getFachinfo(lang: String?="de", id: Long)
 
-GET     /de/fi/gtin/:gtin           controllers.MainController.fachinfoDirect(lang: String="de", gtin: String)
-GET     /fr/fi/gtin/:gtin           controllers.MainController.fachinfoDirect(lang: String="fr", gtin: String)
+GET     /de/fi/gtin/:gtin           controllers.MainController.fachinfoDirect(request: Request, lang: String="de", gtin: String)
+GET     /fr/fi/gtin/:gtin           controllers.MainController.fachinfoDirect(request: Request, lang: String="fr", gtin: String)
 
-GET     /de/fi                      controllers.MainController.fachinfoRequest(lang: String="de", gtin: String, type: String?="", key: String?="", highlight: String?="", anchor: String?="", filter: String?="0")
-GET     /fr/fi                      controllers.MainController.fachinfoRequest(lang: String="fr", gtin: String, type: String?="", key: String?="", highlight: String?="", anchor: String?="", filter: String?="0")
+GET     /de/fi                      controllers.MainController.fachinfoRequest(request: Request, lang: String="de", gtin: String, type: String?="", key: String?="", highlight: String?="", anchor: String?="", filter: String?="0")
+GET     /fr/fi                      controllers.MainController.fachinfoRequest(request: Request, lang: String="fr", gtin: String, type: String?="", key: String?="", highlight: String?="", anchor: String?="", filter: String?="0")
 
-GET     /fulltext                   controllers.MainController.showFullTextSearchResult(lang: String?="de", keyword: String, key: String, filter: String?="0")
-GET     /de/fulltext                controllers.MainController.showFullTextSearchResult(lang: String?="de", keyword: String, key: String, filter: String?="0")
-GET     /fr/fulltext                controllers.MainController.showFullTextSearchResult(lang: String?="fr", keyword: String, key: String, filter: String?="0")
+GET     /fulltext                   controllers.MainController.showFullTextSearchResult(request: Request, lang: String?="de", keyword: String, key: String, filter: String?="0")
+GET     /de/fulltext                controllers.MainController.showFullTextSearchResult(request: Request, lang: String?="de", keyword: String, key: String, filter: String?="0")
+GET     /fr/fulltext                controllers.MainController.showFullTextSearchResult(request: Request, lang: String?="fr", keyword: String, key: String, filter: String?="0")
 
-GET     /de                         controllers.MainController.setLang(lang: String="de")
-GET     /fr                         controllers.MainController.setLang(lang: String="fr")
+GET     /de                         controllers.MainController.setLang(request: Request, lang: String="de")
+GET     /fr                         controllers.MainController.setLang(request: Request, lang: String="fr")
 
-POST    /lang/:lang                 controllers.MainController.setLang(lang: String)
+POST    /lang/:lang                 controllers.MainController.setLang(request: Request, lang: String)
 
-GET     /javascriptRoutes           controllers.MainController.javascriptRoutes
+GET     /javascriptRoutes           controllers.MainController.javascriptRoutes(request: Request)
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)

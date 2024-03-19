@@ -2,12 +2,14 @@ name := """AmiKoWeb"""
 
 version := "1.0-SNAPSHOT"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.13.13"
 
 libraryDependencies ++= Seq(
   javaJdbc,
-  cache,
-  javaWs
+  ehcache,
+  javaWs,
+  guice,
+  "org.xerial" % "sqlite-jdbc" % "3.45.2.0"
 )
 
 lazy val root = (project in file(".")).enablePlugins(PlayJava)
@@ -16,8 +18,8 @@ lazy val root = (project in file(".")).enablePlugins(PlayJava)
 // Checks for package.json in project's base directory then causes npm to run
 JsEngineKeys.engineType := JsEngineKeys.EngineType.Node
 
-pipelineStages in Assets := Seq(autoprefixer)
-includeFilter in autoprefixer := GlobFilter("*.css")
+// pipelineStages in Assets := Seq(autoprefixer)
+// includeFilter in autoprefixer := GlobFilter("*.css")
 
 sources in (Compile, doc) := Seq.empty
 

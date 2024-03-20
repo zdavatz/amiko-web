@@ -1,24 +1,18 @@
 // The Play plugin
-addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.5.3")
+addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.9.2")
 
 // Web plugins
-addSbtPlugin("com.typesafe.sbt" % "sbt-coffeescript" % "1.0.0")
-addSbtPlugin("com.typesafe.sbt" % "sbt-less" % "1.1.0")
-addSbtPlugin("com.typesafe.sbt" % "sbt-jshint" % "1.0.3")
-addSbtPlugin("com.typesafe.sbt" % "sbt-rjs" % "1.0.7")
-addSbtPlugin("com.typesafe.sbt" % "sbt-digest" % "1.1.0")
-addSbtPlugin("com.typesafe.sbt" % "sbt-mocha" % "1.1.0")
-addSbtPlugin("org.irundaia.sbt" % "sbt-sassify" % "1.4.2")
+addSbtPlugin("com.github.sbt" % "sbt-coffeescript" % "2.0.1")
+addSbtPlugin("com.github.sbt" % "sbt-less" % "2.0.1")
+addSbtPlugin("com.github.sbt" % "sbt-jshint" % "2.0.1")
+addSbtPlugin("com.github.sbt" % "sbt-rjs" % "2.0.0")
+addSbtPlugin("com.github.sbt" % "sbt-digest" % "2.0.0")
+addSbtPlugin("com.github.sbt" % "sbt-mocha" % "2.0.0")
+addSbtPlugin("io.github.irundaia" % "sbt-sassify" % "1.5.2")
 
 // Autoprefixer plugin
-lazy val root = project.in(file(".")).dependsOn(sbtAutoprefixer)
-lazy val sbtAutoprefixer = uri("git://github.com/matthewrennie/sbt-autoprefixer")
-
-// Play enhancer - this automatically generates getters/setters for public fields
-// and rewrites accessors of these fields to use the getters/setters. Remove this
-// plugin if you prefer not to have this feature, or disable on a per project
-// basis using disablePlugins(PlayEnhancer) in your build.sbt
-addSbtPlugin("com.typesafe.sbt" % "sbt-play-enhancer" % "1.1.0")
+// lazy val sbtAutoprefixer = uri("https://github.com/matthewrennie/sbt-autoprefixer.git")
+// lazy val root = project.in(file(".")).dependsOn(sbtAutoprefixer)
 
 // Play Ebean support, to enable, uncomment this line, and enable in your build.sbt using
 // enablePlugins(PlayEbean).

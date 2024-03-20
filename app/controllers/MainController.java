@@ -20,13 +20,17 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package controllers;
 
 import models.*;
-import play.Configuration;
+import com.typesafe.config.Config;
+import play.api.i18n.I18nSupport;
+import play.api.i18n.MessagesProvider;
 import play.data.DynamicForm;
 import play.data.FormFactory;
 import play.db.NamedDatabase;
 import play.db.Database;
 import play.mvc.*;
 import play.i18n.Messages;
+import play.i18n.MessagesApi;
+import play.i18n.Lang;
 import views.html.*;
 
 import java.sql.*;
@@ -62,8 +66,9 @@ public class MainController extends Controller {
     private static final String DATABASE_TABLE = "amikodb";
     private static final String FREQUENCY_TABLE = "frequency";
 
-    @Inject private Configuration configuration;
+    @Inject private Config configuration;
     @Inject WSClient ws;
+    @Inject private MessagesApi messagesApi;
 
     /**
      * Table columns used for fast queries
@@ -87,11 +92,15 @@ public class MainController extends Controller {
     @Inject FormFactory formFactory;
 
     Boolean getShowInteractions() {
-        return configuration.getBoolean("feature.interactions", true);
+        try {
+            return configuration.getBoolean("feature.interactions");
+        } catch (com.typesafe.config.ConfigException.Missing e_) {
+            return true;
+        }
     }
 
-    ViewContext getViewContext() {
-        String host = ctx().request().host();
+    ViewContext getViewContext(Http.Request request) {
+        String host = request.host();
         ViewContext ctx = new ViewContext();
         ctx.showInteraction = getShowInteractions();
         if (host.contains("zurrose")) {
@@ -108,21 +117,22 @@ public class MainController extends Controller {
      * Absolute minimal html-rendering
      * @return
      */
-    public Result index(String atc_query) {
-        ViewContext vc = getViewContext();
+    public Result index(Http.Request request, String atc_query) {
+        ViewContext vc = getViewContext(request);
+        Messages messages = messagesApi.preferred(request);
         if (!atc_query.equals("")) {
-            return ok(index.render("", "", atc_query, "atc", "", vc));
+            return ok(index.render("", "", atc_query, "atc", "", vc, messages));
         }
-        return ok(index.render("", "", "", "", "", vc));
+        return ok(index.render("", "", "", "", "", vc, messages));
     }
 
     /**
      * These is the list of functions which are called from javascripts/coffeescripts
      * @return
      */
-    public Result javascriptRoutes() {
+    public Result javascriptRoutes(Http.Request request) {
         return ok(
-                play.routing.JavaScriptReverseRouter.create("jsRoutes",
+                play.routing.JavaScriptReverseRouter.create("jsRoutes", "jQuery.ajax", request.host(),
                         controllers.routes.javascript.MainController.setLang(),
                         controllers.routes.javascript.MainController.getFachinfo(),
                         controllers.routes.javascript.MainController.interactionsBasket(),
@@ -137,10 +147,10 @@ public class MainController extends Controller {
      * @param lang
      * @return
      */
-    public Result setLang(String lang) {
-        // response().discardCookie("PLAY_LANG");
-        ctx().changeLang(lang);
-        return index("");
+    public Result setLang(Http.Request request, String lang) {
+        Lang l = Lang.forCode(lang);
+        request = request.withTransientLang(l);
+        return index(request, "").withLang(l, messagesApi);
     }
 
     /**
@@ -150,9 +160,9 @@ public class MainController extends Controller {
      * @param id
      * @return
      */
-    public Result fachinfoId(String lang, long id) {
+    public Result fachinfoId(Http.Request request, String lang, long id) {
         Medication m = getMedicationWithId(lang, id);
-        return retrieveFachinfo(lang, m, "", "", "");
+        return retrieveFachinfo(request, lang, m, "", "", "");
     }
 
     /**
@@ -173,9 +183,9 @@ public class MainController extends Controller {
      * @param ean
      * @return
      */
-    public Result fachinfoDirect(String lang, String ean) {
+    public Result fachinfoDirect(Http.Request request, String lang, String ean) {
         Medication m = getMedicationWithEan(lang, ean);
-        return retrieveFachinfo(lang, m, "", "", "");
+        return retrieveFachinfo(request, lang, m, "", "", "");
     }
 
     /**
@@ -190,12 +200,12 @@ public class MainController extends Controller {
      * @param filter
      * @return
      */
-    public Result fachinfoRequest(String lang, String ean, String type, String key, String highlight, String anchor, String filter) {
+    public Result fachinfoRequest(Http.Request request, String lang, String ean, String type, String key, String highlight, String anchor, String filter) {
         Medication m = getMedicationWithEan(lang, ean);
         if (key.isEmpty())
-            return retrieveFachinfo(lang, m, type, anchor, highlight);
+            return retrieveFachinfo(request, lang, m, type, anchor, highlight);
         else
-            return retrieveFachinfo(lang, m, type, key, "");
+            return retrieveFachinfo(request, lang, m, type, key, "");
     }
 
     /**
@@ -203,12 +213,13 @@ public class MainController extends Controller {
      * https://github.com/zdavatz/amiko-web/issues/38
      */
 
-    public Result interactionsBasket() {
+    public Result interactionsBasket(Http.Request request) {
         String interactions_html = "";
         String titles_html = "";
         String name = "";
-        ViewContext vc = getViewContext();
-        return ok(index.render(interactions_html, titles_html, name, "", "", vc));
+        ViewContext vc = getViewContext(request);
+        Messages messages = messagesApi.preferred(request);
+        return ok(index.render(interactions_html, titles_html, name, "", "", vc, messages));
     }
 
     /**
@@ -218,19 +229,19 @@ public class MainController extends Controller {
      * @param basket
      * @return
      */
-    public CompletionStage<Result> interactionsBasket(String lang, String basket) {
-        String subdomainLang = ctx().lang().language();
+    public CompletionStage<Result> interactionsBasket(Http.Request request, String lang, String basket) {
+        String subdomainLang = request.transientLang().orElse(Lang.forCode(lang)).language();
         boolean showInteraction = getShowInteractions();
-        final ViewContext vc = getViewContext();
+        final ViewContext vc = getViewContext(request);
         if (!showInteraction) {
             return CompletableFuture.completedFuture(notFound("Interactions is not enabled"));
         }
 
         if (!subdomainLang.equals(lang)) {
             // Change lang so message it is another lang
-            ctx().setTransientLang(lang);
-            Messages mes = ctx().messages();
-            String baseUrl = mes.at("web_url");
+            request = request.withTransientLang(lang);
+            Messages messages = messagesApi.preferred(request);
+            String baseUrl = messages.at("web_url");
             String sslUrl = baseUrl.replace("http://", "https://");
             String path = controllers.routes.MainController.interactionsBasket(lang, basket).path();
             String newUrl = sslUrl + path;
@@ -257,6 +268,7 @@ public class MainController extends Controller {
         }
         final String final_article_title = article_title;
         InteractionsData inter_data = InteractionsData.getInstance();
+        final Messages messages = messagesApi.preferred(request);
         return inter_data.updateHtml(ws, med_basket, lang).thenApply((interactions_html)-> {
             // Associate section titles and anchors
             String[] section_titles = inter_data.sectionTitles();
@@ -270,12 +282,12 @@ public class MainController extends Controller {
             titles_html += "</ul>";
             if (interactions_html == null)
                 interactions_html = "";
-            return ok(index.render(interactions_html, titles_html, final_article_title, "", "", vc));
+            return ok(index.render(interactions_html, titles_html, final_article_title, "", "", vc, messages));
         });
     }
 
-    public Result interactionsBasketWithoutLang(String basket) {
-        String lang = ctx().lang().language();
+    public Result interactionsBasketWithoutLang(Http.Request request, String basket) {
+        String lang = request.transientLang().orElse(Lang.forCode("de")).language();
         return redirect(controllers.routes.MainController.interactionsBasket(lang, basket));
     }
 
@@ -288,7 +300,7 @@ public class MainController extends Controller {
      * @param filter
      * @return
      */
-    public Result showFullTextSearchResult(String lang, String keyword, String key, String filter) {
+    public Result showFullTextSearchResult(Http.Request request, String lang, String keyword, String key, String filter) {
         FullTextEntry entry = getFullTextEntryWithKeyword(lang, keyword);
 
         if (entry == null) {
@@ -302,8 +314,9 @@ public class MainController extends Controller {
 
         Pair<String, String> fts = full_text_search.updateHtml(lang, list_of_articles, entry.getMapOfChapters(), keyword, key, filter);
 
-        ViewContext vc = getViewContext();
-        return ok(index.render(fts.first, fts.second, key, "", "", vc));
+        ViewContext vc = getViewContext(request);
+        Messages messages = messagesApi.preferred(request);
+        return ok(index.render(fts.first, fts.second, key, "", "", vc, messages));
     }
 
     public Result getName(String lang, String name) {
@@ -375,7 +388,7 @@ public class MainController extends Controller {
      * @param highlight
      * @return
      */
-    private Result retrieveFachinfo(String lang, Medication m, String type, String key, String highlight) {
+    private Result retrieveFachinfo(Http.Request request, String lang, Medication m, String type, String key, String highlight) {
         if (m!=null) {
             String name = "";
             String titles_html = "";
@@ -408,13 +421,14 @@ public class MainController extends Controller {
                     content = "Votre mot clé de recherche n'a abouti à aucun résultat.";
             }
 
-            ViewContext vc = getViewContext();
+            ViewContext vc = getViewContext(request);
+            Messages messages = messagesApi.preferred(request);
             // Text-based HTTP response, default encoding: utf-8
             if (content != null) {
                 if (highlight.length() > 3) {
-                    return ok(index.render(content, titles_html, name, "", "'" + key + "'", vc));
+                    return ok(index.render(content, titles_html, name, "", "'" + key + "'", vc, messages));
                 } else {
-                    return ok(index.render(content, titles_html, key, "", "", vc));
+                    return ok(index.render(content, titles_html, key, "", "", vc, messages));
                 }
             }
         }
@@ -469,7 +483,7 @@ public class MainController extends Controller {
             }
             conn.close();
         } catch (SQLException e) {
-            System.err.println(">> SqlDatabase: SQLException in searchName for " + name);
+            System.err.println(">> SqlDatabase: SQLException in searchName for " + name + ": " + e.toString());
         }
 
         return med_titles;
@@ -635,7 +649,7 @@ public class MainController extends Controller {
             // KEY_STYLE... (ignore)
             medi.setPackages(result.getString(18)); // KEY_PACKAGES
         } catch (SQLException e) {
-            System.err.println(">> SqlDatabase: SQLException in cursorToMedi");
+            System.err.println(">> SqlDatabase: SQLException in cursorToMedi " + e.toString());
         }
         return medi;
     }

@@ -502,6 +502,34 @@ dialog.prescriptions-doctor {
     float: right;
 }
 
+.tt-dataset-articles {
+    overflow-x: hidden;
+}
+.article-packinfo {
+    position: relative;
+    margin: 5px 0;
+    line-height: 1.0;
+}
+
+.article-packinfo:hover {
+    background-color: rgba(128, 128, 128, 0.3);
+}
+
+.article-packinfo-add-prescription {
+    height: 16px;
+    position: absolute;
+    right: 30px;
+    top: 0;
+}
+.article-packinfo-add-prescription:hover {
+    background-color: rgba(128, 128, 128, 0.5);
+}
+@media (prefers-color-scheme: dark) {
+    .article-packinfo-add-prescription {
+        filter: invert(1);
+    }
+}
+
 /* Removes annoying 'x' from IE, Edge and Chrome */
 input[type=text]::-ms-clear {
     display: none; width : 0; height: 0;

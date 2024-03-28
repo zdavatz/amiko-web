@@ -147,6 +147,13 @@ $ ->
 
   typeaheadCtrl = $('#input-form .twitter-typeahead')
 
+  dataForPrescriptionBasket = (data, packinfo) ->
+    JSON.stringify({
+      title: data.title,
+      eancode: data.eancode,
+      packinfo: packinfo.title,
+    })
+
   typeaheadCtrl.typeahead
     menu: $('#special-dropdown')
     hint: false
@@ -160,28 +167,31 @@ $ ->
     source: articles.ttAdapter()
     templates:
       suggestion: (data) ->
+        console.log data
         if search_type == SearchType.Title
+          packsStr = (packinfo)->
+            "<p class='article-packinfo' style='color:#{packinfo.color};' data-prescription='#{dataForPrescriptionBasket(data, packinfo)}'>#{packinfo.title}</p>"
           "<div style='display:table;vertical-align:middle;'>\
           <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
-          <span style='font-size:0.85em;'>#{data.packinfo}</span></div>"
+          <span style='font-size:0.85em;'>#{data.packinfos.map(packsStr).join('')}</span></div>"
         else if search_type == SearchType.Owner
-          "<div style='display:table;vertical-align:middle;'>\
+          "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>\
           <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:#8888cc;font-size:1.0em;'><p>#{data.author}</p></span></div>"
         else if search_type == SearchType.Atc
-          "<div style='display:table;vertical-align:middle;'>\
+          "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>\
           <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:gray;font-size:0.85em;'>#{data.atccode}</span></div>"
         else if search_type == SearchType.Regnr
-          "<div style='display:table;vertical-align:middle;'>\
+          "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>\
           <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:#8888cc;font-size:1.0em;'><p>#{data.regnrs}</p></span></div>"
         else if search_type == SearchType.Therapie
-          "<div style='display:table;vertical-align:middle;'>\
+          "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>\
           <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:gray;font-size:0.85em;'>#{data.therapy}</span></div>"
         else if search_type == SearchType.FullText
-          "<div style='display:table;vertical-align:middle;'>\
+          "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>\
           <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>"
 
   typeaheadCtrl.on 'typeahead:asyncrequest', (event, selection) ->

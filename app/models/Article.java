@@ -1,5 +1,6 @@
 package models;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -34,7 +35,7 @@ public class Article {
     public String atccode = "";
     public String regnrs = "";
     public String therapy = "";
-    public String packinfo = "";
+    public ArrayList<PackInfo> packinfos = new ArrayList();
     public String eancode = "";
     public String titles = "";
     public String sections = "";
@@ -58,7 +59,7 @@ public class Article {
         this.hash = _hash;
         this.title = _title;
         this.keyword = _keyword;;
-        this.packinfo = packinfoStr();
+        this.packinfos = makePackInfos();
         this.author = _author;
         this.atccode = atccodeStr();
         this.regnrs = _regnrs;
@@ -74,24 +75,33 @@ public class Article {
         this._titles = _titles;
     }
 
-    public String packinfoStr() {
-        String pack_info_str = "";
+    public ArrayList<PackInfo> makePackInfos() {
+        // String pack_info_str = "";
         Pattern p_red = Pattern.compile(".*O]");
         Pattern p_green = Pattern.compile(".*G]");
         Scanner pack_str_scanner = new Scanner(_packinfo);
+        ArrayList<PackInfo> result = new ArrayList<PackInfo>();
         while (pack_str_scanner.hasNextLine()) {
             String pack_str_line = pack_str_scanner.nextLine();
             Matcher m_red = p_red.matcher(pack_str_line);
             Matcher m_green = p_green.matcher(pack_str_line);
-            if (m_red.find())
-                pack_info_str += "<p style='color:red;'>" + pack_str_line	+ "</p>";
-            else if (m_green.find())
-                pack_info_str += "<p style='color:green;'>" + pack_str_line + "</p>";
-            else
-                pack_info_str += "<p style='color:gray;'>" + pack_str_line + "</p>";
+            String color = "";
+            if (m_red.find()) {
+                color = "red";
+                // pack_info_str += "<p class='article-packinfo' style='color:red;'>" + pack_str_line	+ "</p>";
+            } else if (m_green.find()) {
+                color = "green";
+                // pack_info_str += "<p class='article-packinfo' style='color:green;'>" + pack_str_line + "</p>";
+            }
+            else {
+                color = "gray";
+                // pack_info_str += "<p class='article-packinfo' style='color:gray;'>" + pack_str_line + "</p>";
+            }
+            result.add(new PackInfo(color, pack_str_line));
         }
         pack_str_scanner.close();
-        return pack_info_str;
+        return result;
+        // return pack_info_str;
     }
 
     public String atccodeStr() {

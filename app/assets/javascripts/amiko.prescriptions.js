@@ -301,3 +301,36 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     reloadPrescriptionInfo();
 });
+
+function addToPrescriptionBasket(data) {
+    var basket = JSON.parse(localStorage.prescriptionBasket || "[]");
+    basket.push(data);
+    localStorage.prescriptionBasket = JSON.stringify(basket);
+}
+
+function listPrescriptionBasket() {
+    return JSON.parse(localStorage.prescriptionBasket || "[]");
+}
+
+$(document).on('mouseenter', '.article-packinfo', function(e) {
+    console.log('in', e);
+    var target = e.currentTarget;
+    var prescriptionButton = $('<img class="article-packinfo-add-prescription" src="/assets/images/prescription.png">');
+    $(target).append(prescriptionButton);
+    prescriptionButton.on('click', function() {
+        addToPrescriptionBasket($(target).data('prescription'));
+    });
+});
+
+$(document).on('mouseleave', '.article-packinfo', function(e) {
+    console.log('out', e);
+    $(e.currentTarget).find('.article-packinfo-add-prescription').remove();
+});
+
+$(document).on('mouseenter', '.typeahead-suggestion-wrapper', function(e) {
+    console.log('in wrap', e);
+});
+
+$(document).on('mouseleave', '.typeahead-suggestion-wrapper', function(e) {
+    console.log('out wrap', e);
+});

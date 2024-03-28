@@ -6,6 +6,7 @@
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.searchdb.js")"></script>
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.helpers.js")"></script>
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/interaction_callbacks.js")"></script>
+    <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.prescriptions.js")"></script>
     <script>setInitialLanguage("@messages("web_url")")</script>
 
     <header>
@@ -32,9 +33,9 @@
         <div class="nav-button" id="prescriptions-button">
             <div class="center-image">
                 <button class="state-button">
-                    <img border="0" alt="Interactions" src="@routes.Assets.versioned("images/prescription.png")" height="28"/>
+                    <img border="0" alt="Prescriptions" src="@routes.Assets.versioned("images/prescription.png")" height="28"/>
                 </button>
-                <span style="display: block;">@Messages("prescriptions")</span>
+                <span style="display: block;">@messages("prescriptions")</span>
             </div>
         </div>
         <!-- DOWNLOAD BUTTON -->

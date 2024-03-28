@@ -127,9 +127,10 @@ public class MainController extends Controller {
     }
 
     public Result prescription(Http.Request request, String lang, String key) {
-        ViewContext vc = getViewContext();
+        ViewContext vc = getViewContext(request);
+        Messages messages = messagesApi.preferred(request);
         String html = prescriptions.render("the name").toString();
-        return ok(index.render(html, "titles", "", "", "", vc));
+        return ok(index.render(html, "titles", "", "", "", vc, messages));
     }
 
     /**

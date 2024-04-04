@@ -1,4 +1,3 @@
-// The info section where we show the current selected patient and doctor info
 function reloadPrescriptionInfo() {
     readDoctor().then(function(profile) {
         var div = document.getElementsByClassName('prescription-doctor-info')[0];
@@ -9,15 +8,16 @@ function reloadPrescriptionInfo() {
         }
     });
     var patientInfo = document.getElementsByClassName('prescription-patent-info')[0];
-    if (currentPatientId === null) {
+    if (getCurrentPatientId() === null) {
         patientInfo.innerText = '';
     } else {
-        readPatient(currentPatientId).then(function(patient) {
+        readPatient(getCurrentPatientId()).then(function(patient) {
             if (patient) {
                 patientInfo.innerText = patient.name + ' ' + patient.surname;
             }
         });
     }
+    displayPrescriptionItems();
 }
 
 function showDoctorModal() {
@@ -124,7 +124,21 @@ function readAndFillDoctorModal() {
     });
 }
 
-var currentPatientId = null;
+function getCurrentPatientId() {
+    try {
+        const id = localStorage.currentPatientId;
+        return parseInt(id) || null;
+    } catch (_e) {
+        return null;
+    }
+}
+function setCurrentPatientId(id) {
+    if (id === null) {
+        localStorage.removeItem('currentPatientId');
+    } else {
+        localStorage.currentPatientId = id;
+    }
+}
 function savePatient() {
     var sexCheckbox = document.querySelector('input[name=address-book-field-sex]:checked');
     var patient = {
@@ -145,8 +159,8 @@ function savePatient() {
         cardexpiry: document.getElementsByName('address-book-field-cardexpiry')[0].value,
         gln: document.getElementsByName('address-book-field-gln')[0].value,
     };
-    if (currentPatientId !== null) {
-        patient.id = currentPatientId;
+    if (getCurrentPatientId() !== null) {
+        patient.id = getCurrentPatientId();
     }
     return getPrescriptionDatabase().then(function (db) {
         return new Promise(function(resolve, reject) {
@@ -155,7 +169,7 @@ function savePatient() {
                 .put(patient);
             req.onsuccess = function(event) {
                 var patientId = event.target.result;
-                currentPatientId = patientId;
+                setCurrentPatientId(patientId);
                 resolve(patientId);
             };
             req.onerror = reject;
@@ -188,7 +202,7 @@ function listPatients() {
         patients.forEach(function (patient) {
             var id = patient.id;
             var div = document.createElement('div');
-            div.className = 'prescriptions-address-book-patient ' + (id === currentPatientId ? '--selected' : '');
+            div.className = 'prescriptions-address-book-patient ' + (id === getCurrentPatientId() ? '--selected' : '');
             div.innerText = patient.name + ' ' + patient.surname;
             div.onclick = function () {
                 readAndFillPatientModal(id);
@@ -225,7 +239,7 @@ function readPatient(id) {
 function readAndFillPatientModal(id) {
     return readPatient(id)
     .then(function (patient) {
-        currentPatientId = patient.id;
+        setCurrentPatientId(patient.id);
         document.getElementsByName('address-book-field-surname')[0].value = patient.surname;
         document.getElementsByName('address-book-field-name')[0].value = patient.name;
         document.getElementsByName('address-book-field-street')[0].value = patient.street;
@@ -269,7 +283,7 @@ function newPatient() {
     document.getElementsByName('address-book-field-cardnumber')[0].value = '';
     document.getElementsByName('address-book-field-cardexpiry')[0].value = '';
     document.getElementsByName('address-book-field-gln')[0].value = '';
-    currentPatientId = null;
+    setCurrentPatientId(null);
 }
 
 function deletePatient(id) {
@@ -288,6 +302,9 @@ function deletePatient(id) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    if (!document.URL.endsWith('/prescriptions')) {
+        return;
+    }
     document.getElementById('doctor-save').addEventListener('click', function() {
         saveDoctor();
         closeDoctorModal();
@@ -303,34 +320,56 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function addToPrescriptionBasket(data) {
+// title: String
+// eancode: String
     var basket = JSON.parse(localStorage.prescriptionBasket || "[]");
     basket.push(data);
     localStorage.prescriptionBasket = JSON.stringify(basket);
+    displayPrescriptionItems();
+}
+
+function deleteFromPrescriptionBasket(index) {
+    var basket = JSON.parse(localStorage.prescriptionBasket || "[]");
+    basket.splice(index, 1);
+    localStorage.prescriptionBasket = JSON.stringify(basket);
+    displayPrescriptionItems();
 }
 
 function listPrescriptionBasket() {
     return JSON.parse(localStorage.prescriptionBasket || "[]");
 }
 
-$(document).on('mouseenter', '.article-packinfo', function(e) {
-    console.log('in', e);
-    var target = e.currentTarget;
-    var prescriptionButton = $('<img class="article-packinfo-add-prescription" src="/assets/images/prescription.png">');
-    $(target).append(prescriptionButton);
-    prescriptionButton.on('click', function() {
-        addToPrescriptionBasket($(target).data('prescription'));
+function displayPrescriptionItems() {
+    $('.prescription-items').empty();
+    listPrescriptionBasket().forEach(function (item, i) {
+        $('.prescription-items').append(
+            $('<div>')
+                .addClass('prescription-item')
+                .append(
+                    $('<div>')
+                        .addClass('prescription-item-actions')
+                        .append(
+                            $('<button>').html('Delete').on('click', function (e) {
+                                deleteFromPrescriptionBasket(i);
+                            })
+                        )
+                )
+                .append(
+                    $('<div>')
+                    .addClass('prescription-item-name')
+                    .html(item.title)
+                )
+                .append(
+                    $('<input>').addClass('prescription-item-note')
+                )
+        );
     });
-});
+}
 
-$(document).on('mouseleave', '.article-packinfo', function(e) {
-    console.log('out', e);
-    $(e.currentTarget).find('.article-packinfo-add-prescription').remove();
-});
-
-$(document).on('mouseenter', '.typeahead-suggestion-wrapper', function(e) {
-    console.log('in wrap', e);
-});
-
-$(document).on('mouseleave', '.typeahead-suggestion-wrapper', function(e) {
-    console.log('out wrap', e);
+$(document).on('click', 'p.article-packinfo', function (e) {
+    var data = $(e.currentTarget).data('prescription');
+    addToPrescriptionBasket(data);
+    if (!document.URL.endsWith('/prescriptions')) {
+        $('button.state-button.--prescription').addClass('shake');
+    }
 });

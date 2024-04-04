@@ -147,11 +147,15 @@ $ ->
 
   typeaheadCtrl = $('#input-form .twitter-typeahead')
 
-  dataForPrescriptionBasket = (data, packinfo) ->
+  packInfoDataForPrescriptionBasket = (data, packinfo) ->
     JSON.stringify({
-      title: data.title,
       eancode: data.eancode,
-      packinfo: packinfo.title,
+      title: packinfo.title,
+    })
+  packInfosDataForPrescriptionBasket = (data) ->
+    JSON.stringify({
+      eancode: data.eancode,
+      packinfos: data.packinfos,
     })
 
   typeaheadCtrl.typeahead
@@ -167,10 +171,11 @@ $ ->
     source: articles.ttAdapter()
     templates:
       suggestion: (data) ->
-        console.log data
         if search_type == SearchType.Title
           packsStr = (packinfo)->
-            "<p class='article-packinfo' style='color:#{packinfo.color};' data-prescription='#{dataForPrescriptionBasket(data, packinfo)}'>#{packinfo.title}</p>"
+            "<p class='article-packinfo' style='color:#{packinfo.color};' data-prescription='#{packInfoDataForPrescriptionBasket(data, packinfo)}'>
+              #{packinfo.title}
+            </p>"
           "<div style='display:table;vertical-align:middle;'>\
           <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='font-size:0.85em;'>#{data.packinfos.map(packsStr).join('')}</span></div>"
@@ -205,6 +210,11 @@ $ ->
     $('.atc-code').on 'click', (e)->
       e.stopPropagation()
 
+    $('p.article-packinfo').on 'click', (e) ->
+      if !document.URL.endsWith('/prescriptions')
+        $('button.state-button.--prescription').addClass('shake')
+        setTimeout((()-> $('button.state-button.--prescription').removeClass('shake')), 1000)
+
   typeaheadCtrl.on 'typeahead:change', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')
 
@@ -215,6 +225,9 @@ $ ->
 
   # Retrieves the fachinfo, the URL should be of the form /fi/gtin/
   typeaheadCtrl.on 'typeahead:selected', (event, selection) ->
+    if window.event.target.classList.contains('article-packinfo')
+      # Clicking on packinfo triggers prescription basket
+      return
     if search_state == SearchState.Compendium
       if search_type == SearchType.FullText
         # FULL TEXT search

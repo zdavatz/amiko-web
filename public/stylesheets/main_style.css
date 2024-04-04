@@ -478,7 +478,7 @@ dialog.prescriptions-doctor {
 }
 
 .prescriptions-address-book-patient.--selected {
-    color: var(--lines-color);
+    border: solid 1px var(--text-color-normal);
 }
 
 .prescriptions-address-book-patient-delete {
@@ -508,26 +508,71 @@ dialog.prescriptions-doctor {
 .article-packinfo {
     position: relative;
     margin: 5px 0;
-    line-height: 1.0;
+    line-height: 1.1;
 }
 
 .article-packinfo:hover {
     background-color: rgba(128, 128, 128, 0.3);
 }
 
-.article-packinfo-add-prescription {
-    height: 16px;
+.typeahead-suggestion-wrapper {
+    position: relative;
+}
+.tt-suggestion {
+    width: 100%;
+}
+.article-packinfo-add-prescription-wrapper {
+    display: none;
     position: absolute;
     right: 30px;
     top: 0;
+    width: 20px;
 }
-.article-packinfo-add-prescription:hover {
-    background-color: rgba(128, 128, 128, 0.5);
+.typeahead-suggestion-wrapper:hover .article-packinfo-add-prescription-wrapper {
+    display: block;
+}
+.article-packinfo-add-prescription-wrapper:hover {
+    background-color: rgba(128, 128, 128, 0.3);
+}
+.article-packinfo-add-prescription-wrapper img {
+    height: 15px;
+}
+.article-packinfo-add-prescription-wrapper select {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    width: 20px;
+    opacity: 0;
 }
 @media (prefers-color-scheme: dark) {
-    .article-packinfo-add-prescription {
+    .article-packinfo-add-prescription-wrapper img {
         filter: invert(1);
     }
+}
+.shake {
+    animation: 0.5s linear shake;
+}
+
+@keyframes shake {
+  0% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(-20deg);
+  }
+  40% {
+    transform: rotate(20deg);
+  }
+  60% {
+    transform: rotate(-20deg);
+  }
+  80% {
+    transform: rotate(20deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
 }
 
 /* Removes annoying 'x' from IE, Edge and Chrome */

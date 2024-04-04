@@ -402,6 +402,7 @@ a.atc-code:hover {
     width: 100%;
     background: var(--background-color-gray);
     border: 0;
+    color: var(--text-color-normal);
 }
 
 .prescriptions dialog {

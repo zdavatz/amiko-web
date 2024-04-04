@@ -126,7 +126,7 @@ function readAndFillDoctorModal() {
 
 function getCurrentPatientId() {
     try {
-        const id = localStorage.currentPatientId;
+        var id = localStorage.currentPatientId;
         return parseInt(id) || null;
     } catch (_e) {
         return null;
@@ -324,6 +324,10 @@ function addToPrescriptionBasket(data) {
 // eancode: String
     var basket = JSON.parse(localStorage.prescriptionBasket || "[]");
     basket.push(data);
+    savePrescriptionBasket(basket);
+}
+
+function savePrescriptionBasket(basket) {
     localStorage.prescriptionBasket = JSON.stringify(basket);
     displayPrescriptionItems();
 }
@@ -360,13 +364,23 @@ function displayPrescriptionItems() {
                     .html(item.title)
                 )
                 .append(
-                    $('<input>').addClass('prescription-item-note')
+                    $('<input>')
+                        .addClass('prescription-item-note')
+                        .data('prescription-item-index', i)
+                        .attr('value', item.note || '')
                 )
         );
     });
 }
 
-$(document).on('click', 'p.article-packinfo', function (e) {
+$(document).on('change', 'input.prescription-item-note', function(e) {
+    var index = $(e.target).data('prescription-item-index');
+    var items = listPrescriptionBasket();
+    items[index].note = e.target.value;
+    savePrescriptionBasket(items);
+});
+
+$(document).on('click', 'p.article-packinfo', function(e) {
     var data = $(e.currentTarget).data('prescription');
     addToPrescriptionBasket(data);
     if (!document.URL.endsWith('/prescriptions')) {

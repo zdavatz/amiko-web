@@ -408,7 +408,7 @@ function displayPrescriptionItems() {
                 .append(
                     $('<div>')
                     .addClass('prescription-item-name')
-                    .html(item.title)
+                    .html(item.package)
                 )
                 .append(
                     $('<input>')

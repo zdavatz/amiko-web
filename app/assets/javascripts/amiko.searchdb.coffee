@@ -150,13 +150,40 @@ $ ->
   packInfoDataForPrescriptionBasket = (data, packinfo) ->
     JSON.stringify({
       eancode: data.eancode,
-      title: packinfo.title,
+      package: packinfo.title,
+      title: data.title
+      author: data.author,
+      regnrs: data.regnrs,
+      atccode: data.atccode
     })
-  packInfosDataForPrescriptionBasket = (data) ->
-    JSON.stringify({
-      eancode: data.eancode,
-      packinfos: data.packinfos,
-    })
+
+  atcCodeElement = (data)->
+    if !data.atccode
+      return ""
+    atcCodeStr = ""
+    atcTitleStr = ""
+    mCode = data.atccode.split(';')
+    if mCode.length > 1
+      atcCodeStr = mCode[0]
+      atcTitleStr = mCode[1]
+
+    atcCodeStr = atcCodeStr.split(',').map((code)-> "<a class='atc-code' href='/?atc_query=#{code}'>#{code}</a>")
+
+    if data.atcclass
+      mClass = data.atcclass.split(';')
+      if mClass.length == 1
+        atcCodeStr = "<p>" + atcCodeStr + " - " + atcTitleStr + "</p><p>" + mClass[0] + "</p>"
+      else if mClass.length == 2 # *** Ver.<1.2.4
+        atcCodeStr = "<p>" + atcCodeStr + " - " + atcTitleStr + "</p><p>" + mClass[1] + "</p>"
+      else if mClass.length == 3 # *** Ver. 1.2.4 and above
+        atcClassL4AndL5 = mClass[2].split('#')
+        atcClassStr = ""
+        if atcClassL4AndL5.length
+          atcClassStr = atcClassL4AndL5[atcClassL4AndL5.length - 1];
+        atcCodeStr = "<p>" + atcCodeStr + " - " + atcTitleStr + "</p><p>" + atcClassStr + "</p><p>" + mClass[1] + "</p>"
+    else
+      atcCodeStr = "<p>" + atcCodeStr + " - " + atcTitleStr + "</p><p>k.A.</p>";
+    return atcCodeStr
 
   typeaheadCtrl.typeahead
     menu: $('#special-dropdown')
@@ -171,6 +198,7 @@ $ ->
     source: articles.ttAdapter()
     templates:
       suggestion: (data) ->
+        console.log 'data', data
         if search_type == SearchType.Title
           packsStr = (packinfo)->
             "<p class='article-packinfo' style='color:#{packinfo.color};' data-prescription='#{packInfoDataForPrescriptionBasket(data, packinfo)}'>
@@ -186,7 +214,7 @@ $ ->
         else if search_type == SearchType.Atc
           "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>\
           <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
-          <span style='color:gray;font-size:0.85em;'>#{data.atccode}</span></div>"
+          <span style='color:gray;font-size:0.85em;'>#{atcCodeElement(data)}</span></div>"
         else if search_type == SearchType.Regnr
           "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>\
           <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\

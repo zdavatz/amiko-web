@@ -75,6 +75,7 @@ function saveDoctor() {
         name: document.getElementsByName('doctor-field-name')[0].value,
         street: document.getElementsByName('doctor-field-street')[0].value,
         city: document.getElementsByName('doctor-field-city')[0].value,
+        country: document.getElementsByName('doctor-field-country')[0].value,
         zip: document.getElementsByName('doctor-field-zip')[0].value,
         phone: document.getElementsByName('doctor-field-phone')[0].value,
         email: document.getElementsByName('doctor-field-email')[0].value,
@@ -116,6 +117,7 @@ function readAndFillDoctorModal() {
         document.getElementsByName('doctor-field-name')[0].value = profile.name;
         document.getElementsByName('doctor-field-street')[0].value = profile.street;
         document.getElementsByName('doctor-field-city')[0].value = profile.city;
+        document.getElementsByName('doctor-field-country')[0].value = profile.country;
         document.getElementsByName('doctor-field-zip')[0].value = profile.zip;
         document.getElementsByName('doctor-field-phone')[0].value = profile.phone;
         document.getElementsByName('doctor-field-email')[0].value = profile.email;

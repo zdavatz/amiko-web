@@ -123,6 +123,7 @@ function readAndFillDoctorModal() {
         document.getElementsByName('doctor-field-email')[0].value = profile.email;
         document.getElementsByName('doctor-field-iban')[0].value = profile.iban;
         document.getElementsByName('doctor-field-vat')[0].value = profile.vat;
+        document.getElementById('doctor-sign-image').src = localStorage.doctorSignImage || '';
     });
 }
 
@@ -303,6 +304,44 @@ function deletePatient(id) {
     .then(newPatient);
 }
 
+function didPickDoctorSignatureImage(file) {
+    var minSignWidth = 90, minSignHeight = 45;
+    var maxSignWidth = 500, maxSignHeight = 500; // We cannot store too much data in browser
+
+    var reader = new FileReader();
+    reader.onload = function() {
+        var dataURL = reader.result;
+        var image = new Image();
+        image.onload = function() {
+            var ratio;
+            var url;
+            var canvas = document.createElement('canvas');
+            var context = canvas.getContext('2d');
+            if (image.width < minSignWidth || image.height < minSignHeight) {
+                ratio = Math.max(minSignWidth / image.width, minSignHeight / image.height);
+                canvas.width = image.width * ratio;
+                canvas.height = image.height * ratio;
+                context.drawImage(image, 0, 0, canvas.width, canvas.height);
+                url = canvas.toDataURL();
+            } else if (image.width > maxSignWidth || image.height > maxSignHeight) {
+                ratio = Math.min(maxSignWidth / image.width, maxSignHeight / image.height);
+                canvas.width = image.width * ratio;
+                canvas.height = image.height * ratio;
+                context.drawImage(image, 0, 0, canvas.width, canvas.height);
+                url = canvas.toDataURL();
+            } else {
+                url = dataURL;
+            }
+            localStorage.doctorSignImage = url;
+            console.log('sign url', url);
+            var signDisplay = document.getElementById('doctor-sign-image');
+            signDisplay.src = url;
+        };
+        image.src = dataURL;
+    };
+    reader.readAsDataURL(file);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     if (!document.URL.endsWith('/prescriptions')) {
         return;
@@ -310,6 +349,11 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('doctor-save').addEventListener('click', function() {
         saveDoctor();
         closeDoctorModal();
+    });
+    document.getElementById('doctor-sign-input').addEventListener('change', function(e) {
+        console.log(e);
+        if (!e.target.files.length) return;
+        didPickDoctorSignatureImage(e.target.files[0]);
     });
     document.getElementById('patient-save').addEventListener('click', function() {
         savePatient();
@@ -324,7 +368,8 @@ document.addEventListener('DOMContentLoaded', function() {
 function addToPrescriptionBasket(data) {
 // title: String
 // eancode: String
-    var basket = JSON.parse(localStorage.prescriptionBasket || "[]");
+    var basket = listPrescriptionBasket();
+    data.note = '';
     basket.push(data);
     savePrescriptionBasket(basket);
 }
@@ -335,7 +380,7 @@ function savePrescriptionBasket(basket) {
 }
 
 function deleteFromPrescriptionBasket(index) {
-    var basket = JSON.parse(localStorage.prescriptionBasket || "[]");
+    var basket = listPrescriptionBasket();
     basket.splice(index, 1);
     localStorage.prescriptionBasket = JSON.stringify(basket);
     displayPrescriptionItems();

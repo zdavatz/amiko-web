@@ -374,7 +374,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     document.getElementById('prescription-create').addEventListener('click', function() {
-
+        localStorage.prescriptionBasket = '[]';
+        displayPrescriptionItems();
     });
     reloadPrescriptionInfo();
 });

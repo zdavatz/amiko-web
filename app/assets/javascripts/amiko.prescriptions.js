@@ -322,13 +322,13 @@ function didPickDoctorSignatureImage(file) {
                 canvas.width = image.width * ratio;
                 canvas.height = image.height * ratio;
                 context.drawImage(image, 0, 0, canvas.width, canvas.height);
-                url = canvas.toDataURL();
+                url = canvas.toDataURL('image/png');
             } else if (image.width > maxSignWidth || image.height > maxSignHeight) {
                 ratio = Math.min(maxSignWidth / image.width, maxSignHeight / image.height);
                 canvas.width = image.width * ratio;
                 canvas.height = image.height * ratio;
                 context.drawImage(image, 0, 0, canvas.width, canvas.height);
-                url = canvas.toDataURL();
+                url = canvas.toDataURL('image/png');
             } else {
                 url = dataURL;
             }
@@ -362,6 +362,20 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('patient-create').addEventListener('click', function() {
         newPatient();
     });
+    document.getElementById('prescription-save').addEventListener('click', function() {
+        currentPrescriptionToAMK().then(function (url) {
+            var element = window.document.createElement('a');
+            element.href = url;
+            element.download = "prescription.amk";
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        });
+    });
+    document.getElementById('prescription-create').addEventListener('click', function() {
+
+    });
     reloadPrescriptionInfo();
 });
 
@@ -388,6 +402,102 @@ function deleteFromPrescriptionBasket(index) {
 
 function listPrescriptionBasket() {
     return JSON.parse(localStorage.prescriptionBasket || "[]");
+}
+
+function encodeCurrentPrescriptionToJSON() {
+    return Promise.all([readDoctor(), readPatient(getCurrentPatientId())]).then(function(result) {
+        var profile = result[0];
+        var patient = result[1];
+        var doctorSignData = localStorage.doctorSignImage;
+        if (doctorSignData) {
+            var index = doctorSignData.indexOf(',');
+            doctorSignData = doctorSignData.slice(index + 1);
+        }
+        var now = new Date();
+
+
+        return {
+            prescription_hash: crypto.randomUUID(),
+            place_date: profile.city + ', ' +
+                // dd.MM.yyyy (HH:mm:ss)
+                ('0' + now.getDate()).slice(-2) + '.' +
+                ('0' + (now.getMonth() + 1)).slice(-2) + '.' +
+                now.getFullYear() +
+                ' (' +
+                ('0' + now.getHours()).slice(-2) + ':' +
+                ('0' + now.getMinutes()).slice(-2) + ':' +
+                ('0' + now.getSeconds()).slice(-2) +
+                ')',
+            operator: {
+                "title": profile.title,
+                "gln": profile.gln,
+                "given_name": profile.name,
+                "family_name": profile.surname,
+                "postal_address": profile.street,
+                "city": profile.city,
+                "country": profile.country,
+                "zip_code": profile.zip,
+                "phone_number": profile.phone,
+                "email_address": profile.email,
+                "iban": profile.iban,
+                "vat_number": profile.vat,
+                "zsr_number": profile.zsrnumber,
+                "signature": doctorSignData,
+            },
+            patient: {
+                "patient_id": String(patient.id),
+                "given_name": patient.name,
+                "family_name": patient.surname,
+                "birth_date": patient.birthday,
+                "weight_kg": patient.weight,
+                "height_cm": patient.height,
+                "gender": patient.sex,
+                "postal_address": patient.street,
+                "zip_code": patient.zip,
+                "city": patient.city,
+                "country": patient.country,
+                "phone_number": patient.phone,
+                "email_address": patient.email,
+                "bag_number": patient.bagnumber,
+                "health_card_number": patient.cardnumber,
+                "health_card_expiry": patient.cardexpiry,
+                "insurance_gln": patient.gln,
+            },
+            medications: listPrescriptionBasket().map(item => {
+                var titleComponents = item.package.split('[');
+                titleComponents = titleComponents[0].split(',');
+                return {
+                    title: item.title,
+                    owner: item.author,
+                    regnrs: item.regnrs,
+                    atccode: item.atccode,
+                    product_name: titleComponents[0],
+                    package: item.package,
+                    eancode: item.eancode,
+                    comment: item.note || '',
+                };
+            })
+        };
+    });
+}
+
+function currentPrescriptionToAMK() {
+    return encodeCurrentPrescriptionToJSON().then(function (obj) {
+        var json = JSON.stringify(obj);
+        var encoder = new TextEncoder();
+        var bytes = encoder.encode(json);
+        var binary = '';
+        var len = bytes.byteLength;
+        for (var i = 0; i < len; i++) {
+            binary += String.fromCharCode( bytes[i] );
+        }
+        var str = btoa(binary);
+        var blob = new Blob([str], {
+            type: 'document/amk'
+        });
+        var url = URL.createObjectURL(blob);
+        return url;
+    });
 }
 
 function displayPrescriptionItems() {

@@ -99,10 +99,19 @@ public class MainController extends Controller {
         }
     }
 
+    Boolean getShowPrescriptions() {
+        try {
+            return configuration.getBoolean("feature.prescriptions");
+        } catch (com.typesafe.config.ConfigException.Missing e_) {
+            return false;
+        }
+    }
+
     ViewContext getViewContext(Http.Request request) {
         String host = request.host();
         ViewContext ctx = new ViewContext();
         ctx.showInteraction = getShowInteractions();
+        ctx.showPrescriptions = getShowPrescriptions();
         if (host.contains("zurrose")) {
             ctx.logo = "ZURROSE";
             ctx.googleAnalyticsId = "UA-20151536-22";

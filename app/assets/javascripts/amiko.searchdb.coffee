@@ -5,6 +5,7 @@ $ ->
   SearchState =
     Compendium: 1
     Interactions: 2
+    Prescriptions: 3
 
   SearchType =
     Title: 1
@@ -89,8 +90,11 @@ $ ->
     else if search_state == SearchState.Interactions
       $('#interactions-button').toggleClass 'nav-button-active'
       $('#fulltext-button').disabled = 'disabled'
+    else if search_state == SearchState.Prescriptions
+      $('#prescriptions-button').toggleClass 'nav-button-active'
+      $('#fulltext-button').disabled = 'disabled'
   else
-    search_state = 1  # default search state is 'compendium'
+    search_state = SearchState.Compendium  # default search state is 'compendium'
     $('#compendium-button').toggleClass 'nav-button-active'
     localStorage.setItem 'search-state', search_state
 
@@ -143,6 +147,44 @@ $ ->
 
   typeaheadCtrl = $('#input-form .twitter-typeahead')
 
+  packInfoDataForPrescriptionBasket = (data, packinfo) ->
+    JSON.stringify({
+      eancode: data.eancode,
+      package: packinfo.title,
+      title: data.title
+      author: data.author,
+      regnrs: data.regnrs,
+      atccode: data.atccode
+    })
+
+  atcCodeElement = (data)->
+    if !data.atccode
+      return ""
+    atcCodeStr = ""
+    atcTitleStr = ""
+    mCode = data.atccode.split(';')
+    if mCode.length > 1
+      atcCodeStr = mCode[0]
+      atcTitleStr = mCode[1]
+
+    atcCodeStr = atcCodeStr.split(',').map((code)-> "<a class='atc-code' href='/?atc_query=#{code}'>#{code}</a>")
+
+    if data.atcclass
+      mClass = data.atcclass.split(';')
+      if mClass.length == 1
+        atcCodeStr = "<p>" + atcCodeStr + " - " + atcTitleStr + "</p><p>" + mClass[0] + "</p>"
+      else if mClass.length == 2 # *** Ver.<1.2.4
+        atcCodeStr = "<p>" + atcCodeStr + " - " + atcTitleStr + "</p><p>" + mClass[1] + "</p>"
+      else if mClass.length == 3 # *** Ver. 1.2.4 and above
+        atcClassL4AndL5 = mClass[2].split('#')
+        atcClassStr = ""
+        if atcClassL4AndL5.length
+          atcClassStr = atcClassL4AndL5[atcClassL4AndL5.length - 1];
+        atcCodeStr = "<p>" + atcCodeStr + " - " + atcTitleStr + "</p><p>" + atcClassStr + "</p><p>" + mClass[1] + "</p>"
+    else
+      atcCodeStr = "<p>" + atcCodeStr + " - " + atcTitleStr + "</p><p>k.A.</p>";
+    return atcCodeStr
+
   typeaheadCtrl.typeahead
     menu: $('#special-dropdown')
     hint: false
@@ -156,28 +198,33 @@ $ ->
     source: articles.ttAdapter()
     templates:
       suggestion: (data) ->
+        console.log 'data', data
         if search_type == SearchType.Title
+          packsStr = (packinfo)->
+            "<p class='article-packinfo' style='color:#{packinfo.color};' data-prescription='#{packInfoDataForPrescriptionBasket(data, packinfo)}'>
+              #{packinfo.title}
+            </p>"
           "<div style='display:table;vertical-align:middle;'>\
           <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
-          <span style='font-size:0.85em;'>#{data.packinfo}</span></div>"
+          <span style='font-size:0.85em;'>#{data.packinfos.map(packsStr).join('')}</span></div>"
         else if search_type == SearchType.Owner
-          "<div style='display:table;vertical-align:middle;'>\
+          "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>\
           <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:#8888cc;font-size:1.0em;'><p>#{data.author}</p></span></div>"
         else if search_type == SearchType.Atc
-          "<div style='display:table;vertical-align:middle;'>\
+          "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>\
           <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
-          <span style='color:gray;font-size:0.85em;'>#{data.atccode}</span></div>"
+          <span style='color:gray;font-size:0.85em;'>#{atcCodeElement(data)}</span></div>"
         else if search_type == SearchType.Regnr
-          "<div style='display:table;vertical-align:middle;'>\
+          "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>\
           <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:#8888cc;font-size:1.0em;'><p>#{data.regnrs}</p></span></div>"
         else if search_type == SearchType.Therapie
-          "<div style='display:table;vertical-align:middle;'>\
+          "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>\
           <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:gray;font-size:0.85em;'>#{data.therapy}</span></div>"
         else if search_type == SearchType.FullText
-          "<div style='display:table;vertical-align:middle;'>\
+          "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>\
           <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>"
 
   typeaheadCtrl.on 'typeahead:asyncrequest', (event, selection) ->
@@ -191,6 +238,11 @@ $ ->
     $('.atc-code').on 'click', (e)->
       e.stopPropagation()
 
+    $('p.article-packinfo').on 'click', (e) ->
+      if !document.URL.endsWith('/prescriptions')
+        $('button.state-button.--prescription').addClass('shake')
+        setTimeout((()-> $('button.state-button.--prescription').removeClass('shake')), 1000)
+
   typeaheadCtrl.on 'typeahead:change', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')
 
@@ -201,6 +253,9 @@ $ ->
 
   # Retrieves the fachinfo, the URL should be of the form /fi/gtin/
   typeaheadCtrl.on 'typeahead:selected', (event, selection) ->
+    if window.event.target.classList.contains('article-packinfo')
+      # Clicking on packinfo triggers prescription basket
+      return
     if search_state == SearchState.Compendium
       if search_type == SearchType.FullText
         # FULL TEXT search
@@ -307,6 +362,14 @@ $ ->
       console.log 'switching to interactions basket -> ' + interactions_basket
     .fail (jqHXR, textStatus) ->
       alert('ajax error')
+
+  $('#prescriptions-button').on 'click', ->
+    $(this).toggleClass 'nav-button-active'
+    # disable full text search button
+    disableButton SearchType.FullText
+    # set search state
+    setSearchUIState(SearchState.Prescriptions)
+    window.location.assign '/prescriptions'
 
   # Detect click on search buttons
   setSearchType = (type) ->

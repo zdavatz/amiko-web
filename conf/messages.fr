@@ -20,3 +20,4 @@ windows_url = https://www.microsoft.com/en-us/store/p/comed-desitin/9nlldb9vxmgx
 macos_url = https://itunes.apple.com/ch/app/comed-desitin/id710472327?mt=12
 ios_url = https://itunes.apple.com/ch/app/comed-desitin/id712891884?mt=8
 android_url = https://play.google.com/store/apps/details?id=com.ywesee.amiko.fr&hl=en
+prescriptions = Ordonnances

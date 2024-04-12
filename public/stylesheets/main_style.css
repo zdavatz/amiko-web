@@ -258,16 +258,12 @@ a.atc-code:hover {
 
 .center-image {
     display: block;
-    margin-left: auto;
-    margin-right: auto;
+    text-align: center;
 }
 
 .state-button {
-    float: left;
-    margin-left: 16px;
     outline: none;
     border: none;
-    text-align: center;
     background: transparent;
 }
 
@@ -377,6 +373,221 @@ a.atc-code:hover {
 
 #download-links a {
     color: var(--background-color-green);
+}
+
+.prescriptions {
+    position: relative;
+    padding-bottom: 30px;
+}
+
+.prescription-header {
+    display: flex;
+    flex-direction: row;
+}
+
+.prescription-patent, .prescription-doctor {
+    width: 50%;
+}
+
+.prescription-items {
+    border-top: solid 1px gray;
+    margin-top: 20px;
+    padding-top: 20px;
+}
+
+.prescription-item {
+    padding-bottom: 20px;
+}
+
+.prescription-item-actions {
+    float: right;
+}
+
+.prescription-item-note {
+    width: 100%;
+    background: var(--background-color-gray);
+    border: 0;
+    color: var(--text-color-normal);
+}
+
+.prescriptions dialog {
+    z-index: 1;
+    background: var(--background-color-gray);
+    color: var(--text-color-normal);
+    width: 40%;
+    top: 100px;
+    border-radius: 8px;
+    border: none;
+    outline-color: #757575c9;
+    outline-style: solid;
+    outline-width: 8px;
+}
+
+.prescriptions dialog form[method="dialog"] {
+    color: var(--text-color-normal);
+}
+
+.prescriptions dialog form[method="dialog"] button, .prescriptions dialog form[method="dialog"] input, .prescriptions .prescription-actions input[type="button"] {
+    border: solid 1px var(--lines-color);
+    color: var(--text-color-normal);
+    background-color: var(--background-color-normal);
+    padding: 5px 20px;
+}
+
+dialog.prescriptions-doctor {
+    width: 500px;
+}
+
+.prescriptions-doctor-content table {
+    width: 100%;
+}
+
+.prescriptions-doctor .-field .-name {
+    text-align: right;
+    width: 150px;
+    padding-right: 10px;
+}
+
+.prescriptions-doctor .-field input {
+    width: 100%;
+}
+
+.prescriptions-address-book-content {
+    display: flex;
+}
+
+.prescriptions-address-book-form {
+    width: 70%;
+}
+
+.prescriptions-address-book-form .-field {
+    width: 150px;
+    padding-right: 10px;
+    text-align: right;
+}
+
+.prescriptions-address-book-patients {
+    width: 30%;
+    overflow-x: auto;
+    overflow-y: scroll;
+    border-left: solid 1px #dddddd;
+    padding-left: 10px;
+}
+
+.prescriptions-address-book-patient {
+    margin-bottom: 5px;
+}
+
+.prescriptions-address-book-patient:hover {
+    cursor: pointer;
+    background: var(--background-color-highlight);
+}
+
+.prescriptions-address-book-patient.--selected {
+    border: solid 1px var(--text-color-normal);
+}
+
+.prescriptions-address-book-patient-delete {
+    display: none;
+    width: 20px;
+    height: 20px;
+    background-color: var(--text-color-normal);
+    mask: url('/assets/images/rubbish-bin.png') center/contain;
+    float: right;
+}
+
+.prescriptions-address-book-patient:hover .prescriptions-address-book-patient-delete {
+    display: inline;
+}
+
+.prescriptions-address-book-patient-delete:hover {
+    background-color: var(--text-color-light);
+}
+
+#patient-create {
+    float: right;
+}
+
+.tt-dataset-articles {
+    overflow-x: hidden;
+}
+.article-packinfo {
+    position: relative;
+    margin: 5px 0;
+    line-height: 1.1;
+}
+
+.article-packinfo:hover {
+    background-color: rgba(128, 128, 128, 0.3);
+}
+
+.typeahead-suggestion-wrapper {
+    position: relative;
+}
+.tt-suggestion {
+    width: 100%;
+}
+.article-packinfo-add-prescription-wrapper {
+    display: none;
+    position: absolute;
+    right: 30px;
+    top: 0;
+    width: 20px;
+}
+.typeahead-suggestion-wrapper:hover .article-packinfo-add-prescription-wrapper {
+    display: block;
+}
+.article-packinfo-add-prescription-wrapper:hover {
+    background-color: rgba(128, 128, 128, 0.3);
+}
+.article-packinfo-add-prescription-wrapper img {
+    height: 15px;
+}
+.article-packinfo-add-prescription-wrapper select {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    width: 20px;
+    opacity: 0;
+}
+@media (prefers-color-scheme: dark) {
+    .article-packinfo-add-prescription-wrapper img {
+        filter: invert(1);
+    }
+}
+
+.prescription-actions {
+    bottom: 0;
+    z-index: 1;
+    position: absolute;
+    width: 100%;
+    text-align: right;
+}
+
+.shake {
+    animation: 0.5s linear shake;
+}
+
+@keyframes shake {
+  0% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(-20deg);
+  }
+  40% {
+    transform: rotate(20deg);
+  }
+  60% {
+    transform: rotate(-20deg);
+  }
+  80% {
+    transform: rotate(20deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
 }
 
 /* Removes annoying 'x' from IE, Edge and Chrome */

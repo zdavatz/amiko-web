@@ -99,10 +99,19 @@ public class MainController extends Controller {
         }
     }
 
+    Boolean getShowPrescriptions() {
+        try {
+            return configuration.getBoolean("feature.prescriptions");
+        } catch (com.typesafe.config.ConfigException.Missing e_) {
+            return false;
+        }
+    }
+
     ViewContext getViewContext(Http.Request request) {
         String host = request.host();
         ViewContext ctx = new ViewContext();
         ctx.showInteraction = getShowInteractions();
+        ctx.showPrescriptions = getShowPrescriptions();
         if (host.contains("zurrose")) {
             ctx.logo = "ZURROSE";
             ctx.googleAnalyticsId = "UA-20151536-22";
@@ -124,6 +133,13 @@ public class MainController extends Controller {
             return ok(index.render("", "", atc_query, "atc", "", vc, messages));
         }
         return ok(index.render("", "", "", "", "", vc, messages));
+    }
+
+    public Result prescription(Http.Request request, String lang, String key) {
+        ViewContext vc = getViewContext(request);
+        Messages messages = messagesApi.preferred(request);
+        String html = prescriptions.render("the name").toString();
+        return ok(index.render(html, "titles", "", "", "", vc, messages));
     }
 
     /**

@@ -1,5 +1,6 @@
 package models;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -32,9 +33,10 @@ public class Article {
     public String keyword = "";
     public String author = "";
     public String atccode = "";
+    public String atcclass = "";
     public String regnrs = "";
     public String therapy = "";
-    public String packinfo = "";
+    public ArrayList<PackInfo> packinfos = new ArrayList();
     public String eancode = "";
     public String titles = "";
     public String sections = "";
@@ -58,9 +60,10 @@ public class Article {
         this.hash = _hash;
         this.title = _title;
         this.keyword = _keyword;;
-        this.packinfo = packinfoStr();
+        this.packinfos = makePackInfos();
         this.author = _author;
-        this.atccode = atccodeStr();
+        this.atccode = _atccode;
+        this.atcclass = _atcclass;
         this.regnrs = _regnrs;
         this.therapy = therapyStr();
         this.eancode = eancodeStr();
@@ -74,59 +77,28 @@ public class Article {
         this._titles = _titles;
     }
 
-    public String packinfoStr() {
-        String pack_info_str = "";
+    public ArrayList<PackInfo> makePackInfos() {
         Pattern p_red = Pattern.compile(".*O]");
         Pattern p_green = Pattern.compile(".*G]");
         Scanner pack_str_scanner = new Scanner(_packinfo);
+        ArrayList<PackInfo> result = new ArrayList<PackInfo>();
         while (pack_str_scanner.hasNextLine()) {
             String pack_str_line = pack_str_scanner.nextLine();
             Matcher m_red = p_red.matcher(pack_str_line);
             Matcher m_green = p_green.matcher(pack_str_line);
-            if (m_red.find())
-                pack_info_str += "<p style='color:red;'>" + pack_str_line	+ "</p>";
-            else if (m_green.find())
-                pack_info_str += "<p style='color:green;'>" + pack_str_line + "</p>";
-            else
-                pack_info_str += "<p style='color:gray;'>" + pack_str_line + "</p>";
+            String color = "";
+            if (m_red.find()) {
+                color = "red";
+            } else if (m_green.find()) {
+                color = "green";
+            }
+            else {
+                color = "gray";
+            }
+            result.add(new PackInfo(color, pack_str_line));
         }
         pack_str_scanner.close();
-        return pack_info_str;
-    }
-
-    public String atccodeStr() {
-        String atc_code_str = "";
-        String atc_title_str = "";
-
-        if (_atccode != null) {
-            String[] m_code = _atccode.split(";");
-            if (m_code.length > 1) {
-                atc_code_str = m_code[0];
-                atc_title_str = m_code[1];
-            }
-            atc_code_str = String.join(",",
-                Stream.of(atc_code_str.split(","))
-                    .map(code -> "<a class='atc-code' href='/?atc_query=" + code + "'>" + code + "</a>")
-                    .collect(Collectors.toList()));
-            if (_atcclass != null) {
-                String[] m_class = _atcclass.split(";");
-                String atc_class_str;
-                if (m_class.length == 1) {
-                    atc_code_str = "<p>" + atc_code_str + " - " + atc_title_str + "</p><p>" + m_class[0] + "</p>";
-                } else if (m_class.length == 2) { // *** Ver.<1.2.4
-                    atc_code_str = "<p>" + atc_code_str + " - " + atc_title_str + "</p><p>" + m_class[1] + "</p>";
-                } else if (m_class.length == 3) { // *** Ver. 1.2.4 and above
-                    atc_class_str = "";
-                    String[] atc_class_l4_and_l5 = m_class[2].split("#");
-                    if (atc_class_l4_and_l5.length > 0)
-                        atc_class_str = atc_class_l4_and_l5[atc_class_l4_and_l5.length - 1];
-                    atc_code_str = "<p>" + atc_code_str + " - " + atc_title_str + "</p><p>" + atc_class_str + "</p><p>" + m_class[1] + "</p>";
-                }
-            } else {
-                atc_code_str = "<p>" + atc_code_str + " - " + atc_title_str + "</p><p>k.A.</p>";
-            }
-        }
-        return atc_code_str;
+        return result;
     }
 
     public String therapyStr() {

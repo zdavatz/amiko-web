@@ -6,6 +6,7 @@
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.searchdb.js")"></script>
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.helpers.js")"></script>
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/interaction_callbacks.js")"></script>
+    <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.prescriptions.js")"></script>
     <script>setInitialLanguage("@messages("web_url")")</script>
 
     <header>
@@ -26,6 +27,16 @@
                         <img border="0" alt="Interactions" src="@routes.Assets.versioned("images/interactions32x32_dark.png")" height="28"/>
                     </button>
                     <span style="display: block;">@messages("interactions")</span>
+                </div>
+            </div>
+        }
+        @if(vc.showPrescriptions) {
+            <div class="nav-button" id="prescriptions-button">
+                <div class="center-image">
+                    <button class="state-button --prescription">
+                        <img border="0" alt="Prescriptions" src="@routes.Assets.versioned("images/prescription.png")" height="28"/>
+                    </button>
+                    <span style="display: block;">@messages("prescriptions")</span>
                 </div>
             </div>
         }

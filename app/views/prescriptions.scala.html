@@ -1,0 +1,165 @@
+@(name: String)
+
+<div class="prescriptions">
+    <div class="prescription-header">
+        <div class="prescription-patent">
+            <div class="prescription-patent-info">Foo bar 12345</div>
+            <button onClick="showPatientsModal()">Choose Patient</button>
+            <div class="prescription-patent-place-and-date">11.22.33</div>
+        </div>
+        <div class="prescription-doctor">
+            <div class="prescription-doctor-info">
+                Mr. Doctor
+            </div>
+            <button onClick="showDoctorModal()">Edit</button>
+            <div class="prescription-doctor-sign"><img /></div>
+        </div>
+    </div>
+    <div class="prescription-items">
+    </div>
+    <div class="prescription-actions">
+        <input id="prescription-save" type="button" value="Save">
+        <input id="prescription-create" type="button" value="Create New">
+    </div>
+
+    <dialog class="prescriptions-address-book">
+        <h2>Address book</h2>
+        <div class="prescriptions-address-book-content">
+            <table class="prescriptions-address-book-form">
+                <tr>
+                    <td class="-field">Surname:</td>
+                    <td><input name="address-book-field-surname"></td>
+                </tr>
+                <tr>
+                    <td class="-field">Name:</td>
+                    <td><input name="address-book-field-name"></td>
+                </tr>
+                <tr>
+                    <td class="-field">Street:</td>
+                    <td><input name="address-book-field-street"></td>
+                </tr>
+                <tr>
+                    <td class="-field">City:</td>
+                    <td><input name="address-book-field-city"></td>
+                </tr>
+                <tr>
+                    <td class="-field">ZIP:</td>
+                    <td><input name="address-book-field-zip"></td>
+                </tr>
+                <tr>
+                    <td class="-field">Country:</td>
+                    <td><input name="address-book-field-country"></td>
+                </tr>
+                <tr>
+                    <td class="-field">Birthday:</td>
+                    <td><input name="address-book-field-birthday"></td>
+                </tr>
+                <tr>
+                    <td class="-field">Sex:</td>
+                    <td><input name="address-book-field-sex" type="radio" value="m" title="M">M <input name="address-book-field-sex" type="radio" value="f" title="F"> F</td>
+                </tr>
+                <tr>
+                    <td class="-field">Weight(kg):</td>
+                    <td><input name="address-book-field-weight"></td>
+                </tr>
+                <tr>
+                    <td class="-field">Height(cm):</td>
+                    <td><input name="address-book-field-height"></td>
+                </tr>
+                <tr>
+                    <td class="-field">Phone:</td>
+                    <td><input name="address-book-field-phone"></td>
+                </tr>
+                <tr>
+                    <td class="-field">Email:</td>
+                    <td><input name="address-book-field-email"></td>
+                </tr>
+                <tr>
+                    <td class="-field">BAG Number:</td>
+                    <td><input name="address-book-field-bagnumber"></td>
+                </tr>
+                <tr>
+                    <td class="-field">Card Number:</td>
+                    <td><input name="address-book-field-cardnumber"></td>
+                </tr>
+                <tr>
+                    <td class="-field">Card Expiry:</td>
+                    <td><input name="address-book-field-cardexpiry"></td>
+                </tr>
+                <tr>
+                    <td class="-field">GLN:</td>
+                    <td><input name="address-book-field-gln"></td>
+                </tr>
+            </table>
+            <div class="prescriptions-address-book-patients">
+                <div class="prescriptions-address-book-patient">
+                    Foo bar
+                </div>
+                <div class="prescriptions-address-book-patient">
+                    xxxx
+                </div>
+            </div>
+        </div>
+        <form class="dialog-action" method="dialog">
+            <input id="patient-save" type="button" value="Save">
+            <button>close</button>
+            <input id="patient-create" type="button" value="New Patient">
+        </form>
+    </dialog>
+    <dialog class="prescriptions-doctor">
+        <h2>Doctor</h2>
+        <div class="prescriptions-doctor-content">
+            <table>
+                <tr class="-field">
+                    <td class="-name">Title</td><td><input name="doctor-field-title"></td>
+                </tr>
+                <tr class="-field">
+                    <td class="-name">ZSR Nr</td><td><input name="doctor-field-zsrnumber"></td>
+                </tr>
+                <tr class="-field">
+                    <td class="-name">GLN</td><td><input name="doctor-field-gln"></td>
+                </tr>
+                <tr class="-field">
+                    <td class="-name">Surname</td><td><input name="doctor-field-surname"></td>
+                </tr>
+                <tr class="-field">
+                    <td class="-name">Name</td><td><input name="doctor-field-name"></td>
+                </tr>
+                <tr class="-field">
+                    <td class="-name">Street</td><td><input name="doctor-field-street"></td>
+                </tr>
+                <tr class="-field">
+                    <td class="-name">City</td><td><input name="doctor-field-city"></td>
+                </tr>
+                <tr class="-field">
+                    <td class="-name">Country</td><td><input name="doctor-field-country"></td>
+                </tr>
+                <tr class="-field">
+                    <td class="-name">Zip</td><td><input name="doctor-field-zip"></td>
+                </tr>
+                <tr class="-field">
+                    <td class="-name">Phone</td><td><input name="doctor-field-phone"></td>
+                </tr>
+                <tr class="-field">
+                    <td class="-name">Email</td><td><input name="doctor-field-email"></td>
+                </tr>
+                <tr class="-field">
+                    <td class="-name">IBAN</td><td><input name="doctor-field-iban"></td>
+                </tr>
+                <tr class="-field">
+                    <td class="-name">Vat Number</td><td><input name="doctor-field-vat"></td>
+                </tr>
+                <tr>
+                    <td></td><td>
+                        <img id="doctor-sign-image"/>
+                        <input id="doctor-sign-input" type="file" accept="image/png, image/jpeg"/>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <form class="dialog-action" method="dialog">
+            <input id="doctor-save" type="button" value="Save">
+            <button>close</button>
+        </form>
+    </dialog>
+</div>

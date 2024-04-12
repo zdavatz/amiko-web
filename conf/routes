@@ -9,14 +9,17 @@ GET     /owner                      controllers.MainController.getOwner(lang: St
 GET     /atc                        controllers.MainController.getATC(lang: String?="de", atc: String)
 GET     /regnr                      controllers.MainController.getRegnr(lang: String?="de", regnr: String)
 GET     /therapy                    controllers.MainController.getTherapy(lang: String?="de", therapy: String)
-GET     /fulltext                   controllers.MainController.getFullText(lang: String?="de", key: String)
+GET     /fulltext                   controllers.MainController.getFullText(lang: String?="de", key: String?="")
 
 # 2. parameter will appear in URI
 GET     /interactions/:basket          controllers.MainController.interactionsBasketWithoutLang(request: Request, basket: String)
 GET     /de/interactions/:basket       controllers.MainController.interactionsBasket(request: Request, lang: String="de", basket: String)
 GET     /fr/interactions/:basket       controllers.MainController.interactionsBasket(request: Request, lang: String="fr", basket: String)
 
+
 GET     /fi/id/:id                  controllers.MainController.fachinfoId(request: Request, lang: String?="de", id: Long)
+GET     /prescriptions              controllers.MainController.prescription(request: Request, lang: String?="de", key: String?="")
+
 GET     /fii                        controllers.MainController.getFachinfo(lang: String?="de", id: Long)
 
 GET     /de/fi/gtin/:gtin           controllers.MainController.fachinfoDirect(request: Request, lang: String="de", gtin: String)

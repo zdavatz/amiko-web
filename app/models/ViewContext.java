@@ -22,5 +22,6 @@ package models;
 public class ViewContext {
     public String logo;
     public boolean showInteraction;
+    public boolean showPrescriptions;
     public String googleAnalyticsId;
 }

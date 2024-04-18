@@ -511,7 +511,7 @@ function displayPrescriptionItems() {
                     $('<div>')
                         .addClass('prescription-item-actions')
                         .append(
-                            $('<button>').html('Delete').on('click', function (e) {
+                            $('<button>').addClass('delete-button').on('click', function (e) {
                                 deleteFromPrescriptionBasket(i);
                             })
                         )

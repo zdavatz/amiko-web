@@ -403,6 +403,15 @@ a.atc-code:hover {
     float: right;
 }
 
+.prescription-item-actions .delete-button {
+    width: 20px;
+    height: 20px;
+    background: url(/assets/images/rubbish-bin.png);
+    background-size: contain;
+    border: 0;
+    cursor: pointer;
+}
+
 .prescription-item-note {
     width: 100%;
     background: var(--background-color-gray);

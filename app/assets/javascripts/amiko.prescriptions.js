@@ -144,6 +144,14 @@ function setCurrentPatientId(id) {
 }
 function savePatient() {
     var sexCheckbox = document.querySelector('input[name=address-book-field-sex]:checked');
+    var birthdayString = document.getElementsByName('address-book-field-birthday')[0].value || '';
+    var birthdayParts = birthdayString.split('-');
+    if (birthdayParts.length === 3) {
+        var year = birthdayParts[0];
+        var month = birthdayParts[1];
+        var date = birthdayParts[2];
+        birthdayString = date + '.' + month + '.' + year;
+    }
     var patient = {
         surname: document.getElementsByName('address-book-field-surname')[0].value,
         name: document.getElementsByName('address-book-field-name')[0].value,
@@ -151,7 +159,7 @@ function savePatient() {
         city: document.getElementsByName('address-book-field-city')[0].value,
         zip: document.getElementsByName('address-book-field-zip')[0].value,
         country: document.getElementsByName('address-book-field-country')[0].value,
-        birthday: document.getElementsByName('address-book-field-birthday')[0].value,
+        birthday: birthdayString,
         sex: sexCheckbox ? sexCheckbox.value : "",
         weight: document.getElementsByName('address-book-field-weight')[0].value,
         height: document.getElementsByName('address-book-field-height')[0].value,
@@ -239,6 +247,14 @@ function readPatient(id) {
 function readAndFillPatientModal(id) {
     return readPatient(id)
     .then(function (patient) {
+        var birthdayString = patient.birthday || '';
+        var birthdayParts = (patient.birthday || '').split('.');
+        if (birthdayParts.length === 3) {
+            var year = birthdayParts[2];
+            var month = birthdayParts[1];
+            var date = birthdayParts[0];
+            birthdayString = year + '-' + month + '-' + date;
+        }
         setCurrentPatientId(patient.id);
         document.getElementsByName('address-book-field-surname')[0].value = patient.surname;
         document.getElementsByName('address-book-field-name')[0].value = patient.name;
@@ -246,7 +262,7 @@ function readAndFillPatientModal(id) {
         document.getElementsByName('address-book-field-city')[0].value = patient.city;
         document.getElementsByName('address-book-field-zip')[0].value = patient.zip;
         document.getElementsByName('address-book-field-country')[0].value = patient.country;
-        document.getElementsByName('address-book-field-birthday')[0].value = patient.birthday;
+        document.getElementsByName('address-book-field-birthday')[0].value = birthdayString;
         document.querySelector('input[name=address-book-field-sex][value=m]').checked =
         document.querySelector('input[name=address-book-field-sex][value=f]').checked = false;
         if (patient.sex === 'f' || patient.sex === 'm') {

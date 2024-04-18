@@ -212,9 +212,6 @@ function listPatients() {
             };
             var deleteButton = document.createElement('div');
             deleteButton.className = 'prescriptions-address-book-patient-delete';
-            var deleteButtonImage = document.createElement('img');
-            deleteButtonImage.src = '/assets/images/rubbish-bin.png';
-            // deleteButton.appendChild(deleteButtonImage);
             div.appendChild(deleteButton);
             deleteButton.onclick = function(e) {
                 e.stopPropagation();

@@ -21,3 +21,32 @@ macos_url = https://itunes.apple.com/ch/app/amiko-desitin/id708142753?mt=12
 ios_url = https://itunes.apple.com/ch/app/amiko-desitin/id687642725?mt=8
 android_url = https://play.google.com/store/apps/details?id=com.ywesee.amiko.de&hl=de
 prescriptions = Rezepte
+surname = Nachname
+name = Vorname
+street = Straße
+city = Ort
+zip = PLZ
+country = Land
+birthday = Geburtstag
+sex = Geschlecht
+weight_kg = Gewicht(kg)
+height_cm = Größe(cm)
+phone = Telefon
+email = E-Mail
+bag_number = BAG-Nummer
+card_number = Kartennummer
+card_expiry = Ablauf der Karte
+gln = GLN
+title = Titel
+zsr_no = ZSR-Nr.
+zip = Postleitzahl
+IBAN = IBAN
+vat_number = Mwst. Nummer
+close = Schließen
+save = Speichern
+new_patient = Neues Patient
+edit = Bearbeiten
+address_book = Addressbuch
+choose_patient = Patient wählen
+new_prescription = Neues Rezept
+signature = Arztstempel

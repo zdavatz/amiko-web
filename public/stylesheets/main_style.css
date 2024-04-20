@@ -403,13 +403,25 @@ a.atc-code:hover {
     float: right;
 }
 
-.prescription-item-actions .delete-button {
+.prescription-item-actions .delete-button, .prescriptions-right-list-item .delete-button {
     width: 20px;
     height: 20px;
     background: url(/assets/images/rubbish-bin.png);
     background-size: contain;
     border: 0;
     cursor: pointer;
+    vertical-align: middle;
+}
+
+.prescriptions-right-list-item .download-button {
+    border: solid 1px var(--text-color-normal);
+    background: transparent;
+    color: var(--text-color-normal);
+    border-radius: 5px;
+}
+
+.prescriptions-right-list-item .download-button::before {
+    content: '↓';
 }
 
 .prescription-item-note {
@@ -561,7 +573,7 @@ dialog.prescriptions-doctor {
     opacity: 0;
 }
 @media (prefers-color-scheme: dark) {
-    .article-packinfo-add-prescription-wrapper img {
+    .article-packinfo-add-prescription-wrapper img, .prescription-item-actions .delete-button, .prescriptions-right-list-item .delete-button {
         filter: invert(1);
     }
 }
@@ -572,6 +584,11 @@ dialog.prescriptions-doctor {
     position: absolute;
     width: 100%;
     text-align: right;
+}
+
+.prescriptions-right-list-item:hover {
+    background: var(--background-color-highlight);
+    cursor: pointer;
 }
 
 .shake {

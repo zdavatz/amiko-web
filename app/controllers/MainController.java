@@ -138,8 +138,8 @@ public class MainController extends Controller {
     public Result prescription(Http.Request request, String lang, String key) {
         ViewContext vc = getViewContext(request);
         Messages messages = messagesApi.preferred(request);
-        String html = prescriptions.render("the name").toString();
-        return ok(index.render(html, "titles", "", "", "", vc, messages));
+        String html = prescriptions.render(messages).toString();
+        return ok(index.render(html, "<div id='prescriptions-right-list'></div>", "", "", "", vc, messages));
     }
 
     /**

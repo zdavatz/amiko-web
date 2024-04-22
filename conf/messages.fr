@@ -21,3 +21,32 @@ macos_url = https://itunes.apple.com/ch/app/comed-desitin/id710472327?mt=12
 ios_url = https://itunes.apple.com/ch/app/comed-desitin/id712891884?mt=8
 android_url = https://play.google.com/store/apps/details?id=com.ywesee.amiko.fr&hl=en
 prescriptions = Ordonnances
+surname = Nom de famille
+name = Nom
+street = Rue
+city = Ville
+zip = CODE POSTAL
+country =
+birthday = Date de naissance
+sex = Sexe
+weight_kg = Poids (kg)
+height_cm = Taille (cm)
+phone = Téléphone
+Email = Courriel
+bag_number = Numéro de BAG
+card_number = Numéro de carte
+card_expiry = Expiration de la carte
+gln = GLN
+title = Titre
+zsr_no = ZSR Nr
+zip = Code postal
+IBAN = IBAN
+vat_number = Numéro de TVA
+close = Fermer
+save = Sauver
+new_patient = Nouvelle patient
+edit = Éditer
+address_book = Carnet d'adresses
+choose_patient = Choisir un patient
+new_prescription = Nouvelle ordonnance
+signature = Signature du médicin

@@ -1,109 +1,109 @@
-@(name: String)
+@(messages: play.i18n.Messages)
 
 <div class="prescriptions">
     <div class="prescription-header">
         <div class="prescription-patent">
-            <div class="prescription-patent-info">Foo bar 12345</div>
-            <button onClick="showPatientsModal()">Choose Patient</button>
-            <div class="prescription-patent-place-and-date">11.22.33</div>
+            <div class="prescription-patent-info"></div>
+            <button onClick="showPatientsModal()">@messages("choose_patient")</button>
+            <div class="prescription-patent-place-and-date"></div>
         </div>
         <div class="prescription-doctor">
             <div class="prescription-doctor-info">
                 Mr. Doctor
             </div>
-            <button onClick="showDoctorModal()">Edit</button>
+            <button onClick="showDoctorModal()">@messages("edit")</button>
             <div class="prescription-doctor-sign"><img /></div>
         </div>
     </div>
     <div class="prescription-items">
     </div>
     <div class="prescription-actions">
-        <input id="prescription-save" type="button" value="Save">
-        <input id="prescription-create" type="button" value="Create New">
+        <input id="prescription-save" type="button" value='@messages("save")'>
+        <input id="prescription-create" type="button" value='@messages("new_prescription")'>
     </div>
 
     <dialog class="prescriptions-address-book">
-        <h2>Address book</h2>
+        <h2>@messages("address_book")</h2>
         <div class="prescriptions-address-book-content">
             <table class="prescriptions-address-book-form">
                 <tr>
-                    <td class="-field">Surname:</td>
+                    <td class="-field">@messages("surname"):</td>
                     <td><input name="address-book-field-surname"></td>
                 </tr>
                 <tr>
-                    <td class="-field">Name:</td>
+                    <td class="-field">@messages("name"):</td>
                     <td><input name="address-book-field-name"></td>
                 </tr>
                 <tr>
-                    <td class="-field">Street:</td>
+                    <td class="-field">@messages("street"):</td>
                     <td><input name="address-book-field-street"></td>
                 </tr>
                 <tr>
-                    <td class="-field">City:</td>
+                    <td class="-field">@messages("city"):</td>
                     <td><input name="address-book-field-city"></td>
                 </tr>
                 <tr>
-                    <td class="-field">ZIP:</td>
+                    <td class="-field">@messages("zip"):</td>
                     <td><input name="address-book-field-zip"></td>
                 </tr>
                 <tr>
-                    <td class="-field">Country:</td>
+                    <td class="-field">@messages("country"):</td>
                     <td><input name="address-book-field-country"></td>
                 </tr>
                 <tr>
-                    <td class="-field">Birthday:</td>
-                    <td><input name="address-book-field-birthday"></td>
+                    <td class="-field">@messages("birthday"):</td>
+                    <td><input name="address-book-field-birthday" type="date"></td>
                 </tr>
                 <tr>
-                    <td class="-field">Sex:</td>
+                    <td class="-field">@messages("sex"):</td>
                     <td><input name="address-book-field-sex" type="radio" value="m" title="M">M <input name="address-book-field-sex" type="radio" value="f" title="F"> F</td>
                 </tr>
                 <tr>
-                    <td class="-field">Weight(kg):</td>
+                    <td class="-field">@messages("weight_kg"):</td>
                     <td><input name="address-book-field-weight"></td>
                 </tr>
                 <tr>
-                    <td class="-field">Height(cm):</td>
+                    <td class="-field">@messages("height_cm"):</td>
                     <td><input name="address-book-field-height"></td>
                 </tr>
                 <tr>
-                    <td class="-field">Phone:</td>
+                    <td class="-field">@messages("phone"):</td>
                     <td><input name="address-book-field-phone"></td>
                 </tr>
                 <tr>
-                    <td class="-field">Email:</td>
+                    <td class="-field">@messages("email"):</td>
                     <td><input name="address-book-field-email"></td>
                 </tr>
                 <tr>
-                    <td class="-field">BAG Number:</td>
+                    <td class="-field">@messages("bag_number") Number:</td>
                     <td><input name="address-book-field-bagnumber"></td>
                 </tr>
                 <tr>
-                    <td class="-field">Card Number:</td>
+                    <td class="-field">@messages("card_number"):</td>
                     <td><input name="address-book-field-cardnumber"></td>
                 </tr>
                 <tr>
-                    <td class="-field">Card Expiry:</td>
+                    <td class="-field">@messages("card_expiry"):</td>
                     <td><input name="address-book-field-cardexpiry"></td>
                 </tr>
                 <tr>
-                    <td class="-field">GLN:</td>
+                    <td class="-field">@messages("gln"):</td>
                     <td><input name="address-book-field-gln"></td>
                 </tr>
             </table>
             <div class="prescriptions-address-book-patients">
                 <div class="prescriptions-address-book-patient">
-                    Foo bar
+
                 </div>
                 <div class="prescriptions-address-book-patient">
-                    xxxx
+
                 </div>
             </div>
         </div>
         <form class="dialog-action" method="dialog">
-            <input id="patient-save" type="button" value="Save">
-            <button>close</button>
-            <input id="patient-create" type="button" value="New Patient">
+            <input id="patient-save" type="button" value='@messages("save")'>
+            <button>@messages("close")</button>
+            <input id="patient-create" type="button" value='@messages("new_patient")'>
         </form>
     </dialog>
     <dialog class="prescriptions-doctor">
@@ -111,46 +111,46 @@
         <div class="prescriptions-doctor-content">
             <table>
                 <tr class="-field">
-                    <td class="-name">Title</td><td><input name="doctor-field-title"></td>
+                    <td class="-name">@messages("title")</td><td><input name="doctor-field-title"></td>
                 </tr>
                 <tr class="-field">
-                    <td class="-name">ZSR Nr</td><td><input name="doctor-field-zsrnumber"></td>
+                    <td class="-name">@messages("zsr_no")</td><td><input name="doctor-field-zsrnumber"></td>
                 </tr>
                 <tr class="-field">
-                    <td class="-name">GLN</td><td><input name="doctor-field-gln"></td>
+                    <td class="-name">@messages("gln")</td><td><input name="doctor-field-gln"></td>
                 </tr>
                 <tr class="-field">
-                    <td class="-name">Surname</td><td><input name="doctor-field-surname"></td>
+                    <td class="-name">@messages("surname")</td><td><input name="doctor-field-surname"></td>
                 </tr>
                 <tr class="-field">
-                    <td class="-name">Name</td><td><input name="doctor-field-name"></td>
+                    <td class="-name">@messages("name")</td><td><input name="doctor-field-name"></td>
                 </tr>
                 <tr class="-field">
-                    <td class="-name">Street</td><td><input name="doctor-field-street"></td>
+                    <td class="-name">@messages("street")</td><td><input name="doctor-field-street"></td>
                 </tr>
                 <tr class="-field">
-                    <td class="-name">City</td><td><input name="doctor-field-city"></td>
+                    <td class="-name">@messages("city")</td><td><input name="doctor-field-city"></td>
                 </tr>
                 <tr class="-field">
-                    <td class="-name">Country</td><td><input name="doctor-field-country"></td>
+                    <td class="-name">@messages("country")</td><td><input name="doctor-field-country"></td>
                 </tr>
                 <tr class="-field">
-                    <td class="-name">Zip</td><td><input name="doctor-field-zip"></td>
+                    <td class="-name">@messages("zip")</td><td><input name="doctor-field-zip"></td>
                 </tr>
                 <tr class="-field">
-                    <td class="-name">Phone</td><td><input name="doctor-field-phone"></td>
+                    <td class="-name">@messages("phone")</td><td><input name="doctor-field-phone"></td>
                 </tr>
                 <tr class="-field">
-                    <td class="-name">Email</td><td><input name="doctor-field-email"></td>
+                    <td class="-name">@messages("email")</td><td><input name="doctor-field-email"></td>
                 </tr>
                 <tr class="-field">
-                    <td class="-name">IBAN</td><td><input name="doctor-field-iban"></td>
+                    <td class="-name">@messages("iban")</td><td><input name="doctor-field-iban"></td>
                 </tr>
                 <tr class="-field">
-                    <td class="-name">Vat Number</td><td><input name="doctor-field-vat"></td>
+                    <td class="-name">@messages("vat_number")</td><td><input name="doctor-field-vat"></td>
                 </tr>
                 <tr>
-                    <td></td><td>
+                    <td>@messages("signature")</td><td>
                         <img id="doctor-sign-image"/>
                         <input id="doctor-sign-input" type="file" accept="image/png, image/jpeg"/>
                     </td>
@@ -158,8 +158,8 @@
             </table>
         </div>
         <form class="dialog-action" method="dialog">
-            <input id="doctor-save" type="button" value="Save">
-            <button>close</button>
+            <input id="doctor-save" type="button" value='@messages("save")'>
+            <button>@messages("close")</button>
         </form>
     </dialog>
 </div>

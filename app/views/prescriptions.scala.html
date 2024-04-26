@@ -162,4 +162,19 @@
             <button>@messages("close")</button>
         </form>
     </dialog>
+    <dialog id="prescriptions-save-confirm">
+        <form class="dialog-action" method="dialog">
+            <h2>@messages("overwrite_prescription_title")</h2>
+            <p>@messages("overwrite_prescription_confirm")</p>
+            <input id="prescription-save-new" type="button" value='@messages("save_new")'>
+            <input id="prescription-save-overwrite" type="button" value='@messages("save_overwrite")'>
+            <button>@messages("cancel")</button>
+        </form>
+    </dialog>
+    <dialog id="prescriptions-save-no-patient">
+        <form class="dialog-action" method="dialog">
+            <p>@messages("prescription_please_choose_patient")</p>
+            <button>@messages("cancel")</button>
+        </form>
+    </dialog>
 </div>

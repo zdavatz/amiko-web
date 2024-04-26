@@ -198,7 +198,6 @@ $ ->
     source: articles.ttAdapter()
     templates:
       suggestion: (data) ->
-        console.log 'data', data
         if search_type == SearchType.Title
           packsStr = (packinfo)->
             "<p class='article-packinfo' style='color:#{packinfo.color};' data-prescription='#{packInfoDataForPrescriptionBasket(data, packinfo)}'>

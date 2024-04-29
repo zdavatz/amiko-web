@@ -207,19 +207,11 @@ function listPatients() {
     return getPrescriptionDatabase().then(function(db) {
         return new Promise(function(resolve, reject) {
             var objectStore = db.transaction("patients").objectStore("patients");
-            var cursor = objectStore.openCursor();
-            var results = [];
-            cursor.onsuccess = function(event) {
-              var cursor = event.target.result;
-              if (cursor) {
-                cursor.continue();
-                results.push(cursor.value);
-              } else {
-                console.log("No more entries!");
-                resolve(results);
-              }
+            var request = objectStore.getAll();
+            request.onsuccess = function(event) {
+                resolve(event.target.result);
             };
-            cursor.onerror = reject;
+            request.onerror = reject;
         });
     }).then(function(patients) {
         var container = document.getElementsByClassName('prescriptions-address-book-patients')[0];
@@ -429,7 +421,7 @@ function listSimplifiedPrescriptions(patientId) {
             var index = store.index('patient_id');
             var getAllRequest = index.getAll(patientId);
             getAllRequest.onsuccess = function() {
-              res(getAllRequest.result);
+              res(getAllRequest.result.reverse());
             };
             getAllRequest.onerror = rej;
         });

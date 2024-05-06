@@ -55,3 +55,4 @@ save_new = als neues Rezept speichern
 save_overwrite = besteh. Rezept überschreiben
 cancel = Abbrechen
 prescription_please_choose_patient = Bitte wählen Sie einen Patienten
+export_to_zip = Exportieren in Zip

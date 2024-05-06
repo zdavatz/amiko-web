@@ -428,6 +428,18 @@ function listSimplifiedPrescriptions(patientId) {
     });
 }
 
+function makeFullPrescription(simplifiedPrescription) {
+    // We do not save the doctor's signature in the DB to save space,
+    // this function add the signature back to a simplified prescription
+    var doctorSignData = localStorage.doctorSignImage;
+    if (doctorSignData) {
+        var index = doctorSignData.indexOf(',');
+        doctorSignData = doctorSignData.slice(index + 1);
+        simplifiedPrescription.operator.signature = doctorSignData;
+    }
+    return simplifiedPrescription;
+}
+
 function getFullSavedPrescription(prescriptionId) {
     return getPrescriptionDatabase().then(function (db) {
         return new Promise(function(resolve, reject) {
@@ -436,13 +448,8 @@ function getFullSavedPrescription(prescriptionId) {
                 .get(prescriptionId);
             req.onsuccess = function(event) {
                 var p = event.target.result;
-                var doctorSignData = localStorage.doctorSignImage;
-                if (doctorSignData) {
-                    var index = doctorSignData.indexOf(',');
-                    doctorSignData = doctorSignData.slice(index + 1);
-                    p.operator.signature = doctorSignData;
-                }
-                resolve(p);
+                var full = makeFullPrescription(p);
+                resolve(full);
             };
             req.onerror = reject;
         });
@@ -511,14 +518,8 @@ function displaySavedPrescriptions() {
                     $('<button>').addClass('download-button').on('click', function (e) {
                         e.stopPropagation();
                         getFullSavedPrescription(prescription.id).then(function(obj) {
-                            const url = prescriptionToAMK(obj);
-                            var element = window.document.createElement('a');
-                            element.href = url;
-                            element.download = prescription.filename;
-                            element.style.display = 'none';
-                            document.body.appendChild(element);
-                            element.click();
-                            document.body.removeChild(element);
+                            var blob = prescriptionToAMK(obj);
+                            downloadBlob(blob, prescription.filename);
                         });
                     })
                 )
@@ -589,6 +590,9 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.prescriptionBasket = '[]';
         setCurrentPrescriptionId(null);
         displayPrescriptionItems();
+    });
+    document.getElementById('prescription-export-all').addEventListener('click', function() {
+        exportEverything();
     });
     reloadPrescriptionInfo();
 });
@@ -712,8 +716,18 @@ function prescriptionToAMK(obj) {
     var blob = new Blob([str], {
         type: 'document/amk'
     });
+    return blob;
+}
+
+function downloadBlob(blob, filename) {
     var url = URL.createObjectURL(blob);
-    return url;
+    var element = window.document.createElement('a');
+    element.href = url;
+    element.download = filename;
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
 }
 
 function displayPrescriptionItems() {
@@ -760,3 +774,43 @@ $(document).on('click', 'p.article-packinfo', function(e) {
         $('button.state-button.--prescription').addClass('shake');
     }
 });
+
+function exportEverything() {
+    (window.JSZip ? Promise.resolve() : Promise.resolve(
+        $.getScript('/assets/javascripts/jszip.min.js')
+    ))
+    .then(getPrescriptionDatabase)
+    .then(function(db) {
+        return new Promise(function (res, rej) {
+            var store = db.transaction("prescriptions").objectStore("prescriptions");
+            var getAllRequest = store.getAll();
+            getAllRequest.onsuccess = function() {
+              res(getAllRequest.result);
+            };
+            getAllRequest.onerror = rej;
+        });
+    })
+    .then(function(simplifiedPrescriptions) {
+        var zip = new JSZip();
+        simplifiedPrescriptions.forEach(function(prescription) {
+            var obj = makeFullPrescription(prescription);
+            var blob = prescriptionToAMK(obj);
+            zip.file(prescription.filename, blob);
+        });
+        return zip.generateAsync({type:"blob"});
+    })
+    .then(function(blob) {
+        // dd.mm.yyyy-hh.mm.ss.zip
+        var now = new Date();
+        var filename =
+            ('0' + now.getDate()).slice(-2) + '.' +
+            ('0' + (now.getMonth() + 1)).slice(-2) + '.' +
+            now.getFullYear() +
+            '-' +
+            ('0' + now.getHours()).slice(-2) + '.' +
+            ('0' + now.getMinutes()).slice(-2) + '.' +
+            ('0' + now.getSeconds()).slice(-2) +
+            '.zip';
+        downloadBlob(blob, filename);
+    });
+}

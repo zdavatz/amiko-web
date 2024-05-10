@@ -1,3 +1,194 @@
+(function() {
+var Doctor = {
+    toAMKObject: function(profile, doctorSignData) {
+        return {
+            "title": profile.title,
+            "gln": profile.gln,
+            "given_name": profile.name,
+            "family_name": profile.surname,
+            "postal_address": profile.street,
+            "city": profile.city,
+            "country": profile.country,
+            "zip_code": profile.zip,
+            "phone_number": profile.phone,
+            "email_address": profile.email,
+            "iban": profile.iban,
+            "vat_number": profile.vat,
+            "zsr_number": profile.zsrnumber,
+            "signature": doctorSignData,
+        };
+    },
+    fromAMKObject: function(obj) {
+        return {
+            title: obj.title,
+            gln: obj.gln,
+            name: obj.given_name,
+            surname: obj.family_name,
+            street: obj.postal_address,
+            city: obj.city,
+            country: obj.country,
+            zip: obj.zip_code,
+            phone: obj.phone_number,
+            email: obj.email_address,
+            iban: obj.iban,
+            vat: obj.vat_number,
+            zsrnumber: obj.zsr_number,
+        };
+    },
+    fromCurrentUIState: function() {
+        return {
+            title: document.getElementsByName('doctor-field-title')[0].value,
+            zsrnumber: document.getElementsByName('doctor-field-zsrnumber')[0].value,
+            gln: document.getElementsByName('doctor-field-gln')[0].value,
+            surname: document.getElementsByName('doctor-field-surname')[0].value,
+            name: document.getElementsByName('doctor-field-name')[0].value,
+            street: document.getElementsByName('doctor-field-street')[0].value,
+            city: document.getElementsByName('doctor-field-city')[0].value,
+            country: document.getElementsByName('doctor-field-country')[0].value,
+            zip: document.getElementsByName('doctor-field-zip')[0].value,
+            phone: document.getElementsByName('doctor-field-phone')[0].value,
+            email: document.getElementsByName('doctor-field-email')[0].value,
+            iban: document.getElementsByName('doctor-field-iban')[0].value,
+            vat: document.getElementsByName('doctor-field-vat')[0].value,
+        };
+    },
+    save: function(profile) {
+        return getPrescriptionDatabase().then(function (db) {
+            return new Promise(function(resolve, reject) {
+                var req = db.transaction("doctor", "readwrite")
+                    .objectStore("doctor")
+                    .put(profile, "doctor-profile");
+                req.onsuccess = resolve;
+                req.onerror = reject;
+            });
+        });
+    },
+};
+var Patient = {
+    toAMKObject: function(patient) {
+        return {
+            "patient_id": String(patient.id),
+            "given_name": patient.name,
+            "family_name": patient.surname,
+            "birth_date": patient.birthday,
+            "weight_kg": patient.weight,
+            "height_cm": patient.height,
+            "gender": patient.sex,
+            "postal_address": patient.street,
+            "zip_code": patient.zip,
+            "city": patient.city,
+            "country": patient.country,
+            "phone_number": patient.phone,
+            "email_address": patient.email,
+            "bag_number": patient.bagnumber,
+            "health_card_number": patient.cardnumber,
+            "health_card_expiry": patient.cardexpiry,
+            "insurance_gln": patient.gln,
+        };
+    },
+    fromAMKObject: function(amkPatient) {
+        return {
+            id: parseInt(amkPatient.patient_id),
+            name: amkPatient.given_name,
+            surname: amkPatient.family_name,
+            birthday: amkPatient.birth_date,
+            weight: amkPatient.weight_kg,
+            height: amkPatient.height_cm,
+            sex: amkPatient.gender,
+            street: amkPatient.postal_address,
+            zip: amkPatient.zip_code,
+            city: amkPatient.city,
+            country: amkPatient.country,
+            phone: amkPatient.phone_number,
+            email: amkPatient.email_address,
+            bagnumber: amkPatient.bag_number,
+            cardnumber: amkPatient.health_card_number,
+            cardexpiry: amkPatient.health_card_expiry,
+            gln: amkPatient.insurance_gln,
+        };
+    },
+    // If the patient object has an `id` value, it updates existing patient
+    // @return Promise<patientId>
+    upsert: function(patient) {
+        return getPrescriptionDatabase().then(function (db) {
+            return new Promise(function(resolve, reject) {
+                var req = db.transaction("patients", "readwrite")
+                    .objectStore("patients")
+                    .put(patient);
+                req.onsuccess = function(event) {
+                    var patientId = event.target.result;
+                    setCurrentPatientId(patientId);
+                    resolve(patientId);
+                };
+                req.onerror = reject;
+            });
+        });
+    },
+    deleteAll: function() {
+        return getPrescriptionDatabase().then(function(db) {
+            return db.transaction("patients", "readwrite")
+                .objectStore("patients")
+                .clear();
+        });
+    },
+    // Returns a map of old patient id -> new patient id
+    importFromAMKPrescriptions: function (prescriptions) {
+        var patientById = {};
+        var oldPatientIdToNewPatientId = {};
+        prescriptions.forEach(function(prescription) {
+            var patient = prescription.patient;
+            patientById[patient.patient_id] = patient;
+        });
+        return Promise.all(Object.keys(patientById).map(function(patientId) {
+            var amkPatient = patientById[patientId];
+            var patient = Patient.fromAMKObject(amkPatient);
+            delete patient.id; // make it insert new patient
+            return Patient.upsert(patient).then(function(newPatientId) {
+                oldPatientIdToNewPatientId[patientId] = newPatientId;
+            });
+        })).then(function() {
+            return oldPatientIdToNewPatientId;
+        });
+    }
+};
+
+var Prescription = {
+    toAMKObject: function() {},
+    fromAMKObject: function() {},
+    fromCurrentUIState: function() {},
+    save: function(prescription) {
+        return getPrescriptionDatabase().then(function (db) {
+            return new Promise(function(resolve, reject) {
+                var req = db.transaction("prescriptions", "readwrite")
+                    .objectStore("prescriptions")
+                    .put(prescription);
+                req.onsuccess = function(e) {
+                    var prescriptionId = e.target.result;
+                    resolve(prescriptionId);
+                };
+                req.onerror = reject;
+            });
+        });
+    },
+    deleteAll: function() {
+        return getPrescriptionDatabase().then(function(db) {
+            return db.transaction("prescriptions", "readwrite")
+                .objectStore("prescriptions")
+                .clear();
+        });
+    },
+    // Import prescriptions and _new_ patients
+    importAMKObjects: function(amkObjs) {
+        return Patient.importFromAMKPrescriptions(amkObjs).then(function(oldPatientIdToNewPatientId) {
+            // TODO, sort by place date?
+            return Promise.all(amkObjs.map(function(amkObj) {
+                amkObj.patient_id = amkObj.patient.patient_id = oldPatientIdToNewPatientId[amkObj.patient.patient_id];
+                return Prescription.save(amkObj);
+            }));
+        });
+    }
+};
+
 function reloadPrescriptionInfo() {
     readDoctor().then(function(profile) {
         var div = document.getElementsByClassName('prescription-doctor-info')[0];
@@ -187,20 +378,7 @@ function savePatient() {
     if (patientId !== null) {
         patient.id = patientId;
     }
-    return getPrescriptionDatabase().then(function (db) {
-        return new Promise(function(resolve, reject) {
-            var req = db.transaction("patients", "readwrite")
-                .objectStore("patients")
-                .put(patient);
-            req.onsuccess = function(event) {
-                var patientId = event.target.result;
-                setCurrentPatientId(patientId);
-                resolve(patientId);
-            };
-            req.onerror = reject;
-        });
-    })
-    .then(reloadPrescriptionInfo);
+    return Patient.upsert(patient).then(reloadPrescriptionInfo);
 }
 
 function listPatients() {
@@ -367,7 +545,7 @@ function didPickDoctorSignatureImage(file) {
 
 function savePrescription(prescriptionObj, optionalPrescriptionId) {
     // The saved object is
-    // prescription object with
+    // amk prescription object with
     // + patient_id: number <- refers to a patient in the patient store
     // + filename: string
     // + (automatically generated) id: number
@@ -594,6 +772,11 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('prescription-export-all').addEventListener('click', function() {
         exportEverything();
     });
+    document.getElementById('prescription-import-all').addEventListener('change', function(e) {
+        console.log(e);
+        if (!e.currentTarget.files.length) return;
+        importFromZip(e.currentTarget.files[0]);
+    });
     reloadPrescriptionInfo();
 });
 
@@ -645,41 +828,8 @@ function encodeCurrentPrescriptionToJSON() {
                 ('0' + now.getMinutes()).slice(-2) + ':' +
                 ('0' + now.getSeconds()).slice(-2) +
                 ')',
-            operator: {
-                "title": profile.title,
-                "gln": profile.gln,
-                "given_name": profile.name,
-                "family_name": profile.surname,
-                "postal_address": profile.street,
-                "city": profile.city,
-                "country": profile.country,
-                "zip_code": profile.zip,
-                "phone_number": profile.phone,
-                "email_address": profile.email,
-                "iban": profile.iban,
-                "vat_number": profile.vat,
-                "zsr_number": profile.zsrnumber,
-                "signature": doctorSignData,
-            },
-            patient: {
-                "patient_id": String(patient.id),
-                "given_name": patient.name,
-                "family_name": patient.surname,
-                "birth_date": patient.birthday,
-                "weight_kg": patient.weight,
-                "height_cm": patient.height,
-                "gender": patient.sex,
-                "postal_address": patient.street,
-                "zip_code": patient.zip,
-                "city": patient.city,
-                "country": patient.country,
-                "phone_number": patient.phone,
-                "email_address": patient.email,
-                "bag_number": patient.bagnumber,
-                "health_card_number": patient.cardnumber,
-                "health_card_expiry": patient.cardexpiry,
-                "insurance_gln": patient.gln,
-            },
+            operator: Doctor.toAMKObject(profile, doctorSignData),
+            patient: Patient.toAMKObject(patient),
             medications: listPrescriptionBasket().map(item => {
                 var titleComponents = item.package.split('[');
                 titleComponents = titleComponents[0].split(',');
@@ -705,7 +855,7 @@ function prescriptionToAMK(obj) {
     delete obj.id;
     delete obj.filename;
     var json = JSON.stringify(obj);
-    var encoder = new TextEncoder();
+    var encoder = new TextEncoder('utf-8');
     var bytes = encoder.encode(json);
     var binary = '';
     var len = bytes.byteLength;
@@ -717,6 +867,17 @@ function prescriptionToAMK(obj) {
         type: 'document/amk'
     });
     return blob;
+}
+
+function amkToPrescription(amkStr) {
+    var utf8 = atob(amkStr);
+    var charCodes = [];
+    for (var i = 0; i < utf8.length; i++) {
+        charCodes.push(utf8.charCodeAt(i));
+    }
+    var decoder = new TextDecoder('utf-8');
+    var utf16 = decoder.decode(new Uint8Array(charCodes));
+    return JSON.parse(utf16);
 }
 
 function downloadBlob(blob, filename) {
@@ -814,3 +975,86 @@ function exportEverything() {
         downloadBlob(blob, filename);
     });
 }
+
+function sequencePromise(promises) {
+    var results = [];
+    return promises.reduce(function(prev, curr) {
+        return prev.then(function() {
+            return curr.then(function(val) {
+                results.push(val);
+            });
+        });
+    }, Promise.resolve())
+    .then(function() {
+        return results;
+    });
+}
+
+function importFromZip(file) {
+    var amksPromise;
+    if (file.name.endsWith('.zip')) {
+        amksPromise = (window.JSZip ? Promise.resolve() : Promise.resolve(
+            $.getScript('/assets/javascripts/jszip.min.js')
+        ))
+        .then(function() {
+            return JSZip.loadAsync(file);
+        })
+        .then(function(zip) {
+            if (zip.files.length === 0) {
+                return Promise.reject(new Error('Empty zip file'));
+            } else if (zip.files)
+            return Promise.all(
+                Object.keys(zip.files)
+                    .map(function(key) {
+                        var file = zip.files[key];
+                        if (!file.name.endsWith('.amk') || file.dir) {
+                            return null;
+                        }
+                        return file.async('text')
+                            .then(amkToPrescription)
+                            .then(function(prescription) {
+                                prescription.filename = file.name;
+                                return prescription;
+                            });
+                    })
+                    .filter(function(x){ return x !== null; })
+            );
+        });
+    } else if (file.name.endsWith('.amk')) {
+        amksPromise = file.text()
+            .then(amkToPrescription)
+            .then(function(prescription) {
+                prescription.filename = file.name;
+                return [prescription];
+            });
+    } else {
+        amksPromise = Promise.reject(new Error('Unknown file type'));
+    }
+    return amksPromise.then(function(amks) {
+        window.amks = amks;
+        // TODO: confirm delete all
+        var clear = amks.length > 1 ?
+            Promise.all([
+                Prescription.deleteAll(),
+                Patient.deleteAll()
+            ]) :
+            Promise.resolve();
+        return clear
+            .then(function(){ return Prescription.importAMKObjects(amks); })
+            .then(function() { return amks; });
+    })
+    .then(function(amks) {
+        var amkDoctor = amks[0].operator;
+        if (amkDoctor.signature) {
+            localStorage.doctorSignImage = 'data:image/png;base64,' + amkDoctor.signature;
+        }
+        var doctor = Doctor.fromAMKObject(amkDoctor);
+        return Doctor.save(doctor);
+    })
+    // TODO: alert "imported n files"
+    .catch(function(e) {
+        alert(e.toString());
+    });
+}
+
+})();

@@ -740,7 +740,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.getElementById('prescription-save').addEventListener('click', function() {
         if (getCurrentPatientId() === null) {
-            $('#prescriptions-save-no-patient')[0].showModal();
+            alert(PrescriptionLocalization.prescription_please_choose_patient);
             return;
         }
         if (getCurrentPrescriptionId()) {

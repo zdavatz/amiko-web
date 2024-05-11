@@ -173,10 +173,11 @@
             <button>@messages("cancel")</button>
         </form>
     </dialog>
-    <dialog id="prescriptions-save-no-patient">
-        <form class="dialog-action" method="dialog">
-            <p>@messages("prescription_please_choose_patient")</p>
-            <button>@messages("cancel")</button>
-        </form>
-    </dialog>
+    <script>
+        var PrescriptionLocalization = {
+            prescription_please_choose_patient: "@messages("prescription_please_choose_patient")",
+            prescription_confirm_clear: "@messages("prescription_confirm_clear")",
+            prescription_imported: "@messages("prescription_imported")"
+        };
+    </script>
 </div>

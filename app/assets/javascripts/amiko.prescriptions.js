@@ -716,6 +716,12 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!document.URL.endsWith('/prescriptions')) {
         return;
     }
+    document.getElementById('prescription-choose-patient-button').addEventListener('click', function() {
+        showPatientsModal();
+    });
+    document.getElementById('prescription-edit-doctor-button').addEventListener('click', function() {
+        showDoctorModal();
+    });
     document.getElementById('doctor-save').addEventListener('click', function() {
         saveDoctor();
         closeDoctorModal();

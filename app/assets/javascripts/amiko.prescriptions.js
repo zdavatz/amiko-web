@@ -498,6 +498,14 @@ function deletePatient(id) {
                 .delete(id);
             req.onsuccess = resolve;
             req.onerror = reject;
+        })
+        .then(function(){
+            return listSimplifiedPrescriptions(id);
+        })
+        .then(function(prescriptions) {
+            return Promise.all(prescriptions.map(function(p) {
+                return deletePrescription(p.id);
+            }));
         });
     })
     .then(listPatients)

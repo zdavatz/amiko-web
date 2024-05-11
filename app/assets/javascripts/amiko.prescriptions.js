@@ -180,7 +180,6 @@ var Prescription = {
     // Import prescriptions and _new_ patients
     importAMKObjects: function(amkObjs) {
         return Patient.importFromAMKPrescriptions(amkObjs).then(function(oldPatientIdToNewPatientId) {
-            // TODO, sort by place date?
             return Promise.all(amkObjs.map(function(amkObj) {
                 amkObj.patient_id = amkObj.patient.patient_id = oldPatientIdToNewPatientId[amkObj.patient.patient_id];
                 return Prescription.save(amkObj);
@@ -1037,6 +1036,9 @@ function importFromZip(file) {
         amksPromise = Promise.reject(new Error('Unknown file type'));
     }
     return amksPromise.then(function(amks) {
+        amks.sort(function(a, b) {
+            return a.filename < b.filename ? -1 : 1;
+        });
         window.amks = amks;
         // TODO: confirm delete all
         var clear = amks.length > 1 ?

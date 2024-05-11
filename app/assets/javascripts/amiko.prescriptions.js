@@ -1044,11 +1044,13 @@ function importFromZip(file) {
         amksPromise = Promise.reject(new Error('Unknown file type'));
     }
     return amksPromise.then(function(amks) {
+        if (amks.length > 1 && !window.confirm(PrescriptionLocalization.prescription_confirm_clear)) {
+            return [];
+        }
         amks.sort(function(a, b) {
             return a.filename < b.filename ? -1 : 1;
         });
         window.amks = amks;
-        // TODO: confirm delete all
         var clear = amks.length > 1 ?
             Promise.all([
                 Prescription.deleteAll(),
@@ -1060,14 +1062,24 @@ function importFromZip(file) {
             .then(function() { return amks; });
     })
     .then(function(amks) {
+        if (amks.length === 0) {
+            return [];
+        }
         var amkDoctor = amks[0].operator;
         if (amkDoctor.signature) {
             localStorage.doctorSignImage = 'data:image/png;base64,' + amkDoctor.signature;
         }
         var doctor = Doctor.fromAMKObject(amkDoctor);
-        return Doctor.save(doctor);
+        return Doctor.save(doctor)
+            .then(function() { return amks; });
     })
-    // TODO: alert "imported n files"
+    .then(function(amks) {
+        if (amks.length) {
+            alert(PrescriptionLocalization.prescription_imported.replace('%d', amks.length));
+            setCurrentPatientId(amks[0].patient_id);
+        }
+        reloadPrescriptionInfo();
+    })
     .catch(function(e) {
         alert(e.toString());
     });

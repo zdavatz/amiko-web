@@ -1,6 +1,6 @@
 (function() {
 var Doctor = {
-    toAMKObject: function(profile, doctorSignData) {
+    toAMKObjectWithoutSign: function(profile) {
         return {
             "title": profile.title,
             "gln": profile.gln,
@@ -15,7 +15,6 @@ var Doctor = {
             "iban": profile.iban,
             "vat_number": profile.vat,
             "zsr_number": profile.zsrnumber,
-            "signature": doctorSignData,
         };
     },
     fromAMKObject: function(obj) {
@@ -52,6 +51,10 @@ var Doctor = {
             vat: document.getElementsByName('doctor-field-vat')[0].value,
         };
     },
+    saveFromCurrentUIState: function() {
+        var profile = Doctor.fromCurrentUIState();
+        return Doctor.save(profile).then(UI.Prescription.reloadInfo);
+    },
     save: function(profile) {
         return getPrescriptionDatabase().then(function (db) {
             return new Promise(function(resolve, reject) {
@@ -63,7 +66,38 @@ var Doctor = {
             });
         });
     },
+    read: function() {
+        return getPrescriptionDatabase().then(function (db) {
+            return new Promise(function(resolve, reject) {
+                var req = db.transaction("doctor")
+                    .objectStore("doctor")
+                    .get("doctor-profile");
+                req.onsuccess = function(event) {
+                    resolve(event.target.result);
+                };
+                req.onerror = reject;
+            });
+        });
+    },
+    getSignatureURL: function() {
+        return localStorage.doctorSignImage;
+    },
+    getSignatureBase64: function() {
+        var doctorSignData = localStorage.doctorSignImage;
+        if (doctorSignData) {
+            var index = doctorSignData.indexOf(',');
+            return doctorSignData.slice(index + 1);
+        }
+        return undefined;
+    },
+    setSignatureWithURL: function(url) {
+        localStorage.doctorSignImage = url;
+    },
+    setSignatureWithBase64: function(base64Str) {
+        localStorage.doctorSignImage = 'data:image/png;base64,' + base64Str;
+    }
 };
+
 var Patient = {
     toAMKObject: function(patient) {
         return {
@@ -107,6 +141,59 @@ var Patient = {
             gln: amkPatient.insurance_gln,
         };
     },
+    fromCurrentUIState: function() {
+        var sexCheckbox = document.querySelector('input[name=address-book-field-sex]:checked');
+        var birthdayString = document.getElementsByName('address-book-field-birthday')[0].value || '';
+        var birthdayParts = birthdayString.split('-');
+        if (birthdayParts.length === 3) {
+            var year = birthdayParts[0];
+            var month = birthdayParts[1];
+            var date = birthdayParts[2];
+            birthdayString = date + '.' + month + '.' + year;
+        }
+        var patient = {
+            surname: document.getElementsByName('address-book-field-surname')[0].value,
+            name: document.getElementsByName('address-book-field-name')[0].value,
+            street: document.getElementsByName('address-book-field-street')[0].value,
+            city: document.getElementsByName('address-book-field-city')[0].value,
+            zip: document.getElementsByName('address-book-field-zip')[0].value,
+            country: document.getElementsByName('address-book-field-country')[0].value,
+            birthday: birthdayString,
+            sex: sexCheckbox ? sexCheckbox.value : "",
+            weight: document.getElementsByName('address-book-field-weight')[0].value,
+            height: document.getElementsByName('address-book-field-height')[0].value,
+            phone: document.getElementsByName('address-book-field-phone')[0].value,
+            email: document.getElementsByName('address-book-field-email')[0].value,
+            bagnumber: document.getElementsByName('address-book-field-bagnumber')[0].value,
+            cardnumber: document.getElementsByName('address-book-field-cardnumber')[0].value,
+            cardexpiry: document.getElementsByName('address-book-field-cardexpiry')[0].value,
+            gln: document.getElementsByName('address-book-field-gln')[0].value,
+        };
+        var patientId = Patient.getCurrentId();
+        if (patientId !== null) {
+            patient.id = patientId;
+        }
+        return patient;
+    },
+    saveFromCurrentUIState: function() {
+        var patient = Patient.fromCurrentUIState();
+        return Patient.upsert(patient).then(UI.Prescription.reloadInfo);
+    },
+    getCurrentId: function() {
+        try {
+            var id = localStorage.currentPatientId;
+            return parseInt(id) || null;
+        } catch (_e) {
+            return null;
+        }
+    },
+    setCurrentId: function(id) {
+        if (id === null) {
+            localStorage.removeItem('currentPatientId');
+        } else {
+            localStorage.currentPatientId = id;
+        }
+    },
     // If the patient object has an `id` value, it updates existing patient
     // @return Promise<patientId>
     upsert: function(patient) {
@@ -117,10 +204,30 @@ var Patient = {
                     .put(patient);
                 req.onsuccess = function(event) {
                     var patientId = event.target.result;
-                    setCurrentPatientId(patientId);
+                    Patient.setCurrentId(patientId);
                     resolve(patientId);
                 };
                 req.onerror = reject;
+            });
+        });
+    },
+    delete: function(id) {
+        return getPrescriptionDatabase().then(function(db) {
+            return new Promise(function(resolve, reject) {
+                var req = db
+                    .transaction("patients", "readwrite")
+                    .objectStore("patients")
+                    .delete(id);
+                req.onsuccess = resolve;
+                req.onerror = reject;
+            })
+            .then(function(){
+                return Prescription.listSimplified(id);
+            })
+            .then(function(prescriptions) {
+                return Promise.all(prescriptions.map(function(p) {
+                    return Prescription.delete(p.id);
+                }));
             });
         });
     },
@@ -129,6 +236,31 @@ var Patient = {
             return db.transaction("patients", "readwrite")
                 .objectStore("patients")
                 .clear();
+        });
+    },
+    list: function() {
+        return getPrescriptionDatabase().then(function(db) {
+            return new Promise(function(resolve, reject) {
+                var objectStore = db.transaction("patients").objectStore("patients");
+                var request = objectStore.getAll();
+                request.onsuccess = function(event) {
+                    resolve(event.target.result);
+                };
+                request.onerror = reject;
+            });
+        });
+    },
+    read: function(id) {
+        return getPrescriptionDatabase().then(function (db) {
+            return new Promise(function(resolve, reject) {
+                var req = db.transaction("patients")
+                    .objectStore("patients")
+                    .get(id);
+                req.onsuccess = function(event) {
+                    resolve(event.target.result);
+                };
+                req.onerror = reject;
+            });
         });
     },
     // Returns a map of old patient id -> new patient id
@@ -152,10 +284,142 @@ var Patient = {
     }
 };
 
+var PrescriptionBasket = {
+    add: function(data) {
+        // data.title: String
+        // data.eancode: String
+        var basket = PrescriptionBasket.list();
+        data.note = '';
+        basket.push(data);
+        PrescriptionBasket.save(basket);
+    },
+    save: function(basket) {
+        localStorage.prescriptionBasket = JSON.stringify(basket);
+        UI.PrescriptionBasket.reloadList();
+    },
+    delete: function(index) {
+        var basket = PrescriptionBasket.list();
+        basket.splice(index, 1);
+        localStorage.prescriptionBasket = JSON.stringify(basket);
+        UI.PrescriptionBasket.reloadList();
+    },
+    list: function() {
+        return JSON.parse(localStorage.prescriptionBasket || "[]");
+    }
+};
+
 var Prescription = {
-    toAMKObject: function() {},
-    fromAMKObject: function() {},
-    fromCurrentUIState: function() {},
+    toAMKBlob: function(prescriptionObj) {
+        prescriptionObj = Object.assign({}, prescriptionObj); // Shallow clone so we can
+        // Remove the extra fields, see Prescription.fromCurrentUIState
+        delete prescriptionObj.patient_id;
+        delete prescriptionObj.id;
+        delete prescriptionObj.filename;
+        var json = JSON.stringify(prescriptionObj);
+        var encoder = new TextEncoder('utf-8');
+        var bytes = encoder.encode(json);
+        var binary = '';
+        var len = bytes.byteLength;
+        for (var i = 0; i < len; i++) {
+            binary += String.fromCharCode( bytes[i] );
+        }
+        var str = btoa(binary);
+        var blob = new Blob([str], {
+            type: 'document/amk'
+        });
+        return blob;
+    },
+    fromAMKString: function(amkStr) {
+        var utf8 = atob(amkStr);
+        var charCodes = [];
+        for (var i = 0; i < utf8.length; i++) {
+            charCodes.push(utf8.charCodeAt(i));
+        }
+        var decoder = new TextDecoder('utf-8');
+        var utf16 = decoder.decode(new Uint8Array(charCodes));
+        return JSON.parse(utf16);
+    },
+    fromCurrentUIState: function(overwriteCurrent) {
+        // The saved object is
+        // amk prescription object with
+        // + patient_id: number <- refers to a patient in the patient store
+        // + filename: string
+        // + (automatically generated) id: number
+        // - operator.signature <- to save data size
+        var optionalPrescriptionId = overwriteCurrent ? Prescription.getCurrentId() : null;
+        var now = new Date();
+        var currentDateStr = '' +
+            now.getFullYear() +
+            ('0' + (now.getMonth() + 1)).slice(-2) +
+            ('0' + now.getDate()).slice(-2) +
+            ('0' + now.getHours()).slice(-2) +
+            ('0' + now.getMinutes()).slice(-2) +
+            ('0' + now.getSeconds()).slice(-2);
+        var filenamePromise = optionalPrescriptionId ? Prescription.readComplete(optionalPrescriptionId).then(p => p.filename) : Promise.resolve(null);
+        return Promise.all([
+                Doctor.read(),
+                Patient.read(Patient.getCurrentId()),
+                filenamePromise
+            ])
+            .then(function(result) {
+                var profile = result[0];
+                var patient = result[1];
+                var filename = result[2];
+
+                var doctorSignData = Doctor.getSignatureBase64();
+                var now = new Date();
+
+                var prescriptionObj = {
+                    // Non-AMK extra fields
+                    patient_id: Number(patient.id),
+                    filename: filename || "RZ_"+currentDateStr+".amk",
+                    // AMK fields
+                    prescription_hash: crypto.randomUUID(),
+                    place_date: profile.city + ', ' +
+                        // dd.MM.yyyy (HH:mm:ss)
+                        ('0' + now.getDate()).slice(-2) + '.' +
+                        ('0' + (now.getMonth() + 1)).slice(-2) + '.' +
+                        now.getFullYear() +
+                        ' (' +
+                        ('0' + now.getHours()).slice(-2) + ':' +
+                        ('0' + now.getMinutes()).slice(-2) + ':' +
+                        ('0' + now.getSeconds()).slice(-2) +
+                        ')',
+                    operator: Doctor.toAMKObjectWithoutSign(profile),
+                    patient: Patient.toAMKObject(patient),
+                    medications: PrescriptionBasket.list().map(item => {
+                        var titleComponents = item.package.split('[');
+                        titleComponents = titleComponents[0].split(',');
+                        return {
+                            title: item.title,
+                            owner: item.author,
+                            regnrs: item.regnrs,
+                            atccode: item.atccode,
+                            product_name: titleComponents[0],
+                            package: item.package,
+                            eancode: item.eancode,
+                            comment: item.note || '',
+                        };
+                    }),
+                };
+                // if optionalPrescriptionId is present, it updates existing prescription
+                if (optionalPrescriptionId) {
+                    prescriptionObj.id = optionalPrescriptionId;
+                }
+                return prescriptionObj;
+            });
+    },
+    getCurrentId: function() {
+        if (!localStorage.currentPrescriptionId) return null;
+        return Number(localStorage.currentPrescriptionId);
+    },
+    setCurrentId: function(prescriptionId) {
+        if (!prescriptionId) {
+            localStorage.removeItem('currentPrescriptionId');
+        } else {
+            localStorage.currentPrescriptionId = prescriptionId;
+        }
+    },
     save: function(prescription) {
         return getPrescriptionDatabase().then(function (db) {
             return new Promise(function(resolve, reject) {
@@ -170,6 +434,22 @@ var Prescription = {
             });
         });
     },
+    delete: function(prescriptionId) {
+        return getPrescriptionDatabase().then(function(db) {
+            return new Promise(function(resolve, reject) {
+                var req = db
+                    .transaction("prescriptions", "readwrite")
+                    .objectStore("prescriptions")
+                    .delete(prescriptionId);
+                req.onsuccess = resolve;
+                req.onerror = reject;
+            });
+        }).then(function() {
+            if (prescriptionId === Prescription.getCurrentId()) {
+                Prescription.setCurrentId(null);
+            }
+        });
+    },
     deleteAll: function() {
         return getPrescriptionDatabase().then(function(db) {
             return db.transaction("prescriptions", "readwrite")
@@ -177,65 +457,280 @@ var Prescription = {
                 .clear();
         });
     },
+    listSimplified: function(patientId) {
+        if (!patientId) {
+            return Promise.resolve([]);
+        }
+        // This function returns the saved, simplified version of prescription,
+        // which doesn't have the signature to save space
+        return getPrescriptionDatabase().then(function (db) {
+            return new Promise(function (res, rej) {
+                var store = db.transaction("prescriptions").objectStore("prescriptions");
+                var index = store.index('patient_id');
+                var getAllRequest = index.getAll(patientId);
+                getAllRequest.onsuccess = function() {
+                  res(getAllRequest.result.reverse());
+                };
+                getAllRequest.onerror = rej;
+            });
+        });
+    },
+    makeComplete: function(simplifiedPrescription) {
+        // We do not save the doctor's signature in the DB to save space,
+        // this function add the signature back to a simplified prescription
+        var doctorSignData = Doctor.getSignatureBase64();
+        if (doctorSignData) {
+            simplifiedPrescription.operator.signature = doctorSignData;
+        }
+        return simplifiedPrescription;
+    },
+    readComplete: function(prescriptionId) {
+        return getPrescriptionDatabase().then(function (db) {
+            return new Promise(function(resolve, reject) {
+                var req = db.transaction("prescriptions")
+                    .objectStore("prescriptions")
+                    .get(prescriptionId);
+                req.onsuccess = function(event) {
+                    var p = event.target.result;
+                    var full = Prescription.makeComplete(p);
+                    resolve(full);
+                };
+                req.onerror = reject;
+            });
+        });
+    },
     // Import prescriptions and _new_ patients
     importAMKObjects: function(amkObjs) {
         return Patient.importFromAMKPrescriptions(amkObjs).then(function(oldPatientIdToNewPatientId) {
-            return Promise.all(amkObjs.map(function(amkObj) {
-                amkObj.patient_id = amkObj.patient.patient_id = oldPatientIdToNewPatientId[amkObj.patient.patient_id];
-                return Prescription.save(amkObj);
+            return sequencePromise(amkObjs.map(function(amkObj) {
+                return function() {
+                    amkObj.patient_id = amkObj.patient.patient_id = oldPatientIdToNewPatientId[amkObj.patient.patient_id];
+                    return Prescription.save(amkObj);
+                };
             }));
         });
     }
 };
-
-function reloadPrescriptionInfo() {
-    readDoctor().then(function(profile) {
-        var div = document.getElementsByClassName('prescription-doctor-info')[0];
-        if (!profile) {
-            div.innerText = '';
-        } else {
-            div.innerText = profile.title + ' ' + profile.name + ' ' + profile.surname;
-        }
-    });
-    var patientInfo = document.getElementsByClassName('prescription-patent-info')[0];
-    var patientId = getCurrentPatientId();
-    if (patientId === null) {
-        patientInfo.innerText = '';
-    } else {
-        readPatient(patientId).then(function(patient) {
-            if (patient) {
-                patientInfo.innerText = patient.name + ' ' + patient.surname;
-            } else {
-                // Cannot find patient, remove id
-                setCurrentPatientId(null);
+var UI = {
+    Doctor: {
+        showModal: function() {
+            var modal = document.querySelector('dialog.prescriptions-doctor');
+            modal.showModal();
+            Doctor.read().then(UI.Doctor.applyToModal);
+        },
+        closeModal: function() {
+            var modal = document.querySelector('dialog.prescriptions-doctor');
+            modal.close();
+        },
+        applyToModal: function(profile) {
+            document.getElementsByName('doctor-field-title')[0].value = profile.title;
+            document.getElementsByName('doctor-field-zsrnumber')[0].value = profile.zsrnumber;
+            document.getElementsByName('doctor-field-gln')[0].value = profile.gln;
+            document.getElementsByName('doctor-field-surname')[0].value = profile.surname;
+            document.getElementsByName('doctor-field-name')[0].value = profile.name;
+            document.getElementsByName('doctor-field-street')[0].value = profile.street;
+            document.getElementsByName('doctor-field-city')[0].value = profile.city;
+            document.getElementsByName('doctor-field-country')[0].value = profile.country;
+            document.getElementsByName('doctor-field-zip')[0].value = profile.zip;
+            document.getElementsByName('doctor-field-phone')[0].value = profile.phone;
+            document.getElementsByName('doctor-field-email')[0].value = profile.email;
+            document.getElementsByName('doctor-field-iban')[0].value = profile.iban;
+            document.getElementsByName('doctor-field-vat')[0].value = profile.vat;
+            document.getElementById('doctor-sign-image').src = Doctor.getSignatureURL() || '';
+        },
+    },
+    Patient: {
+        showModal: function() {
+            var modal = document.querySelector('dialog.prescriptions-address-book');
+            UI.Patient.fillModalPatientList();
+            var pid = Patient.getCurrentId();
+            if (pid) {
+                readAndFillPatientModal(pid);
             }
-        });
+            modal.showModal();
+        },
+        fillModalForm: function(patient) {
+            var birthdayString = patient.birthday || '';
+            var birthdayParts = (patient.birthday || '').split('.');
+            if (birthdayParts.length === 3) {
+                var year = birthdayParts[2];
+                var month = birthdayParts[1];
+                var date = birthdayParts[0];
+                birthdayString = year + '-' + month + '-' + date;
+            }
+            Patient.setCurrentId(patient.id);
+            Prescription.setCurrentId(null);
+            document.getElementsByName('address-book-field-surname')[0].value = patient.surname;
+            document.getElementsByName('address-book-field-name')[0].value = patient.name;
+            document.getElementsByName('address-book-field-street')[0].value = patient.street;
+            document.getElementsByName('address-book-field-city')[0].value = patient.city;
+            document.getElementsByName('address-book-field-zip')[0].value = patient.zip;
+            document.getElementsByName('address-book-field-country')[0].value = patient.country;
+            document.getElementsByName('address-book-field-birthday')[0].value = birthdayString;
+            document.querySelector('input[name=address-book-field-sex][value=m]').checked =
+            document.querySelector('input[name=address-book-field-sex][value=f]').checked = false;
+            if (patient.sex === 'f' || patient.sex === 'm') {
+                document.querySelector('input[name=address-book-field-sex][value=' + patient.sex + ']').checked = true;
+            }
+            document.getElementsByName('address-book-field-weight')[0].value = patient.weight;
+            document.getElementsByName('address-book-field-height')[0].value = patient.height;
+            document.getElementsByName('address-book-field-phone')[0].value = patient.phone;
+            document.getElementsByName('address-book-field-email')[0].value = patient.email;
+            document.getElementsByName('address-book-field-bagnumber')[0].value = patient.bagnumber;
+            document.getElementsByName('address-book-field-cardnumber')[0].value = patient.cardnumber;
+            document.getElementsByName('address-book-field-cardexpiry')[0].value = patient.cardexpiry;
+            document.getElementsByName('address-book-field-gln')[0].value = patient.gln;
+        },
+        fillModalPatientList: function() {
+            return Patient.list().then(function(patients) {
+                var container = document.getElementsByClassName('prescriptions-address-book-patients')[0];
+                container.innerHTML = '';
+                patients.forEach(function (patient) {
+                    var id = patient.id;
+                    var div = document.createElement('div');
+                    div.className = 'prescriptions-address-book-patient ' + (id === Patient.getCurrentId() ? '--selected' : '');
+                    div.innerText = patient.name + ' ' + patient.surname;
+                    div.onclick = function () {
+                        readAndFillPatientModal(id);
+                    };
+                    var deleteButton = document.createElement('div');
+                    deleteButton.className = 'prescriptions-address-book-patient-delete';
+                    div.appendChild(deleteButton);
+                    deleteButton.onclick = function(e) {
+                        e.stopPropagation();
+                        deletePatient(id);
+                    };
+                    container.appendChild(div);
+                });
+            });
+        },
+        resetForm: function() {
+            document.getElementsByName('address-book-field-surname')[0].value = '';
+            document.getElementsByName('address-book-field-name')[0].value = '';
+            document.getElementsByName('address-book-field-street')[0].value = '';
+            document.getElementsByName('address-book-field-city')[0].value = '';
+            document.getElementsByName('address-book-field-zip')[0].value = '';
+            document.getElementsByName('address-book-field-country')[0].value = '';
+            document.getElementsByName('address-book-field-birthday')[0].value = '';
+            document.querySelector('input[name=address-book-field-sex][value=m]').checked =
+            document.querySelector('input[name=address-book-field-sex][value=f]').checked = false;
+            document.getElementsByName('address-book-field-weight')[0].value = '';
+            document.getElementsByName('address-book-field-height')[0].value = '';
+            document.getElementsByName('address-book-field-phone')[0].value = '';
+            document.getElementsByName('address-book-field-email')[0].value = '';
+            document.getElementsByName('address-book-field-bagnumber')[0].value = '';
+            document.getElementsByName('address-book-field-cardnumber')[0].value = '';
+            document.getElementsByName('address-book-field-cardexpiry')[0].value = '';
+            document.getElementsByName('address-book-field-gln')[0].value = '';
+        }
+    },
+    PrescriptionBasket: {
+        reloadList: function() {
+            $('.prescription-items').empty();
+            PrescriptionBasket.list().forEach(function (item, i) {
+                $('.prescription-items').append(
+                    $('<div>')
+                        .addClass('prescription-item')
+                        .append(
+                            $('<div>')
+                                .addClass('prescription-item-actions')
+                                .append(
+                                    $('<button>').addClass('delete-button').on('click', function (e) {
+                                        PrescriptionBasket.delete(i);
+                                    })
+                                )
+                        )
+                        .append(
+                            $('<div>')
+                            .addClass('prescription-item-name')
+                            .text(item.package)
+                        )
+                        .append(
+                            $('<input>')
+                                .addClass('prescription-item-note')
+                                .data('prescription-item-index', i)
+                                .attr('value', item.note || '')
+                        )
+                );
+            });
+        },
+    },
+    Prescription: {
+        reloadInfo: function() {
+            Doctor.read().then(function(profile) {
+                var div = document.getElementsByClassName('prescription-doctor-info')[0];
+                if (!profile) {
+                    div.innerText = '';
+                } else {
+                    div.innerText = profile.title + ' ' + profile.name + ' ' + profile.surname;
+                }
+            });
+            var patientInfo = document.getElementsByClassName('prescription-patent-info')[0];
+            var patientId = Patient.getCurrentId();
+            if (patientId === null) {
+                patientInfo.innerText = '';
+            } else {
+                Patient.read(patientId).then(function(patient) {
+                    if (patient) {
+                        patientInfo.innerText = patient.name + ' ' + patient.surname;
+                    } else {
+                        // Cannot find patient, remove id
+                        Patient.setCurrentId(null);
+                    }
+                });
+            }
+            UI.PrescriptionBasket.reloadList();
+            UI.Prescription.reloadList();
+        },
+        reloadList: function() {
+            var list = $('#prescriptions-right-list');
+            list.html('');
+            return Prescription.listSimplified(Patient.getCurrentId()).then(function(prescriptions) {
+                prescriptions.forEach(function(prescription) {
+                    list.append(
+                        $('<div>')
+                        .text(prescription.filename)
+                        .addClass('prescriptions-right-list-item')
+                        .on('click', function() {
+                            localStorage.prescriptionBasket = '[]';
+                            prescription.medications.forEach(function(m) {
+                                PrescriptionBasket.add({
+                                    title: m.title,
+                                    author: m.owner,
+                                    regnrs: m.regnrs,
+                                    atccode: m.atccode,
+                                    package: m.package,
+                                    eancode: m.eancode,
+                                    note: m.comment || '',
+                                });
+                            });
+                            UI.PrescriptionBasket.reloadList();
+                            Patient.setCurrentId(prescription.patient_id);
+                            Prescription.setCurrentId(prescription.id);
+                            var patientInfo = document.getElementsByClassName('prescription-patent-info')[0];
+                            patientInfo.innerText = prescription.patient.given_name + ' ' + prescription.patient.family_name;
+                        })
+                        .append(
+                            $('<button>').addClass('download-button').on('click', function (e) {
+                                e.stopPropagation();
+                                Prescription.readComplete(prescription.id).then(function(obj) {
+                                    var blob = Prescription.toAMKBlob(obj);
+                                    downloadBlob(blob, prescription.filename);
+                                });
+                            })
+                        )
+                        .append(
+                            $('<button>').addClass('delete-button').on('click', function (e) {
+                                e.stopPropagation();
+                                Prescription.delete(prescription.id).then(UI.Prescription.reloadList);
+                            })
+                        )
+                    );
+                });
+            });
+        }
     }
-    displayPrescriptionItems();
-    displaySavedPrescriptions();
-}
-
-function showDoctorModal() {
-    var modal = document.querySelector('dialog.prescriptions-doctor');
-    modal.showModal();
-    readAndFillDoctorModal();
-}
-
-function closeDoctorModal() {
-    var modal = document.querySelector('dialog.prescriptions-doctor');
-    modal.close();
-}
-
-function showPatientsModal() {
-    var modal = document.querySelector('dialog.prescriptions-address-book');
-    listPatients();
-    modal.showModal();
-}
-
-function closePatientsModal() {
-    var modal = document.querySelector('dialog.prescriptions-address-book');
-    modal.close();
-}
+};
 
 var db = null;
 function getPrescriptionDatabase() {
@@ -269,246 +764,26 @@ function getPrescriptionDatabase() {
     });
 }
 
-function saveDoctor() {
-    var profile = {
-        title: document.getElementsByName('doctor-field-title')[0].value,
-        zsrnumber: document.getElementsByName('doctor-field-zsrnumber')[0].value,
-        gln: document.getElementsByName('doctor-field-gln')[0].value,
-        surname: document.getElementsByName('doctor-field-surname')[0].value,
-        name: document.getElementsByName('doctor-field-name')[0].value,
-        street: document.getElementsByName('doctor-field-street')[0].value,
-        city: document.getElementsByName('doctor-field-city')[0].value,
-        country: document.getElementsByName('doctor-field-country')[0].value,
-        zip: document.getElementsByName('doctor-field-zip')[0].value,
-        phone: document.getElementsByName('doctor-field-phone')[0].value,
-        email: document.getElementsByName('doctor-field-email')[0].value,
-        iban: document.getElementsByName('doctor-field-iban')[0].value,
-        vat: document.getElementsByName('doctor-field-vat')[0].value,
-    };
-    return getPrescriptionDatabase().then(function (db) {
-        return new Promise(function(resolve, reject) {
-            var req = db.transaction("doctor", "readwrite")
-                .objectStore("doctor")
-                .put(profile, "doctor-profile");
-            req.onsuccess = resolve;
-            req.onerror = reject;
-        });
-    })
-    .then(reloadPrescriptionInfo);
-}
-
-function readDoctor() {
-    return getPrescriptionDatabase().then(function (db) {
-        return new Promise(function(resolve, reject) {
-            var req = db.transaction("doctor")
-                .objectStore("doctor")
-                .get("doctor-profile");
-            req.onsuccess = function(event) {
-                resolve(event.target.result);
-            };
-            req.onerror = reject;
-        });
-    });
-}
-
-function readAndFillDoctorModal() {
-    return readDoctor().then(function (profile) {
-        document.getElementsByName('doctor-field-title')[0].value = profile.title;
-        document.getElementsByName('doctor-field-zsrnumber')[0].value = profile.zsrnumber;
-        document.getElementsByName('doctor-field-gln')[0].value = profile.gln;
-        document.getElementsByName('doctor-field-surname')[0].value = profile.surname;
-        document.getElementsByName('doctor-field-name')[0].value = profile.name;
-        document.getElementsByName('doctor-field-street')[0].value = profile.street;
-        document.getElementsByName('doctor-field-city')[0].value = profile.city;
-        document.getElementsByName('doctor-field-country')[0].value = profile.country;
-        document.getElementsByName('doctor-field-zip')[0].value = profile.zip;
-        document.getElementsByName('doctor-field-phone')[0].value = profile.phone;
-        document.getElementsByName('doctor-field-email')[0].value = profile.email;
-        document.getElementsByName('doctor-field-iban')[0].value = profile.iban;
-        document.getElementsByName('doctor-field-vat')[0].value = profile.vat;
-        document.getElementById('doctor-sign-image').src = localStorage.doctorSignImage || '';
-    });
-}
-
-function getCurrentPatientId() {
-    try {
-        var id = localStorage.currentPatientId;
-        return parseInt(id) || null;
-    } catch (_e) {
-        return null;
-    }
-}
-function setCurrentPatientId(id) {
-    if (id === null) {
-        localStorage.removeItem('currentPatientId');
-    } else {
-        localStorage.currentPatientId = id;
-    }
-}
-function savePatient() {
-    var sexCheckbox = document.querySelector('input[name=address-book-field-sex]:checked');
-    var birthdayString = document.getElementsByName('address-book-field-birthday')[0].value || '';
-    var birthdayParts = birthdayString.split('-');
-    if (birthdayParts.length === 3) {
-        var year = birthdayParts[0];
-        var month = birthdayParts[1];
-        var date = birthdayParts[2];
-        birthdayString = date + '.' + month + '.' + year;
-    }
-    var patient = {
-        surname: document.getElementsByName('address-book-field-surname')[0].value,
-        name: document.getElementsByName('address-book-field-name')[0].value,
-        street: document.getElementsByName('address-book-field-street')[0].value,
-        city: document.getElementsByName('address-book-field-city')[0].value,
-        zip: document.getElementsByName('address-book-field-zip')[0].value,
-        country: document.getElementsByName('address-book-field-country')[0].value,
-        birthday: birthdayString,
-        sex: sexCheckbox ? sexCheckbox.value : "",
-        weight: document.getElementsByName('address-book-field-weight')[0].value,
-        height: document.getElementsByName('address-book-field-height')[0].value,
-        phone: document.getElementsByName('address-book-field-phone')[0].value,
-        email: document.getElementsByName('address-book-field-email')[0].value,
-        bagnumber: document.getElementsByName('address-book-field-bagnumber')[0].value,
-        cardnumber: document.getElementsByName('address-book-field-cardnumber')[0].value,
-        cardexpiry: document.getElementsByName('address-book-field-cardexpiry')[0].value,
-        gln: document.getElementsByName('address-book-field-gln')[0].value,
-    };
-    var patientId = getCurrentPatientId();
-    if (patientId !== null) {
-        patient.id = patientId;
-    }
-    return Patient.upsert(patient).then(reloadPrescriptionInfo);
-}
-
-function listPatients() {
-    return getPrescriptionDatabase().then(function(db) {
-        return new Promise(function(resolve, reject) {
-            var objectStore = db.transaction("patients").objectStore("patients");
-            var request = objectStore.getAll();
-            request.onsuccess = function(event) {
-                resolve(event.target.result);
-            };
-            request.onerror = reject;
-        });
-    }).then(function(patients) {
-        var container = document.getElementsByClassName('prescriptions-address-book-patients')[0];
-        container.innerHTML = '';
-        patients.forEach(function (patient) {
-            var id = patient.id;
-            var div = document.createElement('div');
-            div.className = 'prescriptions-address-book-patient ' + (id === getCurrentPatientId() ? '--selected' : '');
-            div.innerText = patient.name + ' ' + patient.surname;
-            div.onclick = function () {
-                readAndFillPatientModal(id);
-            };
-            var deleteButton = document.createElement('div');
-            deleteButton.className = 'prescriptions-address-book-patient-delete';
-            div.appendChild(deleteButton);
-            deleteButton.onclick = function(e) {
-                e.stopPropagation();
-                deletePatient(id);
-            };
-            container.appendChild(div);
-        });
-    });
-}
-
-function readPatient(id) {
-    return getPrescriptionDatabase().then(function (db) {
-        return new Promise(function(resolve, reject) {
-            var req = db.transaction("patients")
-                .objectStore("patients")
-                .get(id);
-            req.onsuccess = function(event) {
-                resolve(event.target.result);
-            };
-            req.onerror = reject;
-        });
-    });
-}
-
 function readAndFillPatientModal(id) {
-    return readPatient(id)
+    return Patient.read(id)
     .then(function (patient) {
-        var birthdayString = patient.birthday || '';
-        var birthdayParts = (patient.birthday || '').split('.');
-        if (birthdayParts.length === 3) {
-            var year = birthdayParts[2];
-            var month = birthdayParts[1];
-            var date = birthdayParts[0];
-            birthdayString = year + '-' + month + '-' + date;
-        }
-        setCurrentPatientId(patient.id);
-        setCurrentPrescriptionId(null);
-        document.getElementsByName('address-book-field-surname')[0].value = patient.surname;
-        document.getElementsByName('address-book-field-name')[0].value = patient.name;
-        document.getElementsByName('address-book-field-street')[0].value = patient.street;
-        document.getElementsByName('address-book-field-city')[0].value = patient.city;
-        document.getElementsByName('address-book-field-zip')[0].value = patient.zip;
-        document.getElementsByName('address-book-field-country')[0].value = patient.country;
-        document.getElementsByName('address-book-field-birthday')[0].value = birthdayString;
-        document.querySelector('input[name=address-book-field-sex][value=m]').checked =
-        document.querySelector('input[name=address-book-field-sex][value=f]').checked = false;
-        if (patient.sex === 'f' || patient.sex === 'm') {
-            document.querySelector('input[name=address-book-field-sex][value=' + patient.sex + ']').checked = true;
-        }
-        document.getElementsByName('address-book-field-weight')[0].value = patient.weight;
-        document.getElementsByName('address-book-field-height')[0].value = patient.height;
-        document.getElementsByName('address-book-field-phone')[0].value = patient.phone;
-        document.getElementsByName('address-book-field-email')[0].value = patient.email;
-        document.getElementsByName('address-book-field-bagnumber')[0].value = patient.bagnumber;
-        document.getElementsByName('address-book-field-cardnumber')[0].value = patient.cardnumber;
-        document.getElementsByName('address-book-field-cardexpiry')[0].value = patient.cardexpiry;
-        document.getElementsByName('address-book-field-gln')[0].value = patient.gln;
-        return listPatients();
+        UI.Patient.fillModalForm(patient);
+        return UI.Patient.fillModalPatientList();
     })
     .then(function () {
-        reloadPrescriptionInfo();
+        UI.Prescription.reloadInfo();
     });
 }
 
 function newPatient() {
-    document.getElementsByName('address-book-field-surname')[0].value = '';
-    document.getElementsByName('address-book-field-name')[0].value = '';
-    document.getElementsByName('address-book-field-street')[0].value = '';
-    document.getElementsByName('address-book-field-city')[0].value = '';
-    document.getElementsByName('address-book-field-zip')[0].value = '';
-    document.getElementsByName('address-book-field-country')[0].value = '';
-    document.getElementsByName('address-book-field-birthday')[0].value = '';
-    document.querySelector('input[name=address-book-field-sex][value=m]').checked =
-    document.querySelector('input[name=address-book-field-sex][value=f]').checked = false;
-    document.getElementsByName('address-book-field-weight')[0].value = '';
-    document.getElementsByName('address-book-field-height')[0].value = '';
-    document.getElementsByName('address-book-field-phone')[0].value = '';
-    document.getElementsByName('address-book-field-email')[0].value = '';
-    document.getElementsByName('address-book-field-bagnumber')[0].value = '';
-    document.getElementsByName('address-book-field-cardnumber')[0].value = '';
-    document.getElementsByName('address-book-field-cardexpiry')[0].value = '';
-    document.getElementsByName('address-book-field-gln')[0].value = '';
-    setCurrentPatientId(null);
-    reloadPrescriptionInfo();
+    UI.Patient.resetForm();
+    Patient.setCurrentId(null);
+    UI.Prescription.reloadInfo();
 }
 
 function deletePatient(id) {
-    return getPrescriptionDatabase().then(function(db) {
-        return new Promise(function(resolve, reject) {
-            var req = db
-                .transaction("patients", "readwrite")
-                .objectStore("patients")
-                .delete(id);
-            req.onsuccess = resolve;
-            req.onerror = reject;
-        })
-        .then(function(){
-            return listSimplifiedPrescriptions(id);
-        })
-        .then(function(prescriptions) {
-            return Promise.all(prescriptions.map(function(p) {
-                return deletePrescription(p.id);
-            }));
-        });
-    })
-    .then(listPatients)
+    return Patient.delete(id)
+    .then(UI.Patient.fillModalPatientList)
     .then(newPatient);
 }
 
@@ -540,7 +815,7 @@ function didPickDoctorSignatureImage(file) {
             } else {
                 url = dataURL;
             }
-            localStorage.doctorSignImage = url;
+            Doctor.setSignatureWithURL(url);
             console.log('sign url', url);
             var signDisplay = document.getElementById('doctor-sign-image');
             signDisplay.src = url;
@@ -550,173 +825,8 @@ function didPickDoctorSignatureImage(file) {
     reader.readAsDataURL(file);
 }
 
-function savePrescription(prescriptionObj, optionalPrescriptionId) {
-    // The saved object is
-    // amk prescription object with
-    // + patient_id: number <- refers to a patient in the patient store
-    // + filename: string
-    // + (automatically generated) id: number
-    // - operator.signature <- to save data size
-
-    // if optionalPrescriptionId is present, it updates existing prescription
-    var now = new Date();
-    var currentDateStr = '' +
-        now.getFullYear() +
-        ('0' + (now.getMonth() + 1)).slice(-2) +
-        ('0' + now.getDate()).slice(-2) +
-        ('0' + now.getHours()).slice(-2) +
-        ('0' + now.getMinutes()).slice(-2) +
-        ('0' + now.getSeconds()).slice(-2);
-
-    // yyyy-MM-dd'T'HH:mm.ss
-    var filenamePromise = optionalPrescriptionId ? getFullSavedPrescription(optionalPrescriptionId).then(p => p.filename) : Promise.resolve(null);
-
-    return filenamePromise.then(function(filename) {
-        var prescription = Object.assign({}, prescriptionObj, {
-            patient_id: Number(prescriptionObj.patient.patient_id),
-            filename: filename || "RZ_"+currentDateStr+".amk",
-            operator: Object.assign({}, prescriptionObj.operator, {signature: null}),
-        },
-        optionalPrescriptionId ? {id: optionalPrescriptionId} : {});
-        return getPrescriptionDatabase().then(function (db) {
-            return new Promise(function(resolve, reject) {
-                var req = db.transaction("prescriptions", "readwrite")
-                    .objectStore("prescriptions")
-                    .put(prescription);
-                req.onsuccess = function(e) {
-                    var prescriptionId = e.target.result;
-                    setCurrentPrescriptionId(prescriptionId);
-                    resolve(prescriptionId);
-                };
-                req.onerror = reject;
-            });
-        });
-    });
-}
-
-function listSimplifiedPrescriptions(patientId) {
-    if (!patientId) {
-        return Promise.resolve([]);
-    }
-    // This function returns the saved, simplified version of prescription,
-    // which doesn't have the signature to save space
-    return getPrescriptionDatabase().then(function (db) {
-        return new Promise(function (res, rej) {
-            var store = db.transaction("prescriptions").objectStore("prescriptions");
-            var index = store.index('patient_id');
-            var getAllRequest = index.getAll(patientId);
-            getAllRequest.onsuccess = function() {
-              res(getAllRequest.result.reverse());
-            };
-            getAllRequest.onerror = rej;
-        });
-    });
-}
-
-function makeFullPrescription(simplifiedPrescription) {
-    // We do not save the doctor's signature in the DB to save space,
-    // this function add the signature back to a simplified prescription
-    var doctorSignData = localStorage.doctorSignImage;
-    if (doctorSignData) {
-        var index = doctorSignData.indexOf(',');
-        doctorSignData = doctorSignData.slice(index + 1);
-        simplifiedPrescription.operator.signature = doctorSignData;
-    }
-    return simplifiedPrescription;
-}
-
-function getFullSavedPrescription(prescriptionId) {
-    return getPrescriptionDatabase().then(function (db) {
-        return new Promise(function(resolve, reject) {
-            var req = db.transaction("prescriptions")
-                .objectStore("prescriptions")
-                .get(prescriptionId);
-            req.onsuccess = function(event) {
-                var p = event.target.result;
-                var full = makeFullPrescription(p);
-                resolve(full);
-            };
-            req.onerror = reject;
-        });
-    });
-}
-
-function deletePrescription(prescriptionId) {
-    return getPrescriptionDatabase().then(function(db) {
-        return new Promise(function(resolve, reject) {
-            var req = db
-                .transaction("prescriptions", "readwrite")
-                .objectStore("prescriptions")
-                .delete(prescriptionId);
-            req.onsuccess = resolve;
-            req.onerror = reject;
-        });
-    }).then(function() {
-        if (prescriptionId === getCurrentPrescriptionId()) {
-            setCurrentPrescriptionId(null);
-        }
-    });
-}
-
-function getCurrentPrescriptionId() {
-    if (!localStorage.currentPrescriptionId) return null;
-    return Number(localStorage.currentPrescriptionId);
-}
-
-function setCurrentPrescriptionId(prescriptionId) {
-    if (!prescriptionId) {
-        localStorage.removeItem('currentPrescriptionId');
-    } else {
-        localStorage.currentPrescriptionId = prescriptionId;
-    }
-}
-
-function displaySavedPrescriptions() {
-    var list = $('#prescriptions-right-list');
-    list.html('');
-    return listSimplifiedPrescriptions(getCurrentPatientId()).then(function(prescriptions) {
-        prescriptions.forEach(function(prescription) {
-            list.append(
-                $('<div>')
-                .text(prescription.filename)
-                .addClass('prescriptions-right-list-item')
-                .on('click', function() {
-                    localStorage.prescriptionBasket = '[]';
-                    prescription.medications.forEach(function(m) {
-                        addToPrescriptionBasket({
-                            title: m.title,
-                            author: m.owner,
-                            regnrs: m.regnrs,
-                            atccode: m.atccode,
-                            package: m.package,
-                            eancode: m.eancode,
-                            note: m.comment || '',
-                        });
-                    });
-                    displayPrescriptionItems();
-                    setCurrentPatientId(prescription.patient_id);
-                    setCurrentPrescriptionId(prescription.id);
-                    var patientInfo = document.getElementsByClassName('prescription-patent-info')[0];
-                    patientInfo.innerText = prescription.patient.given_name + ' ' + prescription.patient.family_name;
-                })
-                .append(
-                    $('<button>').addClass('download-button').on('click', function (e) {
-                        e.stopPropagation();
-                        getFullSavedPrescription(prescription.id).then(function(obj) {
-                            var blob = prescriptionToAMK(obj);
-                            downloadBlob(blob, prescription.filename);
-                        });
-                    })
-                )
-                .append(
-                    $('<button>').addClass('delete-button').on('click', function (e) {
-                        e.stopPropagation();
-                        deletePrescription(prescription.id).then(displaySavedPrescriptions);
-                    })
-                )
-            );
-        });
-    });
+function savePrescriptionFromUI(overwriteCurrent) {
+    return Prescription.fromCurrentUIState(overwriteCurrent).then(Prescription.save).then(Prescription.setCurrentId);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -724,14 +834,14 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     document.getElementById('prescription-choose-patient-button').addEventListener('click', function() {
-        showPatientsModal();
+        UI.Patient.showModal();
     });
     document.getElementById('prescription-edit-doctor-button').addEventListener('click', function() {
-        showDoctorModal();
+        UI.Doctor.showModal();
     });
     document.getElementById('doctor-save').addEventListener('click', function() {
-        saveDoctor();
-        closeDoctorModal();
+        Doctor.saveFromCurrentUIState();
+        UI.Doctor.closeModal();
     });
     document.getElementById('doctor-sign-input').addEventListener('change', function(e) {
         console.log(e);
@@ -739,48 +849,41 @@ document.addEventListener('DOMContentLoaded', function() {
         didPickDoctorSignatureImage(e.target.files[0]);
     });
     document.getElementById('patient-save').addEventListener('click', function() {
-        savePatient();
-        listPatients();
+        Patient.saveFromCurrentUIState();
+        UI.Patient.fillModalPatientList();
     });
     document.getElementById('patient-create').addEventListener('click', function() {
         newPatient();
     });
     document.getElementById('prescription-save').addEventListener('click', function() {
-        if (getCurrentPatientId() === null) {
+        if (Patient.getCurrentId() === null) {
             alert(PrescriptionLocalization.prescription_please_choose_patient);
             return;
         }
-        if (getCurrentPrescriptionId()) {
+        if (Prescription.getCurrentId()) {
             // Ask if save new prescription
             var modal = document.getElementById('prescriptions-save-confirm');
             modal.showModal();
         } else {
             // Just save new prescription
-            encodeCurrentPrescriptionToJSON()
-                .then(savePrescription)
-                .then(displaySavedPrescriptions);
+            savePrescriptionFromUI(false)
+                .then(UI.Prescription.reloadList);
         }
     });
     document.getElementById('prescription-save-new').addEventListener('click', function() {
-        encodeCurrentPrescriptionToJSON()
-            .then(savePrescription)
-            .then(displaySavedPrescriptions);
+        savePrescriptionFromUI(false).then(UI.Prescription.reloadList);
         var modal = document.getElementById('prescriptions-save-confirm');
         modal.close();
     });
     document.getElementById('prescription-save-overwrite').addEventListener('click', function() {
-        encodeCurrentPrescriptionToJSON()
-            .then(function(obj) {
-                return savePrescription(obj, getCurrentPrescriptionId());
-            })
-            .then(displaySavedPrescriptions);
+        savePrescriptionFromUI(true).then(UI.Prescription.reloadList);
         var modal = document.getElementById('prescriptions-save-confirm');
         modal.close();
     });
     document.getElementById('prescription-create').addEventListener('click', function() {
         localStorage.prescriptionBasket = '[]';
-        setCurrentPrescriptionId(null);
-        displayPrescriptionItems();
+        Prescription.setCurrentId(null);
+        UI.PrescriptionBasket.reloadList();
     });
     document.getElementById('prescription-export-all').addEventListener('click', function() {
         exportEverything();
@@ -790,108 +893,22 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!e.currentTarget.files.length) return;
         importFromZip(e.currentTarget.files[0]);
     });
-    reloadPrescriptionInfo();
-});
+    $(document).on('change', 'input.prescription-item-note', function(e) {
+        var index = $(e.target).data('prescription-item-index');
+        var items = PrescriptionBasket.list();
+        items[index].note = e.target.value;
+        PrescriptionBasket.save(items);
+    });
 
-function addToPrescriptionBasket(data) {
-// title: String
-// eancode: String
-    var basket = listPrescriptionBasket();
-    data.note = '';
-    basket.push(data);
-    savePrescriptionBasket(basket);
-}
-
-function savePrescriptionBasket(basket) {
-    localStorage.prescriptionBasket = JSON.stringify(basket);
-    displayPrescriptionItems();
-}
-
-function deleteFromPrescriptionBasket(index) {
-    var basket = listPrescriptionBasket();
-    basket.splice(index, 1);
-    localStorage.prescriptionBasket = JSON.stringify(basket);
-    displayPrescriptionItems();
-}
-
-function listPrescriptionBasket() {
-    return JSON.parse(localStorage.prescriptionBasket || "[]");
-}
-
-function encodeCurrentPrescriptionToJSON() {
-    return Promise.all([readDoctor(), readPatient(getCurrentPatientId())]).then(function(result) {
-        var profile = result[0];
-        var patient = result[1];
-        var doctorSignData = localStorage.doctorSignImage;
-        if (doctorSignData) {
-            var index = doctorSignData.indexOf(',');
-            doctorSignData = doctorSignData.slice(index + 1);
+    $(document).on('click', 'p.article-packinfo', function(e) {
+        var data = $(e.currentTarget).data('prescription');
+        PrescriptionBasket.add(data);
+        if (!document.URL.endsWith('/prescriptions')) {
+            $('button.state-button.--prescription').addClass('shake');
         }
-        var now = new Date();
-
-        return {
-            prescription_hash: crypto.randomUUID(),
-            place_date: profile.city + ', ' +
-                // dd.MM.yyyy (HH:mm:ss)
-                ('0' + now.getDate()).slice(-2) + '.' +
-                ('0' + (now.getMonth() + 1)).slice(-2) + '.' +
-                now.getFullYear() +
-                ' (' +
-                ('0' + now.getHours()).slice(-2) + ':' +
-                ('0' + now.getMinutes()).slice(-2) + ':' +
-                ('0' + now.getSeconds()).slice(-2) +
-                ')',
-            operator: Doctor.toAMKObject(profile, doctorSignData),
-            patient: Patient.toAMKObject(patient),
-            medications: listPrescriptionBasket().map(item => {
-                var titleComponents = item.package.split('[');
-                titleComponents = titleComponents[0].split(',');
-                return {
-                    title: item.title,
-                    owner: item.author,
-                    regnrs: item.regnrs,
-                    atccode: item.atccode,
-                    product_name: titleComponents[0],
-                    package: item.package,
-                    eancode: item.eancode,
-                    comment: item.note || '',
-                };
-            })
-        };
     });
-}
-
-function prescriptionToAMK(obj) {
-    obj = Object.assign({}, obj); // Shallow clone so we can
-    // Remove the extra fields, see savePrescription
-    delete obj.patient_id;
-    delete obj.id;
-    delete obj.filename;
-    var json = JSON.stringify(obj);
-    var encoder = new TextEncoder('utf-8');
-    var bytes = encoder.encode(json);
-    var binary = '';
-    var len = bytes.byteLength;
-    for (var i = 0; i < len; i++) {
-        binary += String.fromCharCode( bytes[i] );
-    }
-    var str = btoa(binary);
-    var blob = new Blob([str], {
-        type: 'document/amk'
-    });
-    return blob;
-}
-
-function amkToPrescription(amkStr) {
-    var utf8 = atob(amkStr);
-    var charCodes = [];
-    for (var i = 0; i < utf8.length; i++) {
-        charCodes.push(utf8.charCodeAt(i));
-    }
-    var decoder = new TextDecoder('utf-8');
-    var utf16 = decoder.decode(new Uint8Array(charCodes));
-    return JSON.parse(utf16);
-}
+    UI.Prescription.reloadInfo();
+});
 
 function downloadBlob(blob, filename) {
     var url = URL.createObjectURL(blob);
@@ -903,51 +920,6 @@ function downloadBlob(blob, filename) {
     element.click();
     document.body.removeChild(element);
 }
-
-function displayPrescriptionItems() {
-    $('.prescription-items').empty();
-    listPrescriptionBasket().forEach(function (item, i) {
-        $('.prescription-items').append(
-            $('<div>')
-                .addClass('prescription-item')
-                .append(
-                    $('<div>')
-                        .addClass('prescription-item-actions')
-                        .append(
-                            $('<button>').addClass('delete-button').on('click', function (e) {
-                                deleteFromPrescriptionBasket(i);
-                            })
-                        )
-                )
-                .append(
-                    $('<div>')
-                    .addClass('prescription-item-name')
-                    .text(item.package)
-                )
-                .append(
-                    $('<input>')
-                        .addClass('prescription-item-note')
-                        .data('prescription-item-index', i)
-                        .attr('value', item.note || '')
-                )
-        );
-    });
-}
-
-$(document).on('change', 'input.prescription-item-note', function(e) {
-    var index = $(e.target).data('prescription-item-index');
-    var items = listPrescriptionBasket();
-    items[index].note = e.target.value;
-    savePrescriptionBasket(items);
-});
-
-$(document).on('click', 'p.article-packinfo', function(e) {
-    var data = $(e.currentTarget).data('prescription');
-    addToPrescriptionBasket(data);
-    if (!document.URL.endsWith('/prescriptions')) {
-        $('button.state-button.--prescription').addClass('shake');
-    }
-});
 
 function exportEverything() {
     (window.JSZip ? Promise.resolve() : Promise.resolve(
@@ -967,8 +939,8 @@ function exportEverything() {
     .then(function(simplifiedPrescriptions) {
         var zip = new JSZip();
         simplifiedPrescriptions.forEach(function(prescription) {
-            var obj = makeFullPrescription(prescription);
-            var blob = prescriptionToAMK(obj);
+            var obj = Prescription.makeComplete(prescription);
+            var blob = Prescription.toAMKBlob(obj);
             zip.file(prescription.filename, blob);
         });
         return zip.generateAsync({type:"blob"});
@@ -989,15 +961,17 @@ function exportEverything() {
     });
 }
 
-function sequencePromise(promises) {
+function sequencePromise(promiseFns) {
     var results = [];
-    return promises.reduce(function(prev, curr) {
-        return prev.then(function() {
-            return curr.then(function(val) {
-                results.push(val);
+    return promiseFns.reduce(function(prev, curr) {
+        return function(){
+            return prev().then(function() {
+                return curr().then(function(val) {
+                    results.push(val);
+                });
             });
-        });
-    }, Promise.resolve())
+        };
+    }, function() { return Promise.resolve(); })()
     .then(function() {
         return results;
     });
@@ -1024,7 +998,7 @@ function importFromZip(file) {
                             return null;
                         }
                         return file.async('text')
-                            .then(amkToPrescription)
+                            .then(Prescription.fromAMKString)
                             .then(function(prescription) {
                                 prescription.filename = file.name;
                                 return prescription;
@@ -1035,7 +1009,7 @@ function importFromZip(file) {
         });
     } else if (file.name.endsWith('.amk')) {
         amksPromise = file.text()
-            .then(amkToPrescription)
+            .then(Prescription.fromAMKString)
             .then(function(prescription) {
                 prescription.filename = file.name;
                 return [prescription];
@@ -1067,7 +1041,7 @@ function importFromZip(file) {
         }
         var amkDoctor = amks[0].operator;
         if (amkDoctor.signature) {
-            localStorage.doctorSignImage = 'data:image/png;base64,' + amkDoctor.signature;
+            Doctor.setSignatureWithBase64(amkDoctor.signature);
         }
         var doctor = Doctor.fromAMKObject(amkDoctor);
         return Doctor.save(doctor)
@@ -1076,9 +1050,9 @@ function importFromZip(file) {
     .then(function(amks) {
         if (amks.length) {
             alert(PrescriptionLocalization.prescription_imported.replace('%d', amks.length));
-            setCurrentPatientId(amks[0].patient_id);
+            Patient.setCurrentId(amks[0].patient_id);
         }
-        reloadPrescriptionInfo();
+        UI.Prescription.reloadInfo();
     })
     .catch(function(e) {
         alert(e.toString());

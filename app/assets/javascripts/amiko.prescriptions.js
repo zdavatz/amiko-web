@@ -303,6 +303,9 @@ var PrescriptionBasket = {
         localStorage.prescriptionBasket = JSON.stringify(basket);
         UI.PrescriptionBasket.reloadList();
     },
+    clear: function() {
+        localStorage.prescriptionBasket = '[]';
+    },
     list: function() {
         return JSON.parse(localStorage.prescriptionBasket || "[]");
     }
@@ -419,6 +422,9 @@ var Prescription = {
         } else {
             localStorage.currentPrescriptionId = prescriptionId;
         }
+    },
+    saveFromCurrentUIState: function(overwriteCurrent) {
+        return Prescription.fromCurrentUIState(overwriteCurrent).then(Prescription.save).then(Prescription.setCurrentId);
     },
     save: function(prescription) {
         return getPrescriptionDatabase().then(function (db) {
@@ -545,9 +551,17 @@ var UI = {
             UI.Patient.fillModalPatientList();
             var pid = Patient.getCurrentId();
             if (pid) {
-                readAndFillPatientModal(pid);
+                UI.Patient.fillModal(pid);
             }
             modal.showModal();
+        },
+        fillModal: function(id) {
+            return Patient.read(id)
+                .then(function (patient) {
+                    UI.Patient.fillModalForm(patient);
+                    return UI.Patient.fillModalPatientList();
+                })
+                .then(UI.Prescription.reloadInfo);
         },
         fillModalForm: function(patient) {
             var birthdayString = patient.birthday || '';
@@ -591,18 +605,28 @@ var UI = {
                     div.className = 'prescriptions-address-book-patient ' + (id === Patient.getCurrentId() ? '--selected' : '');
                     div.innerText = patient.name + ' ' + patient.surname;
                     div.onclick = function () {
-                        readAndFillPatientModal(id);
+                        UI.Patient.fillModal(id);
                     };
                     var deleteButton = document.createElement('div');
                     deleteButton.className = 'prescriptions-address-book-patient-delete';
                     div.appendChild(deleteButton);
                     deleteButton.onclick = function(e) {
                         e.stopPropagation();
-                        deletePatient(id);
+                        UI.Patient.delete(id);
                     };
                     container.appendChild(div);
                 });
             });
+        },
+        delete: function(id) {
+            return Patient.delete(id)
+                .then(UI.Patient.fillModalPatientList)
+                .then(UI.Patient.reset);
+        },
+        reset: function() {
+            Patient.setCurrentId(null);
+            UI.Patient.resetForm();
+            UI.Prescription.reloadInfo();
         },
         resetForm: function() {
             document.getElementsByName('address-book-field-surname')[0].value = '';
@@ -680,7 +704,7 @@ var UI = {
                 });
             }
             UI.PrescriptionBasket.reloadList();
-            UI.Prescription.reloadList();
+            return UI.Prescription.reloadList();
         },
         reloadList: function() {
             var list = $('#prescriptions-right-list');
@@ -692,7 +716,7 @@ var UI = {
                         .text(prescription.filename)
                         .addClass('prescriptions-right-list-item')
                         .on('click', function() {
-                            localStorage.prescriptionBasket = '[]';
+                            PrescriptionBasket.clear();
                             prescription.medications.forEach(function(m) {
                                 PrescriptionBasket.add({
                                     title: m.title,
@@ -764,29 +788,6 @@ function getPrescriptionDatabase() {
     });
 }
 
-function readAndFillPatientModal(id) {
-    return Patient.read(id)
-    .then(function (patient) {
-        UI.Patient.fillModalForm(patient);
-        return UI.Patient.fillModalPatientList();
-    })
-    .then(function () {
-        UI.Prescription.reloadInfo();
-    });
-}
-
-function newPatient() {
-    UI.Patient.resetForm();
-    Patient.setCurrentId(null);
-    UI.Prescription.reloadInfo();
-}
-
-function deletePatient(id) {
-    return Patient.delete(id)
-    .then(UI.Patient.fillModalPatientList)
-    .then(newPatient);
-}
-
 function didPickDoctorSignatureImage(file) {
     var minSignWidth = 90, minSignHeight = 45;
     var maxSignWidth = 500, maxSignHeight = 500; // We cannot store too much data in browser
@@ -825,20 +826,16 @@ function didPickDoctorSignatureImage(file) {
     reader.readAsDataURL(file);
 }
 
-function savePrescriptionFromUI(overwriteCurrent) {
-    return Prescription.fromCurrentUIState(overwriteCurrent).then(Prescription.save).then(Prescription.setCurrentId);
-}
-
 document.addEventListener('DOMContentLoaded', function() {
     if (!document.URL.endsWith('/prescriptions')) {
         return;
     }
-    document.getElementById('prescription-choose-patient-button').addEventListener('click', function() {
-        UI.Patient.showModal();
-    });
-    document.getElementById('prescription-edit-doctor-button').addEventListener('click', function() {
-        UI.Doctor.showModal();
-    });
+    document.getElementById('prescription-choose-patient-button').addEventListener('click',
+        UI.Patient.showModal
+    );
+    document.getElementById('prescription-edit-doctor-button').addEventListener('click',
+        UI.Doctor.showModal
+    );
     document.getElementById('doctor-save').addEventListener('click', function() {
         Doctor.saveFromCurrentUIState();
         UI.Doctor.closeModal();
@@ -852,9 +849,9 @@ document.addEventListener('DOMContentLoaded', function() {
         Patient.saveFromCurrentUIState();
         UI.Patient.fillModalPatientList();
     });
-    document.getElementById('patient-create').addEventListener('click', function() {
-        newPatient();
-    });
+    document.getElementById('patient-create').addEventListener('click',
+        UI.Patient.reset
+    );
     document.getElementById('prescription-save').addEventListener('click', function() {
         if (Patient.getCurrentId() === null) {
             alert(PrescriptionLocalization.prescription_please_choose_patient);
@@ -866,22 +863,22 @@ document.addEventListener('DOMContentLoaded', function() {
             modal.showModal();
         } else {
             // Just save new prescription
-            savePrescriptionFromUI(false)
+            Prescription.saveFromCurrentUIState(false)
                 .then(UI.Prescription.reloadList);
         }
     });
     document.getElementById('prescription-save-new').addEventListener('click', function() {
-        savePrescriptionFromUI(false).then(UI.Prescription.reloadList);
+        Prescription.saveFromCurrentUIState(false).then(UI.Prescription.reloadList);
         var modal = document.getElementById('prescriptions-save-confirm');
         modal.close();
     });
     document.getElementById('prescription-save-overwrite').addEventListener('click', function() {
-        savePrescriptionFromUI(true).then(UI.Prescription.reloadList);
+        Prescription.saveFromCurrentUIState(true).then(UI.Prescription.reloadList);
         var modal = document.getElementById('prescriptions-save-confirm');
         modal.close();
     });
     document.getElementById('prescription-create').addEventListener('click', function() {
-        localStorage.prescriptionBasket = '[]';
+        PrescriptionBasket.clear();
         Prescription.setCurrentId(null);
         UI.PrescriptionBasket.reloadList();
     });
@@ -958,22 +955,6 @@ function exportEverything() {
             ('0' + now.getSeconds()).slice(-2) +
             '.zip';
         downloadBlob(blob, filename);
-    });
-}
-
-function sequencePromise(promiseFns) {
-    var results = [];
-    return promiseFns.reduce(function(prev, curr) {
-        return function(){
-            return prev().then(function() {
-                return curr().then(function(val) {
-                    results.push(val);
-                });
-            });
-        };
-    }, function() { return Promise.resolve(); })()
-    .then(function() {
-        return results;
     });
 }
 
@@ -1056,6 +1037,22 @@ function importFromZip(file) {
     })
     .catch(function(e) {
         alert(e.toString());
+    });
+}
+
+function sequencePromise(promiseFns) {
+    var results = [];
+    return promiseFns.reduce(function(prev, curr) {
+        return function(){
+            return prev().then(function() {
+                return curr().then(function(val) {
+                    results.push(val);
+                });
+            });
+        };
+    }, function() { return Promise.resolve(); })()
+    .then(function() {
+        return results;
     });
 }
 

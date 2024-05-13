@@ -20,8 +20,10 @@
     <div class="prescription-actions">
         <input id="prescription-save" type="button" value='@messages("save")'>
         <input id="prescription-create" type="button" value='@messages("new_prescription")'>
-        <input id="prescription-export-all" type="button" value='@messages("export_to_zip")'>
+    <input id="prescription-export-all" type="button" value='@messages("export_to_zip")'>
+    <label id="prescription-import-all-label">
         <input id="prescription-import-all" type="file" accept=".zip,.amk">
+    </label>
     </div>
 
     <dialog class="prescriptions-address-book">
@@ -177,7 +179,8 @@
         var PrescriptionLocalization = {
             prescription_please_choose_patient: "@messages("prescription_please_choose_patient")",
             prescription_confirm_clear: "@messages("prescription_confirm_clear")",
-            prescription_imported: "@messages("prescription_imported")"
+            prescription_imported: "@messages("prescription_imported")",
+            export_to_zip: "@messages("export_to_zip")"
         };
     </script>
 </div>

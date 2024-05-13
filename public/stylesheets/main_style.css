@@ -591,6 +591,41 @@ dialog.prescriptions-doctor {
     cursor: pointer;
 }
 
+#prescription-import-all-label {
+    height: 20px;
+    width: 20px;
+    display: inline-block;
+    background: url(/assets/images/import.png);
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    cursor: pointer;
+    vertical-align: middle;
+}
+#prescription-import-all {
+    display: none;
+}
+#prescription-export-all {
+    height: 22px;
+    width: 20px;
+    display: inline-block;
+    background: url(/assets/images/export.png);
+    border: none;
+    color: transparent;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+@media (prefers-color-scheme: light) {
+    #prescription-export-all, #prescription-import-all-label {
+       -webkit-filter: invert(1);
+       filter: invert(1);
+    }
+}
+
 .shake {
     animation: 0.5s linear shake;
 }

@@ -4,14 +4,14 @@
     <div class="prescription-header">
         <div class="prescription-patent">
             <div class="prescription-patent-info"></div>
-            <button onClick="showPatientsModal()">@messages("choose_patient")</button>
+            <button id="prescription-choose-patient-button">@messages("choose_patient")</button>
             <div class="prescription-patent-place-and-date"></div>
         </div>
         <div class="prescription-doctor">
             <div class="prescription-doctor-info">
                 Mr. Doctor
             </div>
-            <button onClick="showDoctorModal()">@messages("edit")</button>
+            <button id="prescription-edit-doctor-button">@messages("edit")</button>
             <div class="prescription-doctor-sign"><img /></div>
         </div>
     </div>
@@ -20,6 +20,10 @@
     <div class="prescription-actions">
         <input id="prescription-save" type="button" value='@messages("save")'>
         <input id="prescription-create" type="button" value='@messages("new_prescription")'>
+    <input id="prescription-export-all" type="button" value='@messages("export_to_zip")'>
+    <label id="prescription-import-all-label">
+        <input id="prescription-import-all" type="file" accept=".zip,.amk">
+    </label>
     </div>
 
     <dialog class="prescriptions-address-book">
@@ -171,10 +175,12 @@
             <button>@messages("cancel")</button>
         </form>
     </dialog>
-    <dialog id="prescriptions-save-no-patient">
-        <form class="dialog-action" method="dialog">
-            <p>@messages("prescription_please_choose_patient")</p>
-            <button>@messages("cancel")</button>
-        </form>
-    </dialog>
+    <script>
+        var PrescriptionLocalization = {
+            prescription_please_choose_patient: "@messages("prescription_please_choose_patient")",
+            prescription_confirm_clear: "@messages("prescription_confirm_clear")",
+            prescription_imported: "@messages("prescription_imported")",
+            export_to_zip: "@messages("export_to_zip")"
+        };
+    </script>
 </div>

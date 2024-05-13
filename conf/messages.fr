@@ -56,3 +56,6 @@ save_new = Sauvegarder une nouvelle prescription
 save_overwrite = Rédiger la prescription
 cancel = Annuler
 prescription_please_choose_patient = Veuillez choisir un patient
+export_to_zip = Exporter au format Zip
+prescription_confirm_clear = Toutes les données seront écrasées, êtes-vous sûr ?
+prescription_imported = Importation de %d prescriptions

@@ -58,3 +58,4 @@ prescription_please_choose_patient = Bitte wählen Sie einen Patienten
 export_to_zip = Exportieren in Zip
 prescription_confirm_clear = Alle Daten werden überschrieben, sind Sie sicher?
 prescription_imported = %d Rezepte importiert
+doctor = Arzt

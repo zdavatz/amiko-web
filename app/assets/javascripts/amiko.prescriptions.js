@@ -289,7 +289,9 @@ var PrescriptionBasket = {
         // data.title: String
         // data.eancode: String
         var basket = PrescriptionBasket.list();
-        data.note = '';
+        if (!data.comment) {
+            data.comment = '';
+        }
         basket.push(data);
         PrescriptionBasket.save(basket);
     },
@@ -401,7 +403,8 @@ var Prescription = {
                             product_name: titleComponents[0],
                             package: item.package,
                             eancode: item.eancode,
-                            comment: item.note || '',
+                            // TODO: note is legacy, remove it later
+                            comment: item.note || item.comment || '',
                         };
                     }),
                 };
@@ -671,9 +674,10 @@ var UI = {
                         )
                         .append(
                             $('<input>')
-                                .addClass('prescription-item-note')
+                                .addClass('prescription-item-comment')
                                 .data('prescription-item-index', i)
-                                .attr('value', item.note || '')
+                                // TODO: note is legacy, remove it later
+                                .attr('value', item.note || item.comment || '')
                         )
                 );
             });
@@ -725,7 +729,8 @@ var UI = {
                                     atccode: m.atccode,
                                     package: m.package,
                                     eancode: m.eancode,
-                                    note: m.comment || '',
+                                    // TODO: note is legacy, remove it later
+                                    comment: m.note || m.comment || '',
                                 });
                             });
                             UI.PrescriptionBasket.reloadList();
@@ -890,10 +895,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!e.currentTarget.files.length) return;
         importFromZip(e.currentTarget.files[0]);
     });
-    $(document).on('change', 'input.prescription-item-note', function(e) {
+    $(document).on('change', 'input.prescription-item-comment', function(e) {
         var index = $(e.target).data('prescription-item-index');
         var items = PrescriptionBasket.list();
-        items[index].note = e.target.value;
+        items[index].comment = e.target.value;
         PrescriptionBasket.save(items);
     });
 

@@ -424,7 +424,7 @@ a.atc-code:hover {
     content: '↓';
 }
 
-.prescription-item-note {
+.prescription-item-comment {
     width: 100%;
     background: var(--background-color-gray);
     border: 0;

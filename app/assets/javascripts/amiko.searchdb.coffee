@@ -237,11 +237,6 @@ $ ->
     $('.atc-code').on 'click', (e)->
       e.stopPropagation()
 
-    $('p.article-packinfo').on 'click', (e) ->
-      if !document.URL.endsWith('/prescriptions')
-        $('button.state-button.--prescription').addClass('shake')
-        setTimeout((()-> $('button.state-button.--prescription').removeClass('shake')), 1000)
-
   typeaheadCtrl.on 'typeahead:change', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')
 
@@ -368,7 +363,10 @@ $ ->
     disableButton SearchType.FullText
     # set search state
     setSearchUIState(SearchState.Prescriptions)
-    window.location.assign '/prescriptions'
+    if language == 'de'
+      window.location.assign '/rezept'
+    else
+      window.location.assign '/prescription'
 
   # Detect click on search buttons
   setSearchType = (type) ->

@@ -20,7 +20,7 @@ windows_url = https://www.microsoft.com/en-us/store/p/comed-desitin/9nlldb9vxmgx
 macos_url = https://itunes.apple.com/ch/app/comed-desitin/id710472327?mt=12
 ios_url = https://itunes.apple.com/ch/app/comed-desitin/id712891884?mt=8
 android_url = https://play.google.com/store/apps/details?id=com.ywesee.amiko.fr&hl=en
-prescriptions = Ordonnances
+prescriptions = Prescription
 surname = Nom de famille
 name = Nom
 street = Rue
@@ -48,10 +48,10 @@ new_patient = Nouvelle patient
 edit = Éditer
 address_book = Carnet d'adresses
 choose_patient = Choisir un patient
-new_prescription = Nouvelle ordonnance
+new_prescription = Nouvelle prescription
 signature = Signature du médicin
 overwrite_prescription_title = Écraser la version actuelle?
-overwrite_prescription_confirm = Voulez-vous vraiment écraser l'ordonnance existante ou générer une nouvelle?
+overwrite_prescription_confirm = Voulez-vous vraiment écraser l'prescription existante ou générer une nouvelle?
 save_new = Sauvegarder une nouvelle prescription
 save_overwrite = Rédiger la prescription
 cancel = Annuler

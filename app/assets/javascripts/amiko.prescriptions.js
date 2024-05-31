@@ -832,7 +832,7 @@ function didPickDoctorSignatureImage(file) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    if (!document.URL.endsWith('/prescriptions')) {
+    if (!document.URL.endsWith('/prescription') && !document.URL.endsWith('/rezept')) {
         return;
     }
     document.getElementById('prescription-choose-patient-button').addEventListener('click',
@@ -905,9 +905,6 @@ document.addEventListener('DOMContentLoaded', function() {
     $(document).on('click', 'p.article-packinfo', function(e) {
         var data = $(e.currentTarget).data('prescription');
         PrescriptionBasket.add(data);
-        if (!document.URL.endsWith('/prescriptions')) {
-            $('button.state-button.--prescription').addClass('shake');
-        }
     });
     UI.Prescription.reloadInfo();
 });

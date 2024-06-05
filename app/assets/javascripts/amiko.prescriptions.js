@@ -1042,6 +1042,12 @@ function importFromZip(file) {
     });
 }
 
+function generatePDF() {
+    (window.jspdf ? Promise.resolve() : Promise.resolve(
+        $.getScript('/assets/javascripts/jspdf.umd.min.js')
+    ))
+}
+
 function sequencePromise(promiseFns) {
     var results = [];
     return promiseFns.reduce(function(prev, curr) {

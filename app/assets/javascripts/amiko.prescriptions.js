@@ -90,11 +90,33 @@ var Doctor = {
         }
         return undefined;
     },
+    getSignatureImage: function() {
+        var url = Doctor.getSignatureURL();
+        if (!url) {
+            return Promise.resolve(null);
+        }
+        return new Promise(function(res) {
+            var img = new Image();
+            img.onload = function() { res(img); };
+            img.src = url;
+        });
+    },
     setSignatureWithURL: function(url) {
         localStorage.doctorSignImage = url;
     },
     setSignatureWithBase64: function(base64Str) {
         localStorage.doctorSignImage = 'data:image/png;base64,' + base64Str;
+    },
+    stringForPrescriptionPrinting: function(profile) {
+        var s = "";
+        if (profile.title) {
+            s += profile.title + " ";
+        }
+        s += profile.name + " " + profile.surname;
+        s += "\n" + profile.street;
+        s += "\n" + profile.zip + " " + profile.city;
+        if (profile.email) s += "\n" + profile.email;
+        return s;
     }
 };
 
@@ -281,6 +303,13 @@ var Patient = {
         })).then(function() {
             return oldPatientIdToNewPatientId;
         });
+    },
+    stringForPrescriptionPrinting: function(patient) {
+        var s = "";
+        s += patient.name + " " + patient.surname + "\n";
+        s += patient.street + "\n";
+        s += patient.zip + " " + patient.city + "\n";
+        return s;
     }
 };
 
@@ -1043,9 +1072,142 @@ function importFromZip(file) {
 }
 
 function generatePDF() {
+    var margin = 20;
     (window.jspdf ? Promise.resolve() : Promise.resolve(
         $.getScript('/assets/javascripts/jspdf.umd.min.js')
     ))
+    .then(function() {
+        var currentId = Prescription.getCurrentId();
+        return Promise.all([
+            currentId ? Prescription.readComplete(currentId) : Prescription.fromCurrentUIState(),
+            Doctor.getSignatureImage()
+        ]);
+    })
+    .then(function(result) {
+        var prescription = result[0];
+        var signature = result[1];
+        var doc = new jspdf.jsPDF();
+        var fontSize = 11;
+        doc.setFontSize(fontSize);
+
+        var originY = 0;
+        var didDrawnHeaderForCurrentPage = false;
+        var pageNumber = 1;
+
+        for (var medicationIndex = 0; medicationIndex < prescription.medications.length; medicationIndex++) {
+            if (!didDrawnHeaderForCurrentPage) {
+                drawPageNumber(pageNumber);
+                originY = drawPDFHeader(doc, originY, prescription, signature);
+                didDrawnHeaderForCurrentPage = true;
+            }
+
+            originY = drawMedication(originY, prescription.medications[medicationIndex]);
+
+            var needNewPage = isNaN(originY);
+            if (needNewPage) {
+                doc.addPage();
+                didDrawnHeaderForCurrentPage = false;
+                originY = 0;
+                pageNumber++;
+            }
+        }
+        doc.save(prescription.filename + ".pdf");
+    });
+
+    function drawPageNumber(num) {
+        doc.text(
+            PrescriptionLocalization.pdf_page_num.replace("%d", String(num)),
+            doc.internal.pageSize.getWidth() - margin,
+            50,
+            {
+                baseline: 'top',
+                align: 'right'
+            }
+        );
+    }
+
+    function drawPDFHeader(doc, originY, prescription, signature) {
+        var profile = Doctor.fromAMKObject(prescription.operator);
+        var strDoctor = Doctor.stringForPrescriptionPrinting(profile);
+        var doctorTextSize = measureText(strDoctor);
+        var docX = doc.internal.pageSize.getWidth() - margin;
+        var docY = originY + 60;
+        doc.text(strDoctor, docX, docY, {
+            baseline: 'top',
+            align: 'right'
+        });
+
+        var patient = Patient.fromAMKObject(prescription.patient);
+        var patientStr = Patient.stringForPrescriptionPrinting(patient);
+        var patientY = docY;
+        doc.text(patientStr, margin, patientY, {baseline:"top"});
+
+        var signatureY;
+        var signatureHeight;
+        if (signature) {
+            var whRatio = 2; // In Amiko-iOS, the max signature size was 90x45;
+            var signatureMaxWidth = 60, signatureMaxHeight = 30;
+            var ratio = Math.min(signatureMaxWidth / signature.width, signatureMaxHeight / signature.height);
+            var signatureWidth = signature.width * ratio;
+            signatureHeight = signature.height * ratio;
+            var signatureX = docX - (signatureMaxWidth - signatureWidth) / 2 - signatureWidth;
+            signatureY = docY + doctorTextSize.h + (signatureMaxHeight - signatureHeight) / 2;
+
+            doc.addImage(signature, "PNG", signatureX, signatureY, signatureWidth, signatureHeight);
+        }
+
+        var placeDateY = signature ? (signatureY + signatureHeight) : (docY + doctorTextSize.h);
+        doc.text(prescription.place_date, margin, placeDateY, { baseline: 'top' });
+        var placeDateSize = measureText(prescription.place_date);
+        return placeDateY + placeDateSize.h + 10;
+    }
+
+    function drawMedication(originY, medication) {
+        var maxWidth = doc.internal.pageSize.getWidth() - margin * 2;
+        var packageSize = measureText(medication.package, maxWidth);
+        var eanSize = measureText(medication.eancode, maxWidth);
+        var commentSize = medication.comment ? measureText(medication.comment, maxWidth) : {h:0, w:0};
+        if (originY + packageSize.h + 5 + eanSize.h + 5 + (commentSize.h ? commentSize.h + 5 : 0) > doc.internal.pageSize.getHeight() - margin) {
+            return NaN; // Need next page
+        }
+        doc.setTextColor("#0A60FE");
+        doc.text(medication.package, margin, originY, {
+            baseline: 'top',
+            maxWidth: maxWidth
+        });
+        originY += packageSize.h + 2;
+
+        doc.setTextColor("#666666");
+        doc.text(medication.eancode, margin, originY, {
+            baseline: 'top',
+            maxWidth: maxWidth
+        });
+        originY += eanSize.h + 2;
+        doc.setTextColor("#000000");
+        if (medication.comment) {
+            doc.text(medication.comment, margin, originY, {
+                baseline: 'top',
+                maxWidth: maxWidth
+            });
+            originY += commentSize.h + 2;
+        }
+        originY += 5;
+        return originY;
+    }
+
+    function measureText(str, width) {
+        if (!width) width = 210;
+        var fontSize = doc.getFontSize();
+        var lineHeightFactor = doc.getLineHeightFactor();
+        var lines = doc.splitTextToSize(str, width);
+        var w = 0;
+        lines.forEach((l)=> {
+            var d = doc.getTextDimensions(l);
+            w = Math.max(w, d.w);
+        });
+        var h = (fontSize * (lineHeightFactor * (lines.length - 1) + 1)) / doc.internal.scaleFactor;
+        return {h: h, w : w};
+    }
 }
 
 function sequencePromise(promiseFns) {

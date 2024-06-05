@@ -924,6 +924,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!e.currentTarget.files.length) return;
         importFromZip(e.currentTarget.files[0]);
     });
+    document.getElementById('prescription-print').addEventListener('click', function() {
+        generatePDF();
+    });
     $(document).on('change', 'input.prescription-item-comment', function(e) {
         var index = $(e.target).data('prescription-item-index');
         var items = PrescriptionBasket.list();

@@ -60,3 +60,4 @@ export_to_zip = Exporter au format Zip
 prescription_confirm_clear = Toutes les données seront écrasées, êtes-vous sûr ?
 prescription_imported = Importation de %d prescriptions
 doctor = Médecin
+pdf_page_num = Page %d

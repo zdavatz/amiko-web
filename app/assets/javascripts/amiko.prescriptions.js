@@ -592,6 +592,10 @@ var UI = {
             }
             modal.showModal();
         },
+        closeModal: function() {
+            var modal = document.querySelector('dialog.prescriptions-address-book');
+            modal.close();
+        },
         fillModal: function(id) {
             return Patient.read(id)
                 .then(function (patient) {
@@ -644,6 +648,7 @@ var UI = {
                     div.onclick = function () {
                         UI.Patient.fillModal(id);
                     };
+                    div.ondblclick = UI.Patient.closeModal;
                     var deleteButton = document.createElement('div');
                     deleteButton.className = 'prescriptions-address-book-patient-delete';
                     div.appendChild(deleteButton);

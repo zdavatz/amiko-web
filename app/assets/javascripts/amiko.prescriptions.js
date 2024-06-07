@@ -73,7 +73,7 @@ var Doctor = {
                     .objectStore("doctor")
                     .get("doctor-profile");
                 req.onsuccess = function(event) {
-                    resolve(event.target.result);
+                    resolve(event.target.result || Doctor.fromCurrentUIState() /* Default empty when there isn't anything */);
                 };
                 req.onerror = reject;
             });
@@ -381,6 +381,11 @@ var Prescription = {
         // + (automatically generated) id: number
         // - operator.signature <- to save data size
         var optionalPrescriptionId = overwriteCurrent ? Prescription.getCurrentId() : null;
+        var pid = Patient.getCurrentId();
+        if (pid === null) {
+            alert('Please select a patient');
+            return;
+        }
         var now = new Date();
         var currentDateStr = '' +
             now.getFullYear() +
@@ -392,7 +397,7 @@ var Prescription = {
         var filenamePromise = optionalPrescriptionId ? Prescription.readComplete(optionalPrescriptionId).then(p => p.filename) : Promise.resolve(null);
         return Promise.all([
                 Doctor.read(),
-                Patient.read(Patient.getCurrentId()),
+                Patient.read(pid),
                 filenamePromise
             ])
             .then(function(result) {
@@ -742,50 +747,53 @@ var UI = {
         reloadList: function() {
             var list = $('#prescriptions-right-list');
             list.html('');
-            return Prescription.listSimplified(Patient.getCurrentId()).then(function(prescriptions) {
-                prescriptions.forEach(function(prescription) {
-                    list.append(
-                        $('<div>')
-                        .text(prescription.filename)
-                        .addClass('prescriptions-right-list-item')
-                        .on('click', function() {
-                            PrescriptionBasket.clear();
-                            prescription.medications.forEach(function(m) {
-                                PrescriptionBasket.add({
-                                    title: m.title,
-                                    author: m.owner,
-                                    regnrs: m.regnrs,
-                                    atccode: m.atccode,
-                                    package: m.package,
-                                    eancode: m.eancode,
-                                    // TODO: note is legacy, remove it later
-                                    comment: m.note || m.comment || '',
+            var pid = Patient.getCurrentId();
+
+            return (pid === null ? Promise.resolve([]) : Prescription.listSimplified(pid))
+                .then(function(prescriptions) {
+                    prescriptions.forEach(function(prescription) {
+                        list.append(
+                            $('<div>')
+                            .text(prescription.filename)
+                            .addClass('prescriptions-right-list-item')
+                            .on('click', function() {
+                                PrescriptionBasket.clear();
+                                prescription.medications.forEach(function(m) {
+                                    PrescriptionBasket.add({
+                                        title: m.title,
+                                        author: m.owner,
+                                        regnrs: m.regnrs,
+                                        atccode: m.atccode,
+                                        package: m.package,
+                                        eancode: m.eancode,
+                                        // TODO: note is legacy, remove it later
+                                        comment: m.note || m.comment || '',
+                                    });
                                 });
-                            });
-                            UI.PrescriptionBasket.reloadList();
-                            Patient.setCurrentId(prescription.patient_id);
-                            Prescription.setCurrentId(prescription.id);
-                            var patientInfo = document.getElementsByClassName('prescription-patent-info')[0];
-                            patientInfo.innerText = prescription.patient.given_name + ' ' + prescription.patient.family_name;
-                        })
-                        .append(
-                            $('<button>').addClass('download-button').on('click', function (e) {
-                                e.stopPropagation();
-                                Prescription.readComplete(prescription.id).then(function(obj) {
-                                    var blob = Prescription.toAMKBlob(obj);
-                                    downloadBlob(blob, prescription.filename);
-                                });
+                                UI.PrescriptionBasket.reloadList();
+                                Patient.setCurrentId(prescription.patient_id);
+                                Prescription.setCurrentId(prescription.id);
+                                var patientInfo = document.getElementsByClassName('prescription-patent-info')[0];
+                                patientInfo.innerText = prescription.patient.given_name + ' ' + prescription.patient.family_name;
                             })
-                        )
-                        .append(
-                            $('<button>').addClass('delete-button').on('click', function (e) {
-                                e.stopPropagation();
-                                Prescription.delete(prescription.id).then(UI.Prescription.reloadList);
-                            })
-                        )
-                    );
+                            .append(
+                                $('<button>').addClass('download-button').on('click', function (e) {
+                                    e.stopPropagation();
+                                    Prescription.readComplete(prescription.id).then(function(obj) {
+                                        var blob = Prescription.toAMKBlob(obj);
+                                        downloadBlob(blob, prescription.filename);
+                                    });
+                                })
+                            )
+                            .append(
+                                $('<button>').addClass('delete-button').on('click', function (e) {
+                                    e.stopPropagation();
+                                    Prescription.delete(prescription.id).then(UI.Prescription.reloadList);
+                                })
+                            )
+                        );
+                    });
                 });
-            });
         }
     }
 };
@@ -924,9 +932,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!e.currentTarget.files.length) return;
         importFromZip(e.currentTarget.files[0]);
     });
-    document.getElementById('prescription-print').addEventListener('click', function() {
-        generatePDF();
-    });
+    document.getElementById('prescription-print').addEventListener('click',
+        generatePDF
+    );
     $(document).on('change', 'input.prescription-item-comment', function(e) {
         var index = $(e.target).data('prescription-item-index');
         var items = PrescriptionBasket.list();
@@ -1089,6 +1097,7 @@ function generatePDF() {
     .then(function(result) {
         var prescription = result[0];
         var signature = result[1];
+        if (!prescription) return;
         var doc = new jspdf.jsPDF();
         var fontSize = 11;
         doc.setFontSize(fontSize);
@@ -1099,12 +1108,12 @@ function generatePDF() {
 
         for (var medicationIndex = 0; medicationIndex < prescription.medications.length; medicationIndex++) {
             if (!didDrawnHeaderForCurrentPage) {
-                drawPageNumber(pageNumber);
+                drawPageNumber(doc, pageNumber);
                 originY = drawPDFHeader(doc, originY, prescription, signature);
                 didDrawnHeaderForCurrentPage = true;
             }
 
-            originY = drawMedication(originY, prescription.medications[medicationIndex]);
+            originY = drawMedication(doc, originY, prescription.medications[medicationIndex]);
 
             var needNewPage = isNaN(originY);
             if (needNewPage) {
@@ -1117,7 +1126,7 @@ function generatePDF() {
         doc.save(prescription.filename + ".pdf");
     });
 
-    function drawPageNumber(num) {
+    function drawPageNumber(doc, num) {
         doc.text(
             PrescriptionLocalization.pdf_page_num.replace("%d", String(num)),
             doc.internal.pageSize.getWidth() - margin,
@@ -1132,7 +1141,7 @@ function generatePDF() {
     function drawPDFHeader(doc, originY, prescription, signature) {
         var profile = Doctor.fromAMKObject(prescription.operator);
         var strDoctor = Doctor.stringForPrescriptionPrinting(profile);
-        var doctorTextSize = measureText(strDoctor);
+        var doctorTextSize = measureText(doc, strDoctor);
         var docX = doc.internal.pageSize.getWidth() - margin;
         var docY = originY + 60;
         doc.text(strDoctor, docX, docY, {
@@ -1161,15 +1170,15 @@ function generatePDF() {
 
         var placeDateY = signature ? (signatureY + signatureHeight) : (docY + doctorTextSize.h);
         doc.text(prescription.place_date, margin, placeDateY, { baseline: 'top' });
-        var placeDateSize = measureText(prescription.place_date);
+        var placeDateSize = measureText(doc, prescription.place_date);
         return placeDateY + placeDateSize.h + 10;
     }
 
-    function drawMedication(originY, medication) {
+    function drawMedication(doc, originY, medication) {
         var maxWidth = doc.internal.pageSize.getWidth() - margin * 2;
-        var packageSize = measureText(medication.package, maxWidth);
-        var eanSize = measureText(medication.eancode, maxWidth);
-        var commentSize = medication.comment ? measureText(medication.comment, maxWidth) : {h:0, w:0};
+        var packageSize = measureText(doc, medication.package, maxWidth);
+        var eanSize = measureText(doc, medication.eancode, maxWidth);
+        var commentSize = medication.comment ? measureText(doc, medication.comment, maxWidth) : {h:0, w:0};
         if (originY + packageSize.h + 5 + eanSize.h + 5 + (commentSize.h ? commentSize.h + 5 : 0) > doc.internal.pageSize.getHeight() - margin) {
             return NaN; // Need next page
         }
@@ -1198,7 +1207,7 @@ function generatePDF() {
         return originY;
     }
 
-    function measureText(str, width) {
+    function measureText(doc, str, width) {
         if (!width) width = 210;
         var fontSize = doc.getFontSize();
         var lineHeightFactor = doc.getLineHeightFactor();

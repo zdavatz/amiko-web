@@ -802,6 +802,40 @@ var UI = {
         }
     }
 };
+var OAuth = {
+    // Return: {
+    // accessToken
+    // refreshToken
+    // hinId
+    // expiresAt
+    // }
+    getWithApplicationName: function(applicationName) {
+        var str = localStorage['oauth-' + applicationName];
+        if (!str) return null;
+        var obj = JSON.parse(str);
+        return Object.assign(obj, {
+            expiresAt: new Date(obj.expiresAt)
+        });
+    },
+    renewTokenIfNeeded: function(applicationName) {
+        var oauthObj = OAuth.getWithApplicationName(applicationName);
+        if (oauthObj.expiresAt > new Date()) {
+            return Promise.resolve(oauthObj);
+        }
+        return Promise.resolve($.post('/oauth/renew_token', {
+            refresh_token: oauthObj.refreshToken
+        })).then(function(oauthResponse) {
+            var newOAuthObj = {
+                accessToken: oauthResponse.access_token,
+                refreshToken: oauthResponse.refresh_token,
+                hinId: oauthResponse.hin_id,
+                expiresAt: new Date(new Date().getTime() + 1000 * oauthResponse.expires_in).toISOString()
+            };
+            localStorage['oauth-' + applicationName] = JSON.stringify(newOAuthObj);
+            return OAuth.getWithApplicationName(applicationName);
+        });
+    },
+};
 
 var db = null;
 function getPrescriptionDatabase() {

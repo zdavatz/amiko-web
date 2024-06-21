@@ -1,4 +1,4 @@
-@(messages: play.i18n.Messages)
+@(messages: play.i18n.Messages, csrfToken: String)
 
 <div class="prescriptions">
     <div class="prescription-header">
@@ -177,6 +177,11 @@
         </form>
     </dialog>
     <script>
+        $.ajaxSetup({
+            beforeSend: function(xhr) {
+                xhr.setRequestHeader('Csrf-Token','@csrfToken');
+            }
+        });
         var PrescriptionLocalization = {
             prescription_please_choose_patient: "@messages("prescription_please_choose_patient")",
             prescription_confirm_clear: "@messages("prescription_confirm_clear")",

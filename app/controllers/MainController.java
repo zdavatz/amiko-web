@@ -32,6 +32,7 @@ import play.i18n.Messages;
 import play.i18n.MessagesApi;
 import play.i18n.Lang;
 import views.html.*;
+import views.html.helper.CSRF;
 
 import java.sql.*;
 import java.util.*;
@@ -138,7 +139,8 @@ public class MainController extends Controller {
     public Result prescription(Http.Request request, String lang, String key) {
         ViewContext vc = getViewContext(request);
         Messages messages = messagesApi.preferred(request);
-        String html = prescriptions.render(messages).toString();
+        play.filters.csrf.CSRF.Token token = CSRF.getToken(request.asScala());
+        String html = prescriptions.render(messages, token.value()).toString();
         return ok(index.render(html, "<div id='prescriptions-right-list'></div>", "", "", "", vc, messages));
     }
 

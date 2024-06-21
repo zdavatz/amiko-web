@@ -43,6 +43,8 @@ GET     /oauth/adswiss              controllers.OAuthController.adswissAuth(requ
 GET     /oauth/callback             controllers.OAuthController.oauthCallback(request: Request, code: String, state: String)
 GET     /oauth/adswiss_callback     controllers.OAuthController.adswissCallback(request: Request, auth_code: String)
 POST    /oauth/renew_token          controllers.OAuthController.renewOAuthToken(request: Request)
+GET     /sds/profile                controllers.OAuthController.fetchSDSSelfProfile(request: Request, access_token: String)
+
 GET     /javascriptRoutes           controllers.MainController.javascriptRoutes(request: Request)
 
 # Map static resources from the /public folder to the /assets URL path

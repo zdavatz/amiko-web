@@ -102,5 +102,12 @@ public class OAuthController extends Controller {
                 .thenApply((WSResponse ws)-> ok(ws.getBody(WSBodyReadables.instance.json())));
     }
 
+    public CompletionStage<Result> fetchSDSSelfProfile(Http.Request request, String accessToken) {
+        return ws.url("https://oauth2.sds.hin.ch/api/public/v1/self/")
+                .addHeader("Accept", "application/json")
+                .addHeader("Authorization", "Bearer " + accessToken)
+                .get()
+                .thenApply((WSResponse res)-> ok(res.getBody(WSBodyReadables.instance.json())));
+    }
 }
 

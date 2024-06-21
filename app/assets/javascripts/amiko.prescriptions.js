@@ -835,6 +835,23 @@ var OAuth = {
             return OAuth.getWithApplicationName(applicationName);
         });
     },
+    SDS: {
+        isLoggedIn: function() {
+            return !!localStorage['oauth-hin_sds'];
+        },
+        fetchSelf: function() {
+            if (!OAuth.SDS.isLoggedIn()) {
+                return Promise.reject('Not logged in');
+            }
+            return OAuth.renewTokenIfNeeded('hin_sds')
+            .then(function(oauth) {
+                return fetch('/sds/profile?access_token=' + encodeURIComponent(oauth.accessToken));
+            })
+            .then(function(res) {
+                return res.json();
+            });
+        }
+    }
 };
 
 var db = null;

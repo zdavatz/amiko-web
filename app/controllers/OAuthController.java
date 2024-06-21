@@ -81,5 +81,26 @@ public class OAuthController extends Controller {
           });
     }
 
+    public CompletionStage<Result> renewOAuthToken(Http.Request request) {
+        String[] tokenParams = request.body().asFormUrlEncoded().get("refresh_token");
+        if (tokenParams.length == 0) {
+            return CompletableFuture.completedFuture(badRequest("Need refresh_token"));
+        }
+        String refreshToken = tokenParams[0];
+        String postBody = "grant_type=refresh_token"
+                    + "&redirect_uri=" + URLEncoder.encode(this.redirectUri(), StandardCharsets.UTF_8)
+                    + "&refresh_token=" + URLEncoder.encode(refreshToken, StandardCharsets.UTF_8)
+                    + "&client_id=" + HIN_CLIENT_ID
+                    + "&client_secret=" + HIN_CLIENT_SECRET;
+        System.out.println("postBody: " + postBody);
+        return ws.url("https://oauth2.hin.ch/REST/v1/OAuth/GetAccessToken")
+                .addHeader("Accept", "application/json")
+                .addHeader("Content-Type", "application/x-www-form-urlencoded")
+                .post(
+                    postBody
+                )
+                .thenApply((WSResponse ws)-> ok(ws.getBody(WSBodyReadables.instance.json())));
+    }
+
 }
 

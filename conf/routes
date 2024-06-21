@@ -38,6 +38,10 @@ GET     /fr                         controllers.MainController.setLang(request: 
 
 POST    /lang/:lang                 controllers.MainController.setLang(request: Request, lang: String)
 
+GET     /oauth/sds                  controllers.OAuthController.sdsAuth(request: Request)
+GET     /oauth/adswiss              controllers.OAuthController.adswissAuth(request: Request)
+GET     /oauth/callback             controllers.OAuthController.oauthCallback(request: Request, code: String, state: String)
+GET     /oauth/adswiss_callback     controllers.OAuthController.adswissCallback(request: Request, auth_code: String)
 GET     /javascriptRoutes           controllers.MainController.javascriptRoutes(request: Request)
 
 # Map static resources from the /public folder to the /assets URL path

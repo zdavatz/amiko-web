@@ -1,0 +1,24 @@
+@(redirectDest: String, tokenStr: String)
+
+<html>
+<body>
+    <div id="message"></div>
+<script>
+    var oauthResponse = @Html(tokenStr);
+    if (oauthResponse.error) {
+        document.getElementById('message').textContent = oauthResponse.error;
+    } else {
+        var url = new URL(document.location);
+        var state = url.searchParams.get('state');
+
+        localStorage['oauth-' + state] = JSON.stringify({
+            accessToken: oauthResponse.access_token,
+            refreshToken: oauthResponse.refresh_token,
+            hinId: oauthResponse.hin_id,
+            expiresAt: new Date(new Date().getTime() + 1000 * oauthResponse.expires_in).toISOString()
+        });
+        location.href = '@redirectDest';
+    }
+</script>
+</body>
+</html>

@@ -1085,6 +1085,11 @@ document.addEventListener('DOMContentLoaded', function() {
         PrescriptionBasket.add(data);
     });
     UI.Prescription.reloadInfo();
+    // Auto import doctor from SDS after OAuth
+    if (localStorage['needs-import-sds']) {
+        OAuth.SDS.importProfile(false);
+        localStorage.removeItem('needs-import-sds');
+    }
 });
 
 function downloadBlob(blob, filename) {

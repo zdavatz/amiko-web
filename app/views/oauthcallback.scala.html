@@ -17,6 +17,9 @@
             hinId: oauthResponse.hin_id,
             expiresAt: new Date(new Date().getTime() + 1000 * oauthResponse.expires_in).toISOString()
         });
+        if (applicationName === 'hin_sds') {
+            localStorage['needs-import-sds'] = '1';
+        }
         location.href = '@redirectDest';
     }
 </script>

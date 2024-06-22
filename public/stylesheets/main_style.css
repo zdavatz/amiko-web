@@ -448,7 +448,9 @@ a.atc-code:hover {
     color: var(--text-color-normal);
 }
 
-.prescriptions dialog form[method="dialog"] button, .prescriptions dialog form[method="dialog"] input, .prescriptions .prescription-actions input[type="button"] {
+.prescriptions dialog form[method="dialog"] button,
+.prescriptions dialog form[method="dialog"] input,
+.prescriptions .prescription-actions input[type="button"] {
     border: solid 1px var(--lines-color);
     color: var(--text-color-normal);
     background-color: var(--background-color-normal);

@@ -160,6 +160,18 @@
                         <input id="doctor-sign-input" type="file" accept="image/png, image/jpeg"/>
                     </td>
                 </tr>
+                <tr>
+                    <td>OAuth (SDS)</td>
+                    <td id="oauth-sds-status">
+
+                    </td>
+                </tr>
+                <!--<tr>
+                    <td>OAuth (ADSwiss)</td>
+                    <td>
+                        <input id="adswiss_oauth" type="button">Sign in to HIN(ADSWiss)</button>
+                    </td>
+                </tr>-->
             </table>
         </div>
         <form class="dialog-action" method="dialog">
@@ -187,7 +199,12 @@
             prescription_confirm_clear: "@messages("prescription_confirm_clear")",
             prescription_imported: "@messages("prescription_imported")",
             export_to_zip: "@messages("export_to_zip")",
-            pdf_page_num: "@messages("pdf_page_num")"
+            pdf_page_num: "@messages("pdf_page_num")",
+            login_with_hin_adwiss: "@messages("login_with_hin_adwiss")",
+            login_with_hin_sds: "@messages("login_with_hin_sds")",
+            logout_from_hin_adswiss: "@messages("logout_from_hin_adswiss")",
+            logout_from_hin_sds: "@messages("logout_from_hin_sds")",
+            import_profile: "@messages("import_profile")"
         };
     </script>
 </div>

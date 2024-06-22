@@ -560,6 +560,7 @@ var UI = {
             var modal = document.querySelector('dialog.prescriptions-doctor');
             modal.showModal();
             Doctor.read().then(UI.Doctor.applyToModal);
+            UI.Doctor.reloadOAuthState();
         },
         closeModal: function() {
             var modal = document.querySelector('dialog.prescriptions-doctor');
@@ -581,6 +582,36 @@ var UI = {
             document.getElementsByName('doctor-field-vat')[0].value = profile.vat;
             document.getElementById('doctor-sign-image').src = Doctor.getSignatureURL() || '';
         },
+        reloadOAuthState:function() {
+            var oauthSDSContainer = $('#oauth-sds-status').empty();
+            if (OAuth.SDS.isLoggedIn()) {
+                oauthSDSContainer
+                .append($('<span>').text('HIN ID: ' + OAuth.SDS.currentCredentials().hinId))
+                .append(
+                    $('<button>')
+                        .attr('type', 'button')
+                        .text(PrescriptionLocalization.import_profile)
+                        .on('click', function() {
+                            OAuth.SDS.importProfile(true).then(function() {
+                                return Doctor.read().then(UI.Doctor.applyToModal);
+                            });
+                        })
+                )
+                .append(
+                    $('<button>')
+                        .attr('type', 'button')
+                        .text(PrescriptionLocalization.logout_from_hin_sds)
+                        .on('click', OAuth.SDS.logout)
+                );
+            } else {
+                oauthSDSContainer.append(
+                    $('<button>')
+                        .attr('type', 'button')
+                        .text(PrescriptionLocalization.login_with_hin_sds)
+                        .on('click', OAuth.SDS.login)
+                );
+            }
+        }
     },
     Patient: {
         showModal: function() {
@@ -802,6 +833,108 @@ var UI = {
         }
     }
 };
+var OAuth = {
+    // Return: {
+    // accessToken
+    // refreshToken
+    // hinId
+    // expiresAt
+    // }
+    getWithApplicationName: function(applicationName) {
+        var str = localStorage['oauth-' + applicationName];
+        if (!str) return null;
+        var obj = JSON.parse(str);
+        return Object.assign(obj, {
+            expiresAt: new Date(obj.expiresAt)
+        });
+    },
+    renewTokenIfNeeded: function(applicationName) {
+        var oauthObj = OAuth.getWithApplicationName(applicationName);
+        if (oauthObj.expiresAt > new Date()) {
+            return Promise.resolve(oauthObj);
+        }
+        return Promise.resolve($.post('/oauth/renew_token', {
+            refresh_token: oauthObj.refreshToken
+        })).then(function(oauthResponse) {
+            var newOAuthObj = {
+                accessToken: oauthResponse.access_token,
+                refreshToken: oauthResponse.refresh_token,
+                hinId: oauthResponse.hin_id,
+                expiresAt: new Date(new Date().getTime() + 1000 * oauthResponse.expires_in).toISOString()
+            };
+            localStorage['oauth-' + applicationName] = JSON.stringify(newOAuthObj);
+            return OAuth.getWithApplicationName(applicationName);
+        });
+    },
+    SDS: {
+        currentCredentials: function() {
+            return OAuth.getWithApplicationName('hin_sds');
+        },
+        isLoggedIn: function() {
+            return !!OAuth.SDS.currentCredentials();
+        },
+        login: function() {
+            location.href = '/oauth/sds';
+        },
+        logout: function() {
+            localStorage.removeItem('oauth-hin_sds');
+            UI.Doctor.reloadOAuthState();
+        },
+        fetchSelf: function() {
+            if (!OAuth.SDS.isLoggedIn()) {
+                return Promise.reject('Not logged in');
+            }
+            return OAuth.renewTokenIfNeeded('hin_sds')
+            .then(function(oauth) {
+                return fetch('/sds/profile?access_token=' + encodeURIComponent(oauth.accessToken));
+            })
+            .then(function(res) {
+                return res.json();
+            });
+        },
+        importProfile: function(fromUI) {
+            return Promise.all([
+                OAuth.SDS.fetchSelf(),
+                fromIO ? Doctor.fromCurrentUIState() : Doctor.read(),
+            ])
+            .then(function(result) {
+                var response = result[0];
+                var doctor = result[1];
+                if (!doctor.email) {
+                    doctor.email = response.email;
+                }
+                if (!doctor.surname) {
+                    doctor.surname = response.contactId.lastName;
+                }
+                if (!doctor.name) {
+                    doctor.name = response.contactId.firstName;
+                }
+                if (!doctor.street) {
+                    doctor.street = response.contactId.address;
+                }
+                if (!doctor.zip) {
+                    doctor.zip = response.contactId.postalCode;
+                }
+                if (!doctor.city) {
+                    doctor.city = response.contactId.city;
+                }
+                if (!doctor.country) {
+                    doctor.country = response.contactId.countryCode;
+                }
+                if (!doctor.phone) {
+                    doctor.phone = response.contactId.phoneNr;
+                }
+                if (!doctor.gln) {
+                    doctor.gln = response.contactId.gln;
+                }
+                return Doctor.save(doctor);
+            })
+            .then(function() {
+                return Doctor.read().then(UI.Doctor.applyToModal);
+            });
+        }
+    }
+};
 
 var db = null;
 function getPrescriptionDatabase() {
@@ -952,6 +1085,11 @@ document.addEventListener('DOMContentLoaded', function() {
         PrescriptionBasket.add(data);
     });
     UI.Prescription.reloadInfo();
+    // Auto import doctor from SDS after OAuth
+    if (localStorage['needs-import-sds']) {
+        OAuth.SDS.importProfile(false);
+        localStorage.removeItem('needs-import-sds');
+    }
 });
 
 function downloadBlob(blob, filename) {

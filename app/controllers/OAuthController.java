@@ -21,6 +21,8 @@ import views.html.index;
 import views.html.oauthcallback;
 
 public class OAuthController extends Controller {
+    private static final String HIN_CLIENT_ID = "ch.ywesee";
+    private static final String HIN_CLIENT_SECRET = "sGCg0eiu19fyZv0zXZ6WAoBr";
 
     private final WSClient ws;
     @Inject private Config configuration;
@@ -31,20 +33,12 @@ public class OAuthController extends Controller {
     }
 
     public String authUrlWithApplicationName(Http.Request request, String applicationName) {
-        return "https://apps.hin.ch/REST/v1/OAuth/GetAuthCode/" + applicationName + "?response_type=code&client_id=" + getClientId() + "&redirect_uri=" + this.redirectUri(request) + "&state=" + applicationName;
+        return "https://apps.hin.ch/REST/v1/OAuth/GetAuthCode/" + applicationName + "?response_type=code&client_id=" + HIN_CLIENT_ID + "&redirect_uri=" + this.redirectUri(request) + "&state=" + applicationName;
     }
 
     public String redirectUri(Http.Request request) {
         String host = request.host();
         return "https://" + host + "/oauth/callback";
-    }
-
-    public String getClientId() {
-        return configuration.getString("feature.hin_client_id");
-    }
-
-    public String getClientSecret() {
-        return configuration.getString("feature.hin_client_secret");
     }
 
     public Result sdsAuth(Http.Request request) {
@@ -81,8 +75,8 @@ public class OAuthController extends Controller {
                 "grant_type=authorization_code"
                 + "&redirect_uri=" + URLEncoder.encode(this.redirectUri(request), StandardCharsets.UTF_8)
                 + "&code=" + URLEncoder.encode(code, StandardCharsets.UTF_8)
-                + "&client_id=" + getClientId()
-                + "&client_secret=" + getClientSecret()
+                + "&client_id=" + HIN_CLIENT_ID
+                + "&client_secret=" + HIN_CLIENT_SECRET
             ).thenApply(
           (WSResponse r) -> {
               return r.getBody();
@@ -98,8 +92,8 @@ public class OAuthController extends Controller {
         String postBody = "grant_type=refresh_token"
                     + "&redirect_uri=" + URLEncoder.encode(this.redirectUri(request), StandardCharsets.UTF_8)
                     + "&refresh_token=" + URLEncoder.encode(refreshToken, StandardCharsets.UTF_8)
-                    + "&client_id=" + getClientId()
-                    + "&client_secret=" + getClientSecret();
+                    + "&client_id=" + HIN_CLIENT_ID
+                    + "&client_secret=" + HIN_CLIENT_SECRET;
         System.out.println("postBody: " + postBody);
         return ws.url("https://oauth2.hin.ch/REST/v1/OAuth/GetAccessToken")
                 .addHeader("Accept", "application/json")

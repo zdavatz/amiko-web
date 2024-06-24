@@ -9,6 +9,12 @@ jobs:
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
           java-version: '17'
+      - name: Setup credentails
+        env: # Or as an environment variable
+          HIN_CLIENT_ID: ${{ secrets.HIN_CLIENT_ID }}
+          HIN_CLIENT_SECRET: ${{ secrets.HIN_CLIENT_SECRET }}
+        run: |
+          sed -i "s/YOUR_HIN_CLIENT_ID/$HIN_CLIENT_ID/;s/YOUR_HIN_CLIENT_SECRET/$HIN_CLIENT_SECRET/" ./app/controllers/OAuthController.java
       - run: |
           ./bin/activator dist
 

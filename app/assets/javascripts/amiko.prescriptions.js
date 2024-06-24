@@ -895,7 +895,7 @@ var OAuth = {
         importProfile: function(fromUI) {
             return Promise.all([
                 OAuth.SDS.fetchSelf(),
-                fromIO ? Doctor.fromCurrentUIState() : Doctor.read(),
+                fromUI ? Doctor.fromCurrentUIState() : Doctor.read(),
             ])
             .then(function(result) {
                 var response = result[0];

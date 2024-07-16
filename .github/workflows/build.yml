@@ -14,7 +14,7 @@ jobs:
           HIN_CLIENT_ID: ${{ secrets.HIN_CLIENT_ID }}
           HIN_CLIENT_SECRET: ${{ secrets.HIN_CLIENT_SECRET }}
         run: |
-          sed -i "s/YOUR_HIN_CLIENT_ID/$HIN_CLIENT_ID/;s/YOUR_HIN_CLIENT_SECRET/$HIN_CLIENT_SECRET/" ./app/controllers/OAuthController.java
+          sed -i "s/YOUR_HIN_CLIENT_ID/$HIN_CLIENT_ID/;s/YOUR_HIN_CLIENT_SECRET/$HIN_CLIENT_SECRET/;s/YOUR_CERTIFACTION_SERVER/$CERTIFACTION_SERVER/" ./app/controllers/OAuthController.java
       - run: |
           ./bin/activator dist
 

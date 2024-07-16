@@ -10,19 +10,23 @@ import com.typesafe.config.Config;
 import models.ViewContext;
 import play.i18n.Lang;
 import play.i18n.Messages;
+import play.libs.Files;
 import play.libs.ws.WSBodyReadables;
 import javax.inject.Inject;
 import play.libs.ws.*;
+import play.mvc.BodyParser;
 import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
 
 import views.html.index;
 import views.html.oauthcallback;
+import views.html.adswisscallback;
 
 public class OAuthController extends Controller {
-    private static final String HIN_CLIENT_ID = "ch.ywesee";
-    private static final String HIN_CLIENT_SECRET = "sGCg0eiu19fyZv0zXZ6WAoBr";
+    private static final String HIN_CLIENT_ID = "YOUR_HIN_CLIENT_ID";
+    private static final String HIN_CLIENT_SECRET = "YOUR_HIN_CLIENT_SECRET";
+    private static final String CERTIFACTION_SERVER = "YOUR_CERTIFACTION_SERVER";
 
     private final WSClient ws;
     @Inject private Config configuration;
@@ -41,15 +45,34 @@ public class OAuthController extends Controller {
         return "https://" + host + "/oauth/callback";
     }
 
+    public String adswissRedirectUri(Http.Request request) {
+        String host = request.host();
+        return "https://" + host + "/oauth/adswiss_callback";
+    }
+
     public Result sdsAuth(Http.Request request) {
         return redirect(authUrlWithApplicationName(request, "hin_sds"));
-        // ADSwiss_CI-Test
-        // ADSwiss_CI
     }
+
+    public String adswissAppName() {
+        if (configuration.getBoolean("feature.adswiss_test")) {
+            return "ADSwiss_CI-Test";
+        } else {
+            return "ADSwiss_CI";
+        }
+    }
+
     public Result adswissAuth(Http.Request request) {
-        // ADSwiss_CI-Test
-        // ADSwiss_CI
-        return redirect(authUrlWithApplicationName(request, "ADSwiss_CI-Test"));
+        String appName = adswissAppName();
+        return redirect(authUrlWithApplicationName(request, appName));
+    }
+
+    public String hinDomainForADSwiss() {
+        if (configuration.getBoolean("feature.adswiss_test")) {
+            return "oauth2.ci-prep.adswiss.hin.ch";
+        } else {
+            return "oauth2.ci.adswiss.hin.ch";
+        }
     }
 
     public CompletionStage<Result> oauthCallback(Http.Request request, String code, String state) {
@@ -62,9 +85,9 @@ public class OAuthController extends Controller {
     }
 
     public Result adswissCallback(Http.Request request, String authCode) {
-        // TODO
-        ViewContext ctx = new ViewContext();
-        return ok(index.render("", "", "", "", "", ctx, null));
+        String subdomainLang = request.transientLang().orElse(Lang.forCode("de")).language();
+        String redirectDest  = subdomainLang == "de" ? "/rezept" : "/prescription";
+        return ok(adswisscallback.render(redirectDest, adswissAppName()));
     }
 
     public CompletionStage<String> fetchAccessTokenFromOAuthCode(Http.Request request, String code) {
@@ -111,5 +134,13 @@ public class OAuthController extends Controller {
                 .get()
                 .thenApply((WSResponse res)-> ok(res.getBody(WSBodyReadables.instance.json())));
     }
-}
 
+    public CompletionStage<Result> fetchADSwissSAML(Http.Request request, String accessToken) {
+        String url = "https://" + hinDomainForADSwiss() + "/authService/EPDAuth?targetUrl=" + URLEncoder.encode(adswissRedirectUri(request), StandardCharsets.UTF_8) + "&style=redirect";
+        return ws.url(url)
+                .addHeader("Accept", "application/json")
+                .addHeader("Authorization", "Bearer " + accessToken)
+                .post("")
+                .thenApply((WSResponse res)-> ok(res.getBody(WSBodyReadables.instance.json())));
+    }
+}

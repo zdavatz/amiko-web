@@ -1,0 +1,13 @@
+@(redirectDest: String, adswissAppName: String)
+
+<html>
+<body>
+    <div id="message">Loading...</div>
+<script>
+    var adswissAppName = "@adswissAppName";
+    var url = new URL(document.location);
+    var authCode = url.searchParams.get('auth_code');
+    var accessToken = JSON.parse(localStorage['oauth-' + adswissAppName]).accessToken;
+</script>
+</body>
+</html>

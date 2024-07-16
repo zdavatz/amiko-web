@@ -140,7 +140,13 @@ public class MainController extends Controller {
         ViewContext vc = getViewContext(request);
         Messages messages = messagesApi.preferred(request);
         play.filters.csrf.CSRF.Token token = CSRF.getToken(request.asScala());
-        String html = prescriptions.render(messages, token.value()).toString();
+        String adswissAppName;
+        if (configuration.getBoolean("feature.adswiss_test")) {
+            adswissAppName = "ADSwiss_CI-Test";
+        } else {
+            adswissAppName = "ADSwiss_CI";
+        }
+        String html = prescriptions.render(messages, token.value(), adswissAppName).toString();
         return ok(index.render(html, "<div id='prescriptions-right-list'></div>", "", "", "", vc, messages));
     }
 

@@ -1,4 +1,4 @@
-@(messages: play.i18n.Messages, csrfToken: String)
+@(messages: play.i18n.Messages, csrfToken: String, adswissAppName: String)
 
 <div class="prescriptions">
     <div class="prescription-header">
@@ -189,9 +189,10 @@
         </form>
     </dialog>
     <script>
+        var XHRCSRFToken = '@csrfToken';
         $.ajaxSetup({
             beforeSend: function(xhr) {
-                xhr.setRequestHeader('Csrf-Token','@csrfToken');
+                xhr.setRequestHeader('Csrf-Token', XHRCSRFToken);
             }
         });
         var PrescriptionLocalization = {
@@ -206,5 +207,6 @@
             logout_from_hin_sds: "@messages("logout_from_hin_sds")",
             import_profile: "@messages("import_profile")"
         };
+        var adswissAppName = "@adswissAppName";
     </script>
 </div>

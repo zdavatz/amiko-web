@@ -933,6 +933,62 @@ var OAuth = {
                 return Doctor.read().then(UI.Doctor.applyToModal);
             });
         }
+    },
+    ADSwiss: {
+        currentCredentials: function() {
+            return OAuth.getWithApplicationName(adswissAppName);
+        },
+        isLoggedIn: function() {
+            return !!OAuth.ADSwiss.currentCredentials();
+        },
+        login: function() {
+            location.href = '/oauth/adswiss';
+        },
+        logout: function() {
+            localStorage.removeItem('oauth-' + adswissAppName);
+            localStorage.removeItem('auth-handle-' + adswissAppName);
+            UI.Doctor.reloadOAuthState();
+        },
+        fetchSAML: function() {
+            return OAuth.renewTokenIfNeeded(adswissAppName)
+                .then(function(oauth) {
+                    return Promise.resolve($.post('/adswiss/saml?access_token=' + encodeURIComponent(oauth.accessToken)));
+                })
+                .then(function(obj) {
+                    return obj.epdAuthUrl;
+                });
+        },
+        // @return {
+        //     token: string,
+        //     expiresAt: Date,
+        //     lastUsedAt: Date
+        // }
+        getAuthHandle: function() {
+            // if (1) return  {token:'aaaa', expiresAt: new Date("2024-08-16T13:17:51.979Z" ), lastUsedAt: new Date()};
+            var str = localStorage['auth-handle-' + adswissAppName];
+            if (!str) return null;
+            var obj = JSON.parse(str);
+            obj.expiresAt = new Date(obj.expiresAt);
+            obj.lastUsedAt = new Date(obj.lastUsedAt);
+            var now = new Date();
+            if (now >= obj.expiresAt || now.getTime() >= obj.lastUsedAt + 2 * 60 * 60 * 1000) { // Expires after 2 hours of idle
+                localStorage.removeItem('auth-handle-' + adswissAppName);
+                return null;
+            }
+            return obj;
+        },
+        updateAuthHandleLastUsed: function() {
+            var authHandle = OAuth.ADSwiss.getAuthHandle();
+            if (!authHandle) {
+                console.warn('Cannot update auth handle lastUsed');
+                return;
+            }
+            localStorage['auth-handle-' + adswissAppName] = JSON.stringify({
+                token: authHandle.token,
+                expiresAt: authHandle.expiresAt.toISOString(),
+                lastUsedAt: new Date().toISOString()
+            });
+        }
     }
 };
 

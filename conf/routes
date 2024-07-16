@@ -45,6 +45,7 @@ GET     /oauth/adswiss_callback     controllers.OAuthController.adswissCallback(
 POST    /oauth/renew_token          controllers.OAuthController.renewOAuthToken(request: Request)
 GET     /sds/profile                controllers.OAuthController.fetchSDSSelfProfile(request: Request, access_token: String)
 POST    /adswiss/saml               controllers.OAuthController.fetchADSwissSAML(request: Request, access_token: String)
+POST    /adswiss/auth_handle        controllers.OAuthController.fetchAdswissAuthHandle(request: Request)
 
 GET     /javascriptRoutes           controllers.MainController.javascriptRoutes(request: Request)
 

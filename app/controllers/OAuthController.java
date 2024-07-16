@@ -19,6 +19,7 @@ import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
 
+import views.html.helper.CSRF;
 import views.html.index;
 import views.html.oauthcallback;
 import views.html.adswisscallback;
@@ -41,8 +42,9 @@ public class OAuthController extends Controller {
     }
 
     public String redirectUri(Http.Request request) {
-        String host = request.host();
-        return "https://" + host + "/oauth/callback";
+//        return "http://localhost:23822/callback";
+         String host = request.host();
+         return "https://" + host + "/oauth/callback";
     }
 
     public String adswissRedirectUri(Http.Request request) {
@@ -85,9 +87,10 @@ public class OAuthController extends Controller {
     }
 
     public Result adswissCallback(Http.Request request, String authCode) {
+        play.filters.csrf.CSRF.Token token = CSRF.getToken(request.asScala());
         String subdomainLang = request.transientLang().orElse(Lang.forCode("de")).language();
         String redirectDest  = subdomainLang == "de" ? "/rezept" : "/prescription";
-        return ok(adswisscallback.render(redirectDest, adswissAppName()));
+        return ok(adswisscallback.render(redirectDest, adswissAppName(), token.value()));
     }
 
     public CompletionStage<String> fetchAccessTokenFromOAuthCode(Http.Request request, String code) {
@@ -125,6 +128,23 @@ public class OAuthController extends Controller {
                     postBody
                 )
                 .thenApply((WSResponse ws)-> ok(ws.getBody(WSBodyReadables.instance.json())));
+    }
+
+    public CompletionStage<Result> fetchAdswissAuthHandle(Http.Request request) {
+        String accessToken = request.body().asFormUrlEncoded().get("access_token")[0];
+        String authCode = request.body().asFormUrlEncoded().get("auth_code")[0];
+        String url = "https://" + hinDomainForADSwiss() + "/authService/EPDAuth/auth_handle";
+        return ws.url(url)
+                .addHeader("Accept", "application/json")
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Authorization", "Bearer " + accessToken)
+                .post(
+                        "{\"authCode\":\"" + authCode + "\"}"
+                )
+                .thenApply((WSResponse ws)-> {
+                    System.out.println("the body " + ws.getBody().toString());
+                    return ok(ws.getBody(WSBodyReadables.instance.json()));
+                });
     }
 
     public CompletionStage<Result> fetchSDSSelfProfile(Http.Request request, String accessToken) {

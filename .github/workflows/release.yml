@@ -18,8 +18,10 @@ jobs:
         env: # Or as an environment variable
           HIN_CLIENT_ID: ${{ secrets.HIN_CLIENT_ID }}
           HIN_CLIENT_SECRET: ${{ secrets.HIN_CLIENT_SECRET }}
+          CERTIFACTION_SERVER: ${{ secrets.CERTIFACTION_SERVER }}
+          CERTIFACTION_TEST_SERVER: ${{ secrets.CERTIFACTION_TEST_SERVER }}
         run: |
-          sed -i "s/YOUR_HIN_CLIENT_ID/$HIN_CLIENT_ID/;s/YOUR_HIN_CLIENT_SECRET/$HIN_CLIENT_SECRET/;s/YOUR_CERTIFACTION_SERVER/$CERTIFACTION_SERVER/" ./app/controllers/OAuthController.java
+          sed -i "s/YOUR_HIN_CLIENT_ID/$HIN_CLIENT_ID/;s/YOUR_HIN_CLIENT_SECRET/$HIN_CLIENT_SECRET/;s/YOUR_CERTIFACTION_SERVER/$CERTIFACTION_SERVER/;s/YOUR_CERTIFACTION_TEST_SERVER/$CERTIFACTION_TEST_SERVER/" ./app/controllers/OAuthController.java
       - run: |
           ./bin/activator dist
 

@@ -28,6 +28,7 @@ public class OAuthController extends Controller {
     private static final String HIN_CLIENT_ID = "YOUR_HIN_CLIENT_ID";
     private static final String HIN_CLIENT_SECRET = "YOUR_HIN_CLIENT_SECRET";
     private static final String CERTIFACTION_SERVER = "YOUR_CERTIFACTION_SERVER";
+    private static final String CERTIFACTION_TEST_SERVER = "YOUR_CERTIFACTION_TEST_SERVER";
 
     private final WSClient ws;
     @Inject private Config configuration;
@@ -165,7 +166,8 @@ public class OAuthController extends Controller {
     }
 
     public CompletionStage<Result> makeEPrescriptionQR(Http.Request request, String authHandle) {
-        String url = CERTIFACTION_SERVER + "/ePrescription/create?output-format=qrcode";
+        String certifactionServer = configuration.getBoolean("feature.adswiss_test") ? CERTIFACTION_TEST_SERVER : CERTIFACTION_SERVER;
+        String url = certifactionServer + "/ePrescription/create?output-format=qrcode";
         return ws.url(url)
                 .addHeader("Content-Type", "text/plain")
                 .addHeader("Authorization", "Bearer " + authHandle)

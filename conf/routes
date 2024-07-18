@@ -46,6 +46,7 @@ POST    /oauth/renew_token          controllers.OAuthController.renewOAuthToken(
 GET     /sds/profile                controllers.OAuthController.fetchSDSSelfProfile(request: Request, access_token: String)
 POST    /adswiss/saml               controllers.OAuthController.fetchADSwissSAML(request: Request, access_token: String)
 POST    /adswiss/auth_handle        controllers.OAuthController.fetchAdswissAuthHandle(request: Request)
+POST    /adswiss/eprescription_qr   controllers.OAuthController.makeEPrescriptionQR(request: Request, auth_handle: String)
 
 GET     /javascriptRoutes           controllers.MainController.javascriptRoutes(request: Request)
 

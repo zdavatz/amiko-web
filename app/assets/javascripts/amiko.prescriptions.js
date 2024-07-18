@@ -988,6 +988,71 @@ var OAuth = {
                 expiresAt: authHandle.expiresAt.toISOString(),
                 lastUsedAt: new Date().toISOString()
             });
+        },
+        makeQRCodeWithPrescription: function(prescription) {
+            var authHandle = OAuth.ADSwiss.getAuthHandle();
+            if (!authHandle) return Promise.reject();
+            function formatDateForEPrescription(dateStr) {
+                // dd.mm.yyyy -> yyyy-mm-dd
+                var parts = dateStr.split('.');
+                if (parts.length !== 3) return null;
+                return parts[2] + '-' + parts[1] + '-' + parts[0];
+            }
+
+            var ePrescriptionObj = {
+                'Patient': {
+                    'FName': prescription.patient.given_name,
+                    'LName': prescription.patient.family_name,
+                    'BDt': formatDateForEPrescription(prescription.patient.birth_date)
+                },
+                'Medicaments': prescription.medications.map(function(m){
+                    return {
+                        'Id': m.eancode,
+                        'IdType': 2 // GTIN
+                    };
+                }),
+                'MedType': 3, // Prescription
+                'Id': crypto.randomUUID(),
+                'Auth': prescription.operator.gln || '',
+                'Dt': new Date().toISOString()
+            };
+
+            var encoder = new TextEncoder('utf-8');
+
+            var bodyStream = ReadableStream
+                .from([encoder.encode(JSON.stringify(ePrescriptionObj))])
+                .pipeThrough(new CompressionStream("gzip"));
+            return new Response(bodyStream).blob()
+            .then(function(blob) {
+               return new Promise(function(res) {
+                    var reader = new FileReader();
+                    reader.onload = function() {
+                        var dataUrl = reader.result;
+                        var base64 = dataUrl.split(',')[1];
+                        res(base64);
+                    };
+                    reader.readAsDataURL(blob);
+                });
+            }).then(function(str) {
+                return fetch('/adswiss/eprescription_qr?auth_handle=' + encodeURIComponent(authHandle.token), {
+                    method: 'POST',
+                    body: 'CHMED16A1' + str,
+                    headers: {
+                        'Content-Type': 'text/plain',
+                        'Csrf-Token': XHRCSRFToken
+                    }
+                });
+            }).then(function(res) {
+                OAuth.ADSwiss.updateAuthHandleLastUsed();
+                return res.blob();
+            }).then(function(blob) {
+                var url = URL.createObjectURL(blob);
+                return new Promise(function(res) {
+                    var img = new Image();
+                    img.onload = function() { res(img); };
+                    img.src = url;
+                });
+            });
         }
     }
 };

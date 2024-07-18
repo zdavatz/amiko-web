@@ -163,4 +163,15 @@ public class OAuthController extends Controller {
                 .post("")
                 .thenApply((WSResponse res)-> ok(res.getBody(WSBodyReadables.instance.json())));
     }
+
+    public CompletionStage<Result> makeEPrescriptionQR(Http.Request request, String authHandle) {
+        String url = CERTIFACTION_SERVER + "/ePrescription/create?output-format=qrcode";
+        return ws.url(url)
+                .addHeader("Content-Type", "text/plain")
+                .addHeader("Authorization", "Bearer " + authHandle)
+                .post(request.body().asText())
+                .thenApply((WSResponse res)->
+                    ok(res.getBody(WSBodyReadables.instance.bytes()))
+                );
+    }
 }

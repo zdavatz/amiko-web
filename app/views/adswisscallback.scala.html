@@ -1,0 +1,35 @@
+@(redirectDest: String, adswissAppName: String, csrfToken: String)
+
+<html>
+<body>
+    <div id="message">Loading...</div>
+<script>
+    var adswissAppName = "@adswissAppName";
+    var XHRCSRFToken = "@csrfToken";
+    var url = new URL(document.location);
+    var authCode = url.searchParams.get('auth_code');
+    var accessToken = JSON.parse(localStorage['oauth-' + adswissAppName]).accessToken;
+    fetch('/adswiss/auth_handle', {
+        method: 'POST',
+        body: new URLSearchParams({
+            'auth_code': authCode,
+            'access_token': accessToken
+        }),
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Csrf-Token': XHRCSRFToken
+        }
+    }).then(function(res) {
+        return res.json();
+    }).then(function(obj) {
+        console.log('authHandle:', obj.authHandle);
+        localStorage['auth-handle-' + adswissAppName] = JSON.stringify({
+            token: obj.authHandle,
+            expiresAt: new Date(new Date().getTime() + 1000 * 12 * 60 * 60).toISOString(), // 12 hours
+            lastUsedAt: new Date().toISOString()
+        });
+        location.href = '@redirectDest';
+    });
+</script>
+</body>
+</html>

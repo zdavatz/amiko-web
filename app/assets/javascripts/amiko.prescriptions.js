@@ -611,6 +611,25 @@ var UI = {
                         .on('click', OAuth.SDS.login)
                 );
             }
+            var oauthADSwissContainer = $('#oauth-adswiss-status').empty();
+
+            if (OAuth.ADSwiss.isLoggedIn()) {
+                oauthADSwissContainer
+                .append($('<span>').text('HIN ID: ' + OAuth.ADSwiss.currentCredentials().hinId))
+                .append(
+                    $('<button>')
+                        .attr('type', 'button')
+                        .text(PrescriptionLocalization.logout_from_hin_adswiss)
+                        .on('click', OAuth.ADSwiss.logout)
+                );
+            } else {
+                oauthADSwissContainer.append(
+                    $('<button>')
+                        .attr('type', 'button')
+                        .text(PrescriptionLocalization.login_with_hin_adswiss)
+                        .on('click', OAuth.ADSwiss.login)
+                );
+            }
         }
     },
     Patient: {
@@ -933,6 +952,127 @@ var OAuth = {
                 return Doctor.read().then(UI.Doctor.applyToModal);
             });
         }
+    },
+    ADSwiss: {
+        currentCredentials: function() {
+            return OAuth.getWithApplicationName(adswissAppName);
+        },
+        isLoggedIn: function() {
+            return !!OAuth.ADSwiss.currentCredentials();
+        },
+        login: function() {
+            location.href = '/oauth/adswiss';
+        },
+        logout: function() {
+            localStorage.removeItem('oauth-' + adswissAppName);
+            localStorage.removeItem('auth-handle-' + adswissAppName);
+            UI.Doctor.reloadOAuthState();
+        },
+        fetchSAML: function() {
+            return OAuth.renewTokenIfNeeded(adswissAppName)
+                .then(function(oauth) {
+                    return Promise.resolve($.post('/adswiss/saml?access_token=' + encodeURIComponent(oauth.accessToken)));
+                })
+                .then(function(obj) {
+                    return obj.epdAuthUrl;
+                });
+        },
+        // @return {
+        //     token: string,
+        //     expiresAt: Date,
+        //     lastUsedAt: Date
+        // }
+        getAuthHandle: function() {
+            // if (1) return  {token:'aaaa', expiresAt: new Date("2024-08-16T13:17:51.979Z" ), lastUsedAt: new Date()};
+            var str = localStorage['auth-handle-' + adswissAppName];
+            if (!str) return null;
+            var obj = JSON.parse(str);
+            obj.expiresAt = new Date(obj.expiresAt);
+            obj.lastUsedAt = new Date(obj.lastUsedAt);
+            var now = new Date();
+            if (now >= obj.expiresAt || now.getTime() >= obj.lastUsedAt + 2 * 60 * 60 * 1000) { // Expires after 2 hours of idle
+                localStorage.removeItem('auth-handle-' + adswissAppName);
+                return null;
+            }
+            return obj;
+        },
+        updateAuthHandleLastUsed: function() {
+            var authHandle = OAuth.ADSwiss.getAuthHandle();
+            if (!authHandle) {
+                console.warn('Cannot update auth handle lastUsed');
+                return;
+            }
+            localStorage['auth-handle-' + adswissAppName] = JSON.stringify({
+                token: authHandle.token,
+                expiresAt: authHandle.expiresAt.toISOString(),
+                lastUsedAt: new Date().toISOString()
+            });
+        },
+        makeQRCodeWithPrescription: function(prescription) {
+            var authHandle = OAuth.ADSwiss.getAuthHandle();
+            if (!authHandle) return Promise.reject();
+            function formatDateForEPrescription(dateStr) {
+                // dd.mm.yyyy -> yyyy-mm-dd
+                var parts = dateStr.split('.');
+                if (parts.length !== 3) return null;
+                return parts[2] + '-' + parts[1] + '-' + parts[0];
+            }
+
+            var ePrescriptionObj = {
+                'Patient': {
+                    'FName': prescription.patient.given_name,
+                    'LName': prescription.patient.family_name,
+                    'BDt': formatDateForEPrescription(prescription.patient.birth_date)
+                },
+                'Medicaments': prescription.medications.map(function(m){
+                    return {
+                        'Id': m.eancode,
+                        'IdType': 2 // GTIN
+                    };
+                }),
+                'MedType': 3, // Prescription
+                'Id': crypto.randomUUID(),
+                'Auth': prescription.operator.gln || '',
+                'Dt': new Date().toISOString()
+            };
+
+            var encoder = new TextEncoder('utf-8');
+
+            var bodyStream = ReadableStream
+                .from([encoder.encode(JSON.stringify(ePrescriptionObj))])
+                .pipeThrough(new CompressionStream("gzip"));
+            return new Response(bodyStream).blob()
+            .then(function(blob) {
+               return new Promise(function(res) {
+                    var reader = new FileReader();
+                    reader.onload = function() {
+                        var dataUrl = reader.result;
+                        var base64 = dataUrl.split(',')[1];
+                        res(base64);
+                    };
+                    reader.readAsDataURL(blob);
+                });
+            }).then(function(str) {
+                return fetch('/adswiss/eprescription_qr?auth_handle=' + encodeURIComponent(authHandle.token), {
+                    method: 'POST',
+                    body: 'CHMED16A1' + str,
+                    headers: {
+                        'Content-Type': 'text/plain',
+                        'Csrf-Token': XHRCSRFToken
+                    }
+                });
+            }).then(function(res) {
+                OAuth.ADSwiss.updateAuthHandleLastUsed();
+                return res.blob();
+            }).then(function(blob) {
+                var url = URL.createObjectURL(blob);
+                return new Promise(function(res) {
+                    var img = new Image();
+                    img.onload = function() { res(img); };
+                    img.src = url;
+                });
+            });
+        }
     }
 };
 
@@ -1071,7 +1211,7 @@ document.addEventListener('DOMContentLoaded', function() {
         importFromZip(e.currentTarget.files[0]);
     });
     document.getElementById('prescription-print').addEventListener('click',
-        generatePDF
+        generatePDFWithEPrescriptionPrompt
     );
     $(document).on('change', 'input.prescription-item-comment', function(e) {
         var index = $(e.target).data('prescription-item-index');
@@ -1089,6 +1229,15 @@ document.addEventListener('DOMContentLoaded', function() {
     if (localStorage['needs-import-sds']) {
         OAuth.SDS.importProfile(false);
         localStorage.removeItem('needs-import-sds');
+    }
+    if (localStorage['ePrescription-flow-next'] === 'login-saml') {
+        OAuth.ADSwiss.fetchSAML().then(function(url) {
+            localStorage['ePrescription-flow-next'] = 'make-pdf';
+            document.location = url;
+        });
+    } else if (localStorage['ePrescription-flow-next'] === 'make-pdf') {
+        localStorage.removeItem('ePrescription-flow-next');
+        generatePDFWithEPrescriptionPrompt();
     }
 });
 
@@ -1225,22 +1374,43 @@ function importFromZip(file) {
     });
 }
 
-function generatePDF() {
+function generatePDFWithEPrescriptionPrompt() {
+    var currentId = Prescription.getCurrentId();
+    return (currentId ? Prescription.readComplete(currentId) : Prescription.fromCurrentUIState())
+        .then(function(prescription) {
+            var authHandle = OAuth.ADSwiss.getAuthHandle();
+            if (authHandle) {
+                return OAuth.ADSwiss.makeQRCodeWithPrescription(prescription)
+                    .then(function(qrCode) {
+                        return generatePDF(prescription, qrCode);
+                    });
+            }
+            if (confirm(PrescriptionLocalization.sign_eprescription_confirm)) {
+                if (OAuth.ADSwiss.isLoggedIn()) {
+                    return OAuth.ADSwiss.fetchSAML().then(function(url) {
+                        localStorage['ePrescription-flow-next'] = 'make-pdf';
+                        document.location = url;
+                    });
+                } else {
+                    localStorage['ePrescription-flow-next'] = 'login-saml';
+                    OAuth.ADSwiss.login();
+                }
+            } else {
+                generatePDF(prescription, null);
+            }
+        });
+}
+
+function generatePDF(prescription, qrCodeImage) {
+    if (!prescription) return Promise.reject('No prescription');
     var margin = 20;
-    (window.jspdf ? Promise.resolve() : Promise.resolve(
+    return (window.jspdf ? Promise.resolve() : Promise.resolve(
         $.getScript('/assets/javascripts/jspdf.umd.min.js')
     ))
     .then(function() {
-        var currentId = Prescription.getCurrentId();
-        return Promise.all([
-            currentId ? Prescription.readComplete(currentId) : Prescription.fromCurrentUIState(),
-            Doctor.getSignatureImage()
-        ]);
+        return qrCodeImage ? qrCodeImage : Doctor.getSignatureImage();
     })
-    .then(function(result) {
-        var prescription = result[0];
-        var signature = result[1];
-        if (!prescription) return;
+    .then(function(signature) {
         var doc = new jspdf.jsPDF();
         var fontSize = 11;
         doc.setFontSize(fontSize);

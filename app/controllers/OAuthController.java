@@ -156,7 +156,7 @@ public class OAuthController extends Controller {
     }
 
     public CompletionStage<Result> fetchADSwissSAML(Http.Request request, String accessToken) {
-        String url = "https://" + hinDomainForADSwiss() + "/authService/EPDAuth?targetUrl=" + URLEncoder.encode(adswissRedirectUri(request), StandardCharsets.UTF_8) + "&style=redirect";
+        String url = "https://" + hinDomainForADSwiss() + "/authService/EPDAuth?targetUrl=" + adswissRedirectUri(request) + "&style=redirect";
         return ws.url(url)
                 .addHeader("Accept", "application/json")
                 .addHeader("Authorization", "Bearer " + accessToken)

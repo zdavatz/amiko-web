@@ -95,17 +95,20 @@ public class OAuthController extends Controller {
     }
 
     public CompletionStage<String> fetchAccessTokenFromOAuthCode(Http.Request request, String code) {
+        String body = "grant_type=authorization_code"
+                + "&redirect_uri=" + URLEncoder.encode(this.redirectUri(request), StandardCharsets.UTF_8)
+                + "&code=" + URLEncoder.encode(code, StandardCharsets.UTF_8)
+                + "&client_id=" + HIN_CLIENT_ID
+                + "&client_secret=" + HIN_CLIENT_SECRET;
+        System.out.println("Fetch access token with body: " + body);
         return ws.url("https://oauth2.hin.ch/REST/v1/OAuth/GetAccessToken")
             .addHeader("Accept", "application/json")
             .addHeader("Content-Type", "application/x-www-form-urlencoded")
             .post(
-                "grant_type=authorization_code"
-                + "&redirect_uri=" + URLEncoder.encode(this.redirectUri(request), StandardCharsets.UTF_8)
-                + "&code=" + URLEncoder.encode(code, StandardCharsets.UTF_8)
-                + "&client_id=" + HIN_CLIENT_ID
-                + "&client_secret=" + HIN_CLIENT_SECRET
+                body
             ).thenApply(
           (WSResponse r) -> {
+              System.out.println("status: " + r.getStatus());
               return r.getBody();
           });
     }

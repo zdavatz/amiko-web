@@ -528,6 +528,7 @@ var Prescription = {
         return simplifiedPrescription;
     },
     readComplete: function(prescriptionId) {
+        console.log('Reading Precription: ', prescriptionId);
         return getPrescriptionDatabase().then(function (db) {
             return new Promise(function(resolve, reject) {
                 var req = db.transaction("prescriptions")
@@ -1037,12 +1038,17 @@ var OAuth = {
             };
 
             var encoder = new TextEncoder('utf-8');
-
-            var bodyStream = ReadableStream
-                .from([encoder.encode(JSON.stringify(ePrescriptionObj))])
+            console.log('[PDF generation] Making EPrescription (1)');
+            var bodyStream = new ReadableStream({
+                start: function(controller) {
+                    controller.enqueue(encoder.encode(JSON.stringify(ePrescriptionObj)));
+                    controller.close();
+                }
+            })
                 .pipeThrough(new CompressionStream("gzip"));
             return new Response(bodyStream).blob()
             .then(function(blob) {
+                console.log('[PDF generation] Making EPrescription (2)');
                return new Promise(function(res) {
                     var reader = new FileReader();
                     reader.onload = function() {
@@ -1053,6 +1059,7 @@ var OAuth = {
                     reader.readAsDataURL(blob);
                 });
             }).then(function(str) {
+                console.log('[PDF generation] Making EPrescription (3)');
                 return fetch('/adswiss/eprescription_qr?auth_handle=' + encodeURIComponent(authHandle.token), {
                     method: 'POST',
                     body: 'CHMED16A1' + str,
@@ -1062,13 +1069,24 @@ var OAuth = {
                     }
                 });
             }).then(function(res) {
+                console.log('[PDF generation] Making Response status: ', res.status);
+                if (res.status >= 300) {
+                    return res.text().then(function(t) {
+                        console.log('Unexpected status, body: ', t);
+                        throw new Error('Unexpected QR Response');
+                    });
+                }
                 OAuth.ADSwiss.updateAuthHandleLastUsed();
                 return res.blob();
             }).then(function(blob) {
+                console.log('[PDF generation] Making EPrescription (4)');
                 var url = URL.createObjectURL(blob);
-                return new Promise(function(res) {
+                return new Promise(function(res, rej) {
                     var img = new Image();
                     img.onload = function() { res(img); };
+                    img.onerror = function (e) {
+                        rej(new Error('Cannot generate image from response'));
+                    };
                     img.src = url;
                 });
             });
@@ -1376,10 +1394,14 @@ function importFromZip(file) {
 
 function generatePDFWithEPrescriptionPrompt() {
     var currentId = Prescription.getCurrentId();
+    console.log('[PDF generation] currentId', currentId);
     return (currentId ? Prescription.readComplete(currentId) : Prescription.fromCurrentUIState())
         .then(function(prescription) {
+            console.log('[PDF generation] got prescription', prescription);
             var authHandle = OAuth.ADSwiss.getAuthHandle();
+            console.log('[PDF generation] auth handle', authHandle);
             if (authHandle) {
+                console.log('[PDF generation] making QR Code1');
                 return OAuth.ADSwiss.makeQRCodeWithPrescription(prescription)
                     .then(function(qrCode) {
                         return generatePDF(prescription, qrCode);
@@ -1398,11 +1420,15 @@ function generatePDFWithEPrescriptionPrompt() {
             } else {
                 generatePDF(prescription, null);
             }
+        }).catch(function(e) {
+            console.log(e);
+            alert(e.message || e);
         });
 }
 
 function generatePDF(prescription, qrCodeImage) {
     if (!prescription) return Promise.reject('No prescription');
+    console.log('[PDF generation] Loading JSPDF');
     var margin = 20;
     return (window.jspdf ? Promise.resolve() : Promise.resolve(
         $.getScript('/assets/javascripts/jspdf.umd.min.js')
@@ -1411,6 +1437,7 @@ function generatePDF(prescription, qrCodeImage) {
         return qrCodeImage ? qrCodeImage : Doctor.getSignatureImage();
     })
     .then(function(signature) {
+        console.log('[PDF generation] Got signature: ', signature);
         var doc = new jspdf.jsPDF();
         var fontSize = 11;
         doc.setFontSize(fontSize);

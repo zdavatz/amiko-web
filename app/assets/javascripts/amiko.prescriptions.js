@@ -1038,9 +1038,13 @@ var OAuth = {
             };
 
             var encoder = new TextEncoder('utf-8');
-
-            var bodyStream = ReadableStream
-                .from([encoder.encode(JSON.stringify(ePrescriptionObj))])
+            console.log('[PDF generation] Making EPrescription (1)');
+            var bodyStream = new ReadableStream({
+                start: function(controller) {
+                    controller.enqueue(encoder.encode(JSON.stringify(ePrescriptionObj)));
+                    controller.close();
+                }
+            })
                 .pipeThrough(new CompressionStream("gzip"));
             return new Response(bodyStream).blob()
             .then(function(blob) {

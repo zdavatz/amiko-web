@@ -19,6 +19,14 @@
                 <span style="display: block;">@messages("compendium")</span>
             </div>
         </div>
+        <div class="nav-button" id="favourites-button">
+            <div class="center-image">
+                <button class="state-button">
+                    <img border="0" alt="Favourites" src="@routes.Assets.versioned("images/favorites@2x.png")" height="28"/>
+                </button>
+                <span style="display: block;">@messages("favourites")</span>
+            </div>
+        </div>
         <!-- INTERACTIONS BUTTON -->
         @if(vc.showInteraction) {
             <div class="nav-button" id="interactions-button">

@@ -533,6 +533,7 @@ dialog.prescriptions-doctor {
 
 .tt-dataset-articles {
     overflow-x: hidden;
+    position: relative;
 }
 .article-packinfo {
     position: relative;
@@ -549,6 +550,9 @@ dialog.prescriptions-doctor {
 }
 .tt-suggestion {
     width: 100%;
+}
+.twitter-typeahead .typeahead-suggestion-wrapper.tt-suggestion {
+    padding-left: 0;
 }
 .article-packinfo-add-prescription-wrapper {
     display: none;
@@ -641,29 +645,31 @@ dialog.prescriptions-doctor {
     }
 }
 
-.shake {
-    animation: 0.5s linear shake;
+/*c79ad33bd74a5d9bcf5e8fe9107d3554d291215a*/
+
+.add-favourites-button {
+    display: inline-block;
+    background-image: url(/assets/images/28-star.png);
+    background-size: cover;
+    width: 26px;
+    height: 26px;
+    position: absolute;
+    right: 0;
+    background-color: var(--background-color-normal);
 }
 
-@keyframes shake {
-  0% {
-    transform: rotate(0deg);
-  }
-  20% {
-    transform: rotate(-20deg);
-  }
-  40% {
-    transform: rotate(20deg);
-  }
-  60% {
-    transform: rotate(-20deg);
-  }
-  80% {
-    transform: rotate(20deg);
-  }
-  100% {
-    transform: rotate(0deg);
-  }
+.tt-cursor .add-favourites-button {
+    background-color: var(--background-color-gray);
+}
+
+@media (prefers-color-scheme: dark) {
+    .add-favourites-button {
+        background-image: url(/assets/images/28-star-gy.png);
+    }
+}
+
+.add-favourites-button.--favourited {
+    background-image: url(/assets/images/28-star-ye.png);
 }
 
 /* Removes annoying 'x' from IE, Edge and Chrome */

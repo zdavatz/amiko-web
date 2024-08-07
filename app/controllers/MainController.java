@@ -136,6 +136,15 @@ public class MainController extends Controller {
         return ok(index.render("", "", "", "", "", vc, messages));
     }
 
+    public Result favourites(Http.Request request, String atc_query) {
+        ViewContext vc = getViewContext(request);
+        Messages messages = messagesApi.preferred(request);
+        if (!atc_query.equals("")) {
+            return ok(index.render("", "", atc_query, "atc", "", vc, messages));
+        }
+        return ok(index.render("", "", "", "", "", vc, messages));
+    }
+
     public Result prescription(Http.Request request, String lang, String key) {
         ViewContext vc = getViewContext(request);
         Messages messages = messagesApi.preferred(request);

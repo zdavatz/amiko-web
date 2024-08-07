@@ -4,6 +4,7 @@
 
 # Home page
 GET     /                           controllers.MainController.index(request: Request, atc_query: String?="")
+GET     /favourites                 controllers.MainController.favourites(request: Request, atc_query: String?="")
 GET     /name                       controllers.MainController.getName(lang: String?="de", name: String)
 GET     /owner                      controllers.MainController.getOwner(lang: String?="de", owner: String)
 GET     /atc                        controllers.MainController.getATC(lang: String?="de", atc: String)

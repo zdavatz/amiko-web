@@ -465,6 +465,7 @@ $ ->
     $(this).toggleClass 'nav-button-active'
     # set search state
     setSearchUIState(SearchState.Favourites)
+    window.location.assign '/favourites'
 
   # Detect click on search buttons
   setSearchType = (type) ->

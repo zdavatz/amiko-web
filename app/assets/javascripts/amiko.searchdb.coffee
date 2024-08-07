@@ -55,7 +55,7 @@ $ ->
     else if type == SearchType.Atc
       return '/atc?lang=' + lang + '&atc='
     else if type == SearchType.Regnr
-      return '/regnr?lang=' + lang + '&regnr='
+      return '/regnrs?lang=' + lang + '&regnrs='
     else if type == SearchType.Therapie
       return '/therapy?lang=' + lang + '&therapy='
     else if type == SearchType.FullText
@@ -274,17 +274,28 @@ $ ->
       atcCodeStr = "<p>" + atcCodeStr + " - " + atcTitleStr + "</p><p>k.A.</p>";
     return atcCodeStr
 
+  sourceWithFavDefaults = (query, sync, async)->
+    if query == ''
+      if search_state == SearchState.Favourites
+        getFavourtesRegNrs().then (regnrs)->
+          regnrsStr = regnrs.map((x)->x.regnrs).join(',').split(',').filter((x)->x.length).join(',')
+          setSearchType(SearchType.Regnr)
+          articles.search(regnrsStr, sync, async)
+          setSearchType(SearchType.Title)
+      else
+        sync([])
+    else
+      articles.search(query, sync, async)
   typeaheadCtrl.typeahead
     menu: $('#special-dropdown')
     hint: false
     highlight: false
-    minLength: 1
+    minLength: 0
   ,
     name: 'articles'
     displayKey: 'name'
     limit: '300'
-    # "ttAdapter" wraps the suggestion engine in an adapter that is compatible with the typeahead jQuery plugin
-    source: articles.ttAdapter()
+    source: sourceWithFavDefaults
     templates:
       suggestion: (data) ->
         favouritesButton = '<div class="add-favourites-button ' + (if cachedFavourites.has(data.regnrs) then '--favourited' else '') + '" data-regnrs="' + data.regnrs + '"></div>'
@@ -471,6 +482,7 @@ $ ->
   setSearchType = (type) ->
     disableButton(search_type)
     search_type = type
+    search_query = setSearchQuery(language, search_type)
     localStorage.setItem 'search-type', type
     console.log "search type = " + getSearchTypeStr(type) + " for " + typed_input
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)

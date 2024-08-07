@@ -384,6 +384,11 @@ public class MainController extends Controller {
         return names.thenApply(f -> ok(toJson(f))).join();
     }
 
+    public Result getRegnrs(String lang, String regnrs) {
+        CompletableFuture<List<Article>> names = getArticlesFromRegnrs(lang, regnrs);
+        return names.thenApply(f -> ok(toJson(f))).join();
+    }
+
     public Result getTherapy(String lang, String therapy) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchTherapy(lang, therapy));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()

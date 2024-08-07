@@ -9,6 +9,7 @@ GET     /name                       controllers.MainController.getName(lang: Str
 GET     /owner                      controllers.MainController.getOwner(lang: String?="de", owner: String)
 GET     /atc                        controllers.MainController.getATC(lang: String?="de", atc: String)
 GET     /regnr                      controllers.MainController.getRegnr(lang: String?="de", regnr: String)
+GET     /regnrs                     controllers.MainController.getRegnrs(lang: String?="de", regnrs: String)
 GET     /therapy                    controllers.MainController.getTherapy(lang: String?="de", therapy: String)
 GET     /fulltext                   controllers.MainController.getFullText(lang: String?="de", key: String?="")
 

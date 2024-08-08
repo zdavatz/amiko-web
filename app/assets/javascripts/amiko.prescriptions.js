@@ -255,9 +255,13 @@ var Patient = {
     },
     deleteAll: function() {
         return getPrescriptionDatabase().then(function(db) {
-            return db.transaction("patients", "readwrite")
-                .objectStore("patients")
-                .clear();
+            return new Promise(function(resolve, reject){
+                var req = db.transaction("patients", "readwrite")
+                    .objectStore("patients")
+                    .clear();
+                req.onsuccess = resolve;
+                req.onerror = reject;
+            });
         });
     },
     list: function() {
@@ -495,9 +499,13 @@ var Prescription = {
     },
     deleteAll: function() {
         return getPrescriptionDatabase().then(function(db) {
-            return db.transaction("prescriptions", "readwrite")
-                .objectStore("prescriptions")
-                .clear();
+            return new Promise(function(resolve, reject){
+                var req = db.transaction("prescriptions", "readwrite")
+                    .objectStore("prescriptions")
+                    .clear();
+                req.onsuccess = resolve;
+                req.onerror = reject;
+            });
         });
     },
     listSimplified: function(patientId) {

@@ -405,6 +405,19 @@ public class MainController extends Controller {
         return names.thenApply(f -> ok(toJson(f))).join();
     }
 
+    public Result getFullTextHashes(String lang, String hashes) {
+        ArrayList<String> list_of_hash = new ArrayList<>();
+        String[] hs = hashes.split(",");
+        for (String h : hs) {
+            list_of_hash.add(h);
+        }
+        CompletableFuture<List<FullTextEntry>> future = CompletableFuture.supplyAsync(()->searchFullTextHashes(lang, list_of_hash));
+        CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
+                .map(n -> new Article(0, n.getHash(), n.getTitle(), n.getKeyword(), "", "", "", n.getRegnrs(), "", "", "", "", ""))
+                .collect(Collectors.toList()));
+        return names.thenApply(f -> ok(toJson(f))).join();
+    }
+
     public CompletableFuture<List<Article>> getArticlesFromRegnrs(String lang, String regnrs) {
         ArrayList<String> list_of_regnrs = new ArrayList<>();
         String[] regs = regnrs.split(",");
@@ -843,6 +856,37 @@ public class MainController extends Controller {
             conn.close();
         } catch (SQLException e) {
             System.err.println(">> Frequency DB: SQLException in searchFullText for " + word);
+        }
+
+        return search_results;
+    }
+    private List<FullTextEntry> searchFullTextHashes(String lang, List<String> hashes) {
+        List<FullTextEntry> search_results = new ArrayList<>();
+        if (hashes.size() == 0) {
+            return search_results;
+        }
+
+        try {
+            Connection conn = lang.equals("de") ? frequency_de_db.getConnection() : frequency_fr_db.getConnection();
+            Statement stat = conn.createStatement();
+
+            String hashSql = "";
+            for (String hash : hashes) {
+                if (hashSql.length() > 0) {
+                    hashSql += ",";
+                }
+                hashSql += "'" + hash + "'";
+            }
+            String query = "select * from " + FREQUENCY_TABLE + " where id in (" + hashSql + ")";
+            ResultSet rs = stat.executeQuery(query);
+            if (rs!=null) {
+                while (rs.next()) {
+                    search_results.add(cursorToFullTextEntry(rs));
+                }
+            }
+            conn.close();
+        } catch (SQLException e) {
+            System.err.println(">> Frequency DB: SQLException in searchFullTextHashes for " + hashes);
         }
 
         return search_results;

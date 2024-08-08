@@ -12,6 +12,7 @@ GET     /regnr                      controllers.MainController.getRegnr(lang: St
 GET     /regnrs                     controllers.MainController.getRegnrs(lang: String?="de", regnrs: String)
 GET     /therapy                    controllers.MainController.getTherapy(lang: String?="de", therapy: String)
 GET     /fulltext                   controllers.MainController.getFullText(lang: String?="de", key: String?="")
+GET     /fulltext_hash              controllers.MainController.getFullTextHashes(lang: String?="de", hashes: String?="")
 
 # 2. parameter will appear in URI
 GET     /interactions/:basket          controllers.MainController.interactionsBasketWithoutLang(request: Request, basket: String)

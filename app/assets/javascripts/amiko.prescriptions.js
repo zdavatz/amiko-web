@@ -1329,6 +1329,7 @@ function exportEverything() {
 
 function importFromZip(file) {
     var amksPromise;
+    var otherPromiseFns = [];
     if (file.name.endsWith('.zip')) {
         amksPromise = (window.JSZip ? Promise.resolve() : Promise.resolve(
             $.getScript('/assets/javascripts/jszip.min.js')
@@ -1344,15 +1345,36 @@ function importFromZip(file) {
                 Object.keys(zip.files)
                     .map(function(key) {
                         var file = zip.files[key];
-                        if (!file.name.endsWith('.amk') || file.dir) {
+                        if (file.dir) {
                             return null;
                         }
-                        return file.async('text')
-                            .then(Prescription.fromAMKString)
-                            .then(function(prescription) {
-                                prescription.filename = file.name;
-                                return prescription;
-                            });
+                        if (file.name.endsWith('.amk')) {
+                            return file.async('text')
+                                .then(Prescription.fromAMKString)
+                                .then(function(prescription) {
+                                    prescription.filename = file.name;
+                                    return prescription;
+                                });
+                        } else if (file.name === 'favourites.json') {
+                            return file.async('text')
+                                    .then(function(str) {
+                                        var regnrs = JSON.parse(str);
+                                        otherPromiseFns.push(function() {
+                                            return Promise.all(regnrs.map(Favourites.addRegNrs));
+                                        });
+                                    })
+                                    .then(function() { return null; });
+                        } else if (file.name === 'ft-favourites.json') {
+                            return file.async('text')
+                                .then(function(str) {
+                                    var hashes = JSON.parse(str);
+                                    otherPromiseFns.push(function() {
+                                        return Promise.all(hashes.map(Favourites.addFullTextHash));
+                                    });
+                                })
+                                .then(function() { return null; });
+                        }
+                        return null;
                     })
                     .filter(function(x){ return x !== null; })
             );
@@ -1371,6 +1393,7 @@ function importFromZip(file) {
         if (amks.length > 1 && !window.confirm(PrescriptionLocalization.prescription_confirm_clear)) {
             return [];
         }
+        amks = amks.filter(a => a !== null);
         amks.sort(function(a, b) {
             return a.filename < b.filename ? -1 : 1;
         });
@@ -1378,7 +1401,9 @@ function importFromZip(file) {
         var clear = amks.length > 1 ?
             Promise.all([
                 Prescription.deleteAll(),
-                Patient.deleteAll()
+                Patient.deleteAll(),
+                Favourites.removeAllRegNrs(),
+                Favourites.removeAllFullTextHash(),
             ]) :
             Promise.resolve();
         return clear
@@ -1403,6 +1428,9 @@ function importFromZip(file) {
             Patient.setCurrentId(amks[0].patient_id);
         }
         UI.Prescription.reloadInfo();
+    })
+    .then(function() {
+        return Promise.all(otherPromiseFns.map(function(fn){ return fn(); }));
     })
     .catch(function(e) {
         alert(e.toString());

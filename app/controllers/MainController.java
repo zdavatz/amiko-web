@@ -385,7 +385,14 @@ public class MainController extends Controller {
     }
 
     public Result getRegnrs(String lang, String regnrs) {
-        CompletableFuture<List<Article>> names = getArticlesFromRegnrs(lang, regnrs);
+        ArrayList<String> list_of_regnrs = new ArrayList<>();
+        String[] regs = regnrs.split(",");
+        for (String r : regs)
+            list_of_regnrs.add(r);
+        CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchRegnrs(lang, list_of_regnrs));
+        CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
+                .map(n -> new Article(n.getId(), "", n.getTitle(), "", n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
+                .collect(Collectors.toList()));
         return names.thenApply(f -> ok(toJson(f))).join();
     }
 
@@ -600,6 +607,37 @@ public class MainController extends Controller {
             String query = "select " + SHORT_TABLE + " from " + DATABASE_TABLE + " where "
                     + KEY_REGNRS + " like " + "'%, " + regnr + "%' or "
                     + KEY_REGNRS + " like " + "'" + regnr + "%'";
+            ResultSet rs = stat.executeQuery(query);
+            if (rs!=null) {
+                while (rs.next()) {
+                    med_auth.add(cursorToShortMedi(rs));
+                }
+            }
+            conn.close();
+        } catch (SQLException e) {
+            System.err.println(">> SqlDatabase: SQLException in searchRegnr!");
+        }
+
+        return med_auth;
+    }
+
+    private List<Medication> searchRegnrs(String lang, List<String> regnrs) {
+        List<Medication> med_auth = new ArrayList<>();
+        if (regnrs.size() == 0) {
+            return med_auth;
+        }
+
+        try {
+            Connection conn = lang.equals("de") ? german_db.getConnection() : french_db.getConnection();
+            Statement stat = conn.createStatement();
+            String conditionSql = "";
+            for (String regnr : regnrs) {
+                if (conditionSql.length() > 0) conditionSql += " or ";
+                conditionSql += KEY_REGNRS + " like " + "'%, " + regnr + "%' or "
+                        + KEY_REGNRS + " like " + "'" + regnr + "%'";
+            }
+            String query = "select " + SHORT_TABLE + " from " + DATABASE_TABLE + " where " + conditionSql;
+            System.out.println("SQL: " + query);
             ResultSet rs = stat.executeQuery(query);
             if (rs!=null) {
                 while (rs.next()) {

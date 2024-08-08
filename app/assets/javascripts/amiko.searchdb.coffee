@@ -79,86 +79,7 @@ $ ->
       params[key] = decodeURIComponent(val)
     return params
 
-  getFavouritesDB = ->
-    new Promise (resolve, reject)->
-      request = window.indexedDB.open("favourites", 1)
-      request.onerror = (event)->
-        console.error('Cannot open database', request.errorCode)
-        reject(event)
-      request.onsuccess = (event)->
-        db = request.result
-        getFavouritesDB = -> Promise.resolve(db)
-        resolve(db)
-      request.onupgradeneeded = (event)->
-        db = event.target.result
-        if event.oldVersion <= 0
-          db.createObjectStore("favourites", { keyPath: "regnrs", autoIncrement: false })
-          db.createObjectStore("ft_favourites", { keyPath: "hashId", autoIncrement: false }) # full text
 
-  getFavourtesRegNrs = ->
-    getFavouritesDB().then (db)->
-      new Promise (resolve, reject)->
-        objectStore = db.transaction("favourites").objectStore("favourites")
-        request = objectStore.getAll()
-        request.onsuccess = (event)-> resolve(event.target.result)
-        request.onerror = reject
-  addFavourtesRegNrs = (regnrs)->
-    getFavouritesDB().then (db)->
-      new Promise (resolve, reject)->
-        req = db.transaction("favourites", "readwrite")
-            .objectStore("favourites")
-            .put({ regnrs: regnrs })
-        req.onsuccess = (res)->
-          reloadCachedFavourites()
-          resolve(res)
-        req.onerror = reject
-  removeFavourtesRegNrs = (regnrs)->
-    getFavouritesDB().then (db)->
-      new Promise (resolve, reject)->
-        req = db
-            .transaction("favourites", "readwrite")
-            .objectStore("favourites")
-            .delete(regnrs)
-        req.onsuccess = (res)->
-          reloadCachedFavourites()
-          resolve(res)
-        req.onerror = reject
-  getFullTextFavourtesHashes = ->
-    getFavouritesDB().then (db)->
-      new Promise (resolve, reject)->
-        objectStore = db.transaction("ft_favourites").objectStore("ft_favourites")
-        request = objectStore.getAll()
-        request.onsuccess = (event)-> resolve(event.target.result)
-        request.onerror = reject
-  addFullTextFavourtesHash = (hashId)->
-    getFavouritesDB().then (db)->
-      new Promise (resolve, reject)->
-        req = db.transaction("ft_favourites", "readwrite")
-            .objectStore("ft_favourites")
-            .put({ hashId: hashId })
-        req.onsuccess = (res)->
-          reloadCachedFavourites()
-          resolve(res)
-        req.onerror = reject
-  removeFullTextFavourtesHash = (hashId)->
-    getFavouritesDB().then (db)->
-      new Promise (resolve, reject)->
-        req = db
-            .transaction("ft_favourites", "readwrite")
-            .objectStore("ft_favourites")
-            .delete(hashId)
-        req.onsuccess = (res)->
-          reloadCachedFavourites()
-          resolve(res)
-        req.onerror = reject
-
-  cachedFavourites = new Set()
-  cachedFullTextFavourites = new Set()
-  reloadCachedFavourites = ->
-    getFavourtesRegNrs().then (favs)-> cachedFavourites = new Set(favs.map((a)-> a.regnrs))
-    getFullTextFavourtesHashes().then (favs)-> cachedFullTextFavourites = new Set(favs.map((a)->a.hashId))
-
-  reloadCachedFavourites()
   #
   # Local storage handlers
   #
@@ -229,9 +150,9 @@ $ ->
       filter: (list) ->
         if search_state == SearchState.Favourites
           if search_type == SearchType.FullText || search_type == SearchType.FullTextHashes
-            list = list.filter((m)-> cachedFullTextFavourites.has(m.hash))
+            list = list.filter((m)-> Favourites.cachedFullText.has(m.hash))
           else
-            list = list.filter((m)-> cachedFavourites.has(m.regnrs))
+            list = list.filter((m)-> Favourites.cached.has(m.regnrs))
 
         # Sets the number of results in search field (on the right)
         document.getElementById('num-results').textContent=list.length
@@ -285,8 +206,8 @@ $ ->
     if query == ''
       if search_state == SearchState.Favourites
         if search_type == SearchType.FullText || search_type == SearchType.FullTextHashes
-          getFullTextFavourtesHashes().then (hashes)->
-            hashesStr = hashes.map((x)->x.hashId).join(',')
+          Favourites.getFullTextHashes().then (hashes)->
+            hashesStr = hashes.join(',')
             search_type = SearchType.FullTextHashes
             search_query = setSearchQuery(language, search_type)
             articles.search(hashesStr, sync, async)
@@ -294,8 +215,8 @@ $ ->
             search_query = setSearchQuery(language, search_type)
         else
           original_search_type = search_type
-          getFavourtesRegNrs().then (regnrs)->
-            regnrsStr = regnrs.map((x)->x.regnrs).join(',').split(',').filter((x)->x.length).join(',')
+          Favourites.getRegNrs().then (regnrs)->
+            regnrsStr = regnrs.join(',').split(',').filter((x)->x.length).join(',')
             search_type = SearchType.Regnrs
             search_query = setSearchQuery(language, search_type)
             articles.search(regnrsStr, sync, async)
@@ -318,7 +239,7 @@ $ ->
     source: sourceWithFavDefaults
     templates:
       suggestion: (data) ->
-        favouritesButton = '<div class="add-favourites-button ' + (if cachedFavourites.has(data.regnrs) then '--favourited' else '') + '" data-regnrs="' + data.regnrs + '"></div>'
+        favouritesButton = '<div class="add-favourites-button ' + (if Favourites.cached.has(data.regnrs) then '--favourited' else '') + '" data-regnrs="' + data.regnrs + '"></div>'
         if search_type == SearchType.Title
           packsStr = (packinfo)->
             "<p class='article-packinfo' style='color:#{packinfo.color};' data-prescription='#{packInfoDataForPrescriptionBasket(data, packinfo)}'>
@@ -345,7 +266,7 @@ $ ->
           <span style='color:gray;font-size:0.85em;'>#{data.therapy}</span></div>"
         else if search_type == SearchType.FullText || search_type == SearchType.FullTextHashes
           favFTButton = '<div class="add-favourites-button --full-text' +
-            (if cachedFullTextFavourites.has(data.hash) then ' --favourited' else '') +
+            (if Favourites.cachedFullText.has(data.hash) then ' --favourited' else '') +
             '" data-hash="' + data.hash + '"></div>'
           "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>" + favFTButton +
           "<p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>"
@@ -537,15 +458,15 @@ $ ->
     hash = $(e.target).data('hash')
     if hash
       hashStr = String(hash)
-      if cachedFullTextFavourites.has(hashStr)
-        removeFullTextFavourtesHash(hashStr)
+      if Favourites.cachedFullText.has(hashStr)
+        Favourites.removeFullTextHash(hashStr)
       else
-        addFullTextFavourtesHash(hashStr)
+        Favourites.addFullTextHash(hashStr)
     else
       regnrs = String($(e.target).data('regnrs'))
-      if cachedFavourites.has(regnrs)
-        removeFavourtesRegNrs(regnrs)
+      if Favourites.cached.has(regnrs)
+        Favourites.removeRegNrs(regnrs)
       else
-        addFavourtesRegNrs(regnrs)
+        Favourites.addRegNrs(regnrs)
     $(e.target).toggleClass('--favourited')
   )

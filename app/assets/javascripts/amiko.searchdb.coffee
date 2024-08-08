@@ -15,6 +15,9 @@ $ ->
     Regnr: 4
     Therapie: 5
     FullText: 6
+    # Invisible search type for favourites initialisation
+    Regnrs: 7
+    FullTextHashes: 8
 
   #
   # Functions
@@ -55,11 +58,15 @@ $ ->
     else if type == SearchType.Atc
       return '/atc?lang=' + lang + '&atc='
     else if type == SearchType.Regnr
-      return '/regnrs?lang=' + lang + '&regnrs='
+      return '/regnr?lang=' + lang + '&regnr='
     else if type == SearchType.Therapie
       return '/therapy?lang=' + lang + '&therapy='
     else if type == SearchType.FullText
       return '/fulltext?lang=' + lang + '&key='
+    else if type == SearchType.Regnrs
+      return '/regnrs?lang=' + lang + '&regnrs='
+    else if type == SearchType.FullTextHashes
+      return '/fulltext_hash?lang=' + lang + '&hashes='
     return '/name?lang=' + lang + '&name='
 
   getParams = ->
@@ -221,7 +228,7 @@ $ ->
         return search_query + query
       filter: (list) ->
         if search_state == SearchState.Favourites
-          if search_type == SearchType.FullText
+          if search_type == SearchType.FullText || search_type == SearchType.FullTextHashes
             list = list.filter((m)-> cachedFullTextFavourites.has(m.hash))
           else
             list = list.filter((m)-> cachedFavourites.has(m.regnrs))
@@ -315,7 +322,7 @@ $ ->
           "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>" + favouritesButton +
           "<p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:gray;font-size:0.85em;'>#{atcCodeElement(data)}</span></div>"
-        else if search_type == SearchType.Regnr
+        else if search_type == SearchType.Regnr || search_type == SearchType.Regnrs
           "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>" + favouritesButton +
           "<p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:#8888cc;font-size:1.0em;'><p>#{data.regnrs}</p></span></div>"
@@ -323,7 +330,7 @@ $ ->
           "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>" + favouritesButton +
           "<p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:gray;font-size:0.85em;'>#{data.therapy}</span></div>"
-        else if search_type == SearchType.FullText
+        else if search_type == SearchType.FullText || search_type == SearchType.FullTextHashes
           favFTButton = '<div class="add-favourites-button --full-text' +
             (if cachedFullTextFavourites.has(data.hash) then ' --favourited' else '') +
             '" data-hash="' + data.hash + '"></div>'

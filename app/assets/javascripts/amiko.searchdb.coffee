@@ -284,12 +284,25 @@ $ ->
   sourceWithFavDefaults = (query, sync, async)->
     if query == ''
       if search_state == SearchState.Favourites
-        getFavourtesRegNrs().then (regnrs)->
-          regnrsStr = regnrs.map((x)->x.regnrs).join(',').split(',').filter((x)->x.length).join(',')
-          setSearchType(SearchType.Regnr)
-          articles.search(regnrsStr, sync, async)
-          setSearchType(SearchType.Title)
+        if search_type == SearchType.FullText || search_type == SearchType.FullTextHashes
+          getFullTextFavourtesHashes().then (hashes)->
+            hashesStr = hashes.map((x)->x.hashId).join(',')
+            search_type = SearchType.FullTextHashes
+            search_query = setSearchQuery(language, search_type)
+            articles.search(hashesStr, sync, async)
+            search_type = SearchType.FullText
+            search_query = setSearchQuery(language, search_type)
+        else
+          original_search_type = search_type
+          getFavourtesRegNrs().then (regnrs)->
+            regnrsStr = regnrs.map((x)->x.regnrs).join(',').split(',').filter((x)->x.length).join(',')
+            search_type = SearchType.Regnrs
+            search_query = setSearchQuery(language, search_type)
+            articles.search(regnrsStr, sync, async)
+            search_type = original_search_type
+            search_query = setSearchQuery(language, search_type)
       else
+        # Not fav and no query = no result
         sync([])
     else
       articles.search(query, sync, async)
@@ -493,6 +506,9 @@ $ ->
     localStorage.setItem 'search-type', type
     console.log "search type = " + getSearchTypeStr(type) + " for " + typed_input
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
+    if typed_input == ''
+      # Force update
+      typeaheadCtrl.data('tt-typeahead').menu.datasets[0].update('')
 
   $('#article-button').on 'click', ->
     setSearchType(SearchType.Title)

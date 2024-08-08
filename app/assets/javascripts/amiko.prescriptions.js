@@ -1284,22 +1284,31 @@ function exportEverything() {
     ))
     .then(getPrescriptionDatabase)
     .then(function(db) {
-        return new Promise(function (res, rej) {
-            var store = db.transaction("prescriptions").objectStore("prescriptions");
-            var getAllRequest = store.getAll();
-            getAllRequest.onsuccess = function() {
-              res(getAllRequest.result);
-            };
-            getAllRequest.onerror = rej;
-        });
+        return Promise.all([
+            new Promise(function (res, rej) {
+                var store = db.transaction("prescriptions").objectStore("prescriptions");
+                var getAllRequest = store.getAll();
+                getAllRequest.onsuccess = function() {
+                  res(getAllRequest.result);
+                };
+                getAllRequest.onerror = rej;
+            }),
+            Favourites.getRegNrs(),
+            Favourites.getFullTextHashes(),
+        ]);
     })
-    .then(function(simplifiedPrescriptions) {
+    .then(function(results) {
+        var simplifiedPrescriptions = results[0];
+        var favRegnrs = results[1];
+        var ftFavRegnrs = results[2];
         var zip = new JSZip();
         simplifiedPrescriptions.forEach(function(prescription) {
             var obj = Prescription.makeComplete(prescription);
             var blob = Prescription.toAMKBlob(obj);
             zip.file(prescription.filename, blob);
         });
+        zip.file('favourites.json', JSON.stringify(favRegnrs));
+        zip.file('ft-favourites.json', JSON.stringify(ftFavRegnrs));
         return zip.generateAsync({type:"blob"});
     })
     .then(function(blob) {

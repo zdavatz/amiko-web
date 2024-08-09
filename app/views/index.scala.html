@@ -3,6 +3,7 @@
 
 @main("AmiKoWeb", anchor) {
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/typeahead.bundle.corejs.js")"></script>
+    <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.favourites.js")"></script>
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.searchdb.js")"></script>
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.helpers.js")"></script>
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/interaction_callbacks.js")"></script>
@@ -17,6 +18,14 @@
                     <img border="0" alt="Compendium" src="@routes.Assets.versioned("images/aips32x32_dark.png")" height="28"/>
                 </button>
                 <span style="display: block;">@messages("compendium")</span>
+            </div>
+        </div>
+        <div class="nav-button" id="favourites-button">
+            <div class="center-image">
+                <button class="state-button">
+                    <img border="0" alt="Favourites" src="@routes.Assets.versioned("images/favorites@2x.png")" height="28"/>
+                </button>
+                <span style="display: block;">@messages("favourites")</span>
             </div>
         </div>
         <!-- INTERACTIONS BUTTON -->

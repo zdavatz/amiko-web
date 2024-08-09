@@ -4,12 +4,15 @@
 
 # Home page
 GET     /                           controllers.MainController.index(request: Request, atc_query: String?="")
+GET     /favourites                 controllers.MainController.favourites(request: Request, atc_query: String?="")
 GET     /name                       controllers.MainController.getName(lang: String?="de", name: String)
 GET     /owner                      controllers.MainController.getOwner(lang: String?="de", owner: String)
 GET     /atc                        controllers.MainController.getATC(lang: String?="de", atc: String)
 GET     /regnr                      controllers.MainController.getRegnr(lang: String?="de", regnr: String)
+GET     /regnrs                     controllers.MainController.getRegnrs(lang: String?="de", regnrs: String)
 GET     /therapy                    controllers.MainController.getTherapy(lang: String?="de", therapy: String)
 GET     /fulltext                   controllers.MainController.getFullText(lang: String?="de", key: String?="")
+GET     /fulltext_hash              controllers.MainController.getFullTextHashes(lang: String?="de", hashes: String?="")
 
 # 2. parameter will appear in URI
 GET     /interactions/:basket          controllers.MainController.interactionsBasketWithoutLang(request: Request, basket: String)

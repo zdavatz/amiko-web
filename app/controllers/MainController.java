@@ -136,6 +136,15 @@ public class MainController extends Controller {
         return ok(index.render("", "", "", "", "", vc, messages));
     }
 
+    public Result favourites(Http.Request request, String atc_query) {
+        ViewContext vc = getViewContext(request);
+        Messages messages = messagesApi.preferred(request);
+        if (!atc_query.equals("")) {
+            return ok(index.render("", "", atc_query, "atc", "", vc, messages));
+        }
+        return ok(index.render("", "", "", "", "", vc, messages));
+    }
+
     public Result prescription(Http.Request request, String lang, String key) {
         ViewContext vc = getViewContext(request);
         Messages messages = messagesApi.preferred(request);
@@ -375,6 +384,18 @@ public class MainController extends Controller {
         return names.thenApply(f -> ok(toJson(f))).join();
     }
 
+    public Result getRegnrs(String lang, String regnrs) {
+        ArrayList<String> list_of_regnrs = new ArrayList<>();
+        String[] regs = regnrs.split(",");
+        for (String r : regs)
+            list_of_regnrs.add(r);
+        CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchRegnrs(lang, list_of_regnrs));
+        CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
+                .map(n -> new Article(n.getId(), "", n.getTitle(), "", n.getAuth(), n.getAtcCode(), n.getAtcClass(), n.getRegnrs(), n.getApplication(), n.getPackInfo(), n.getPackages(), "", ""))
+                .collect(Collectors.toList()));
+        return names.thenApply(f -> ok(toJson(f))).join();
+    }
+
     public Result getTherapy(String lang, String therapy) {
         CompletableFuture<List<Medication>> future = CompletableFuture.supplyAsync(()->searchTherapy(lang, therapy));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
@@ -385,6 +406,19 @@ public class MainController extends Controller {
 
     public Result getFullText(String lang, String key) {
         CompletableFuture<List<FullTextEntry>> future = CompletableFuture.supplyAsync(()->searchFullText(lang, key));
+        CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
+                .map(n -> new Article(0, n.getHash(), n.getTitle(), n.getKeyword(), "", "", "", n.getRegnrs(), "", "", "", "", ""))
+                .collect(Collectors.toList()));
+        return names.thenApply(f -> ok(toJson(f))).join();
+    }
+
+    public Result getFullTextHashes(String lang, String hashes) {
+        ArrayList<String> list_of_hash = new ArrayList<>();
+        String[] hs = hashes.split(",");
+        for (String h : hs) {
+            list_of_hash.add(h);
+        }
+        CompletableFuture<List<FullTextEntry>> future = CompletableFuture.supplyAsync(()->searchFullTextHashes(lang, list_of_hash));
         CompletableFuture<List<Article>> names = future.thenApplyAsync(a -> a.stream()
                 .map(n -> new Article(0, n.getHash(), n.getTitle(), n.getKeyword(), "", "", "", n.getRegnrs(), "", "", "", "", ""))
                 .collect(Collectors.toList()));
@@ -573,6 +607,37 @@ public class MainController extends Controller {
             String query = "select " + SHORT_TABLE + " from " + DATABASE_TABLE + " where "
                     + KEY_REGNRS + " like " + "'%, " + regnr + "%' or "
                     + KEY_REGNRS + " like " + "'" + regnr + "%'";
+            ResultSet rs = stat.executeQuery(query);
+            if (rs!=null) {
+                while (rs.next()) {
+                    med_auth.add(cursorToShortMedi(rs));
+                }
+            }
+            conn.close();
+        } catch (SQLException e) {
+            System.err.println(">> SqlDatabase: SQLException in searchRegnr!");
+        }
+
+        return med_auth;
+    }
+
+    private List<Medication> searchRegnrs(String lang, List<String> regnrs) {
+        List<Medication> med_auth = new ArrayList<>();
+        if (regnrs.size() == 0) {
+            return med_auth;
+        }
+
+        try {
+            Connection conn = lang.equals("de") ? german_db.getConnection() : french_db.getConnection();
+            Statement stat = conn.createStatement();
+            String conditionSql = "";
+            for (String regnr : regnrs) {
+                if (conditionSql.length() > 0) conditionSql += " or ";
+                conditionSql += KEY_REGNRS + " like " + "'%, " + regnr + "%' or "
+                        + KEY_REGNRS + " like " + "'" + regnr + "%'";
+            }
+            String query = "select " + SHORT_TABLE + " from " + DATABASE_TABLE + " where " + conditionSql;
+            System.out.println("SQL: " + query);
             ResultSet rs = stat.executeQuery(query);
             if (rs!=null) {
                 while (rs.next()) {
@@ -829,6 +894,37 @@ public class MainController extends Controller {
             conn.close();
         } catch (SQLException e) {
             System.err.println(">> Frequency DB: SQLException in searchFullText for " + word);
+        }
+
+        return search_results;
+    }
+    private List<FullTextEntry> searchFullTextHashes(String lang, List<String> hashes) {
+        List<FullTextEntry> search_results = new ArrayList<>();
+        if (hashes.size() == 0) {
+            return search_results;
+        }
+
+        try {
+            Connection conn = lang.equals("de") ? frequency_de_db.getConnection() : frequency_fr_db.getConnection();
+            Statement stat = conn.createStatement();
+
+            String hashSql = "";
+            for (String hash : hashes) {
+                if (hashSql.length() > 0) {
+                    hashSql += ",";
+                }
+                hashSql += "'" + hash + "'";
+            }
+            String query = "select * from " + FREQUENCY_TABLE + " where id in (" + hashSql + ")";
+            ResultSet rs = stat.executeQuery(query);
+            if (rs!=null) {
+                while (rs.next()) {
+                    search_results.add(cursorToFullTextEntry(rs));
+                }
+            }
+            conn.close();
+        } catch (SQLException e) {
+            System.err.println(">> Frequency DB: SQLException in searchFullTextHashes for " + hashes);
         }
 
         return search_results;

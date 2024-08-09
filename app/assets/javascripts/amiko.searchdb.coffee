@@ -4,6 +4,7 @@ $ ->
   #
   SearchState =
     Compendium: 1
+    Favourites: 4
     Interactions: 2
     Prescriptions: 3
 
@@ -14,6 +15,9 @@ $ ->
     Regnr: 4
     Therapie: 5
     FullText: 6
+    # Invisible search type for favourites initialisation
+    Regnrs: 7
+    FullTextHashes: 8
 
   #
   # Functions
@@ -59,6 +63,10 @@ $ ->
       return '/therapy?lang=' + lang + '&therapy='
     else if type == SearchType.FullText
       return '/fulltext?lang=' + lang + '&key='
+    else if type == SearchType.Regnrs
+      return '/regnrs?lang=' + lang + '&regnrs='
+    else if type == SearchType.FullTextHashes
+      return '/fulltext_hash?lang=' + lang + '&hashes='
     return '/name?lang=' + lang + '&name='
 
   getParams = ->
@@ -70,6 +78,7 @@ $ ->
       [key, val] = v.split("=")
       params[key] = decodeURIComponent(val)
     return params
+
 
   #
   # Local storage handlers
@@ -87,6 +96,8 @@ $ ->
     # make sure to toggle the activity state of the nav-button
     if search_state == SearchState.Compendium
       $('#compendium-button').toggleClass 'nav-button-active'
+    else if search_state == SearchState.Favourites
+      $('#favourites-button').toggleClass 'nav-button-active'
     else if search_state == SearchState.Interactions
       $('#interactions-button').toggleClass 'nav-button-active'
       $('#fulltext-button').disabled = 'disabled'
@@ -137,6 +148,12 @@ $ ->
       replace: (url, query) ->
         return search_query + query
       filter: (list) ->
+        if search_state == SearchState.Favourites
+          if search_type == SearchType.FullText || search_type == SearchType.FullTextHashes
+            list = list.filter((m)-> Favourites.cachedFullText.has(m.hash))
+          else
+            list = list.filter((m)-> Favourites.cached.has(m.regnrs))
+
         # Sets the number of results in search field (on the right)
         document.getElementById('num-results').textContent=list.length
         return list
@@ -185,46 +202,74 @@ $ ->
       atcCodeStr = "<p>" + atcCodeStr + " - " + atcTitleStr + "</p><p>k.A.</p>";
     return atcCodeStr
 
+  sourceWithFavDefaults = (query, sync, async)->
+    if query == ''
+      if search_state == SearchState.Favourites
+        if search_type == SearchType.FullText || search_type == SearchType.FullTextHashes
+          Favourites.getFullTextHashes().then (hashes)->
+            hashesStr = hashes.join(',')
+            search_type = SearchType.FullTextHashes
+            search_query = setSearchQuery(language, search_type)
+            articles.search(hashesStr, sync, async)
+            search_type = SearchType.FullText
+            search_query = setSearchQuery(language, search_type)
+        else
+          original_search_type = search_type
+          Favourites.getRegNrs().then (regnrs)->
+            regnrsStr = regnrs.join(',').split(',').filter((x)->x.length).join(',')
+            search_type = SearchType.Regnrs
+            search_query = setSearchQuery(language, search_type)
+            articles.search(regnrsStr, sync, async)
+            search_type = original_search_type
+            search_query = setSearchQuery(language, search_type)
+      else
+        # Not fav and no query = no result
+        sync([])
+    else
+      articles.search(query, sync, async)
   typeaheadCtrl.typeahead
     menu: $('#special-dropdown')
     hint: false
     highlight: false
-    minLength: 1
+    minLength: 0
   ,
     name: 'articles'
     displayKey: 'name'
     limit: '300'
-    # "ttAdapter" wraps the suggestion engine in an adapter that is compatible with the typeahead jQuery plugin
-    source: articles.ttAdapter()
+    source: sourceWithFavDefaults
     templates:
       suggestion: (data) ->
+        favouritesButton = '<div class="add-favourites-button ' + (if Favourites.cached.has(data.regnrs) then '--favourited' else '') + '" data-regnrs="' + data.regnrs + '"></div>'
         if search_type == SearchType.Title
           packsStr = (packinfo)->
             "<p class='article-packinfo' style='color:#{packinfo.color};' data-prescription='#{packInfoDataForPrescriptionBasket(data, packinfo)}'>
               #{packinfo.title}
             </p>"
-          "<div style='display:table;vertical-align:middle;'>\
+          "<div style='display:table;vertical-align:middle;'>" + favouritesButton + "\
           <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='font-size:0.85em;'>#{data.packinfos.map(packsStr).join('')}</span></div>"
         else if search_type == SearchType.Owner
-          "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>\
-          <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
+          "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>" + favouritesButton +
+          "<p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:#8888cc;font-size:1.0em;'><p>#{data.author}</p></span></div>"
         else if search_type == SearchType.Atc
-          "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>\
-          <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
+          "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>" + favouritesButton +
+          "<p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:gray;font-size:0.85em;'>#{atcCodeElement(data)}</span></div>"
-        else if search_type == SearchType.Regnr
-          "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>\
-          <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
+        else if search_type == SearchType.Regnr || search_type == SearchType.Regnrs
+          "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>" + favouritesButton +
+          "<p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:#8888cc;font-size:1.0em;'><p>#{data.regnrs}</p></span></div>"
         else if search_type == SearchType.Therapie
-          "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>\
-          <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
+          "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>" + favouritesButton +
+          "<p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
           <span style='color:gray;font-size:0.85em;'>#{data.therapy}</span></div>"
-        else if search_type == SearchType.FullText
-          "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>\
-          <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>"
+        else if search_type == SearchType.FullText || search_type == SearchType.FullTextHashes
+          favFTButton = '<div class="add-favourites-button --full-text' +
+            (if Favourites.cachedFullText.has(data.hash) then ' --favourited' else '') +
+            '" data-hash="' + data.hash + '"></div>'
+          "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>" + favFTButton +
+          "<p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>"
 
   typeaheadCtrl.on 'typeahead:asyncrequest', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')
@@ -247,10 +292,10 @@ $ ->
 
   # Retrieves the fachinfo, the URL should be of the form /fi/gtin/
   typeaheadCtrl.on 'typeahead:selected', (event, selection) ->
-    if window.event.target.classList.contains('article-packinfo')
+    if window.event.target.classList.contains('article-packinfo') || window.event.target.classList.contains('add-favourites-button')
       # Clicking on packinfo triggers prescription basket
       return
-    if search_state == SearchState.Compendium
+    if search_state == SearchState.Compendium || search_state == SearchState.Favourites
       if search_type == SearchType.FullText
         # FULL TEXT search
         fulltext_key = selection.keyword
@@ -309,7 +354,7 @@ $ ->
   # Detect click on search field
   $('#search-field').on 'click', ->
     search_query = setSearchQuery(language, search_type)
-    if search_state == SearchState.Compendium
+    if search_state == SearchState.Compendium || search_state == SearchState.Favourites
       $('search-field').attr 'value', ''
       $('.twitter-typeahead').typeahead('val', '')
       # $('#fachinfo-id').replaceWith ''
@@ -368,13 +413,23 @@ $ ->
     else
       window.location.assign '/prescription'
 
+  $('#favourites-button').on 'click', ->
+    $(this).toggleClass 'nav-button-active'
+    # set search state
+    setSearchUIState(SearchState.Favourites)
+    window.location.assign '/favourites'
+
   # Detect click on search buttons
   setSearchType = (type) ->
     disableButton(search_type)
     search_type = type
+    search_query = setSearchQuery(language, search_type)
     localStorage.setItem 'search-type', type
     console.log "search type = " + getSearchTypeStr(type) + " for " + typed_input
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
+    if typed_input == ''
+      # Force update
+      typeaheadCtrl.data('tt-typeahead').menu.datasets[0].update('')
 
   $('#article-button').on 'click', ->
     setSearchType(SearchType.Title)
@@ -398,3 +453,20 @@ $ ->
     setSearchType(SearchType.Atc)
     typeaheadCtrl.typeahead('val', atcCode)
     typeaheadCtrl.typeahead('open')
+
+  $(document).on('click', '.add-favourites-button', (e)->
+    hash = $(e.target).data('hash')
+    if hash
+      hashStr = String(hash)
+      if Favourites.cachedFullText.has(hashStr)
+        Favourites.removeFullTextHash(hashStr)
+      else
+        Favourites.addFullTextHash(hashStr)
+    else
+      regnrs = String($(e.target).data('regnrs'))
+      if Favourites.cached.has(regnrs)
+        Favourites.removeRegNrs(regnrs)
+      else
+        Favourites.addRegNrs(regnrs)
+    $(e.target).toggleClass('--favourited')
+  )

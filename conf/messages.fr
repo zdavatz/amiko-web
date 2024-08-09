@@ -67,3 +67,4 @@ logout_from_hin_adswiss = Déconnexion de HIN (ADSwiss)
 logout_from_hin_sds = Déconnexion de HIN (SDS)
 import_profile = Profil d'importation
 sign_eprescription_confirm = Voulez-vous signer numériquement votre ordonnance?
+favourites = Favoris

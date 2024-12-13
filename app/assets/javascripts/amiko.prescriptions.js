@@ -1031,7 +1031,15 @@ var OAuth = {
                 'Patient': {
                     'FName': prescription.patient.given_name,
                     'LName': prescription.patient.family_name,
-                    'BDt': formatDateForEPrescription(prescription.patient.birth_date)
+                    'BDt': formatDateForEPrescription(prescription.patient.birth_date),
+                    'Gender': prescription.patient.gender == 'm' ? 1 : 2,
+                    'Street': prescription.patient.postal_address,
+                    'Zip' : prescription.patient.zip_code,
+                    'City' : prescription.patient.city,
+                    'Lng': String(localStorage.getItem('language')) == 'fr' ? 'fr' : 'de',
+                    'Phone' : prescription.patient.phone_number,
+                    'Email' : prescription.patient.email_address,
+                    'Rcv' : prescription.patient.insurance_gln,
                 },
                 'Medicaments': prescription.medications.map(function(m){
                     return {

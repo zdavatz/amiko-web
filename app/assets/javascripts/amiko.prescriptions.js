@@ -297,14 +297,35 @@ var Patient = {
             var patient = prescription.patient;
             patientById[patient.patient_id] = patient;
         });
-        return Promise.all(Object.keys(patientById).map(function(patientId) {
-            var amkPatient = patientById[patientId];
-            var patient = Patient.fromAMKObject(amkPatient);
-            delete patient.id; // make it insert new patient
-            return Patient.upsert(patient).then(function(newPatientId) {
-                oldPatientIdToNewPatientId[patientId] = newPatientId;
-            });
-        })).then(function() {
+        return getPrescriptionDatabase()
+            .then(function(db) {
+                return new Promise(function(resolve, reject) {
+                    var req = db.transaction("patients").objectStore("patients").getAll();
+                    req.onsuccess = function(event) {
+                        resolve(event.target.result);
+                    };
+                    req.onerror = reject;
+                });
+            }).then(function(allSavedPatients) {
+                return Promise.all(Object.keys(patientById).map(function(patientId) {
+                    var amkPatient = patientById[patientId];
+                    var patient = Patient.fromAMKObject(amkPatient);
+                    var existingPatient = allSavedPatients.find(function(savedPatient) {
+                        return savedPatient.name === patient.name && savedPatient.surname === patient.surname && savedPatient.birthday === patient.birthday;
+                    });
+                    if (existingPatient) {
+                        patient.id = existingPatient.id;
+                    } else {
+                        delete patient.id; // make it insert new patient
+                    }
+                    return Patient.upsert(patient).then(function(newPatientId) {
+                        oldPatientIdToNewPatientId[patientId] = newPatientId;
+                    });
+                }));
+            })
+
+
+        .then(function() {
             return oldPatientIdToNewPatientId;
         });
     },
@@ -314,6 +335,25 @@ var Patient = {
         s += patient.street + "\n";
         s += patient.zip + " " + patient.city + "\n";
         return s;
+    },
+    generateAMKPatientId: function(amkPatient) {
+        // This function makes a id from birthday, lastname, and firstname
+        var birthDateString = amkPatient.birth_date || '';
+        var str = amkPatient.given_name.toLowerCase() + '.' + amkPatient.family_name.toLowerCase() + '.' + birthDateString;
+
+        function digestMessage(message) {
+            var msgUint8 = new TextEncoder().encode(message); // encode as (utf-8) Uint8Array
+            return window.crypto.subtle.digest("SHA-256", msgUint8).then(function(hashBuffer) {
+                // hash the message
+                var hashArray = Array.from(new Uint8Array(hashBuffer)); // convert buffer to byte array
+                var hashHex = hashArray
+                    .map((b) => b.toString(16).padStart(2, "0"))
+                    .join(""); // convert bytes to hex string
+                return hashHex;
+            });
+        }
+
+        return digestMessage(str);
     }
 };
 
@@ -349,10 +389,12 @@ var PrescriptionBasket = {
 var Prescription = {
     toAMKBlob: function(prescriptionObj) {
         prescriptionObj = Object.assign({}, prescriptionObj); // Shallow clone so we can
-        // Remove the extra fields, see Prescription.fromCurrentUIState
+        // Remove the extra fields, and replace patient_id (int) with hash, see Prescription.fromCurrentUIState
         delete prescriptionObj.patient_id;
         delete prescriptionObj.id;
         delete prescriptionObj.filename;
+        prescriptionObj.patient.patient_id = generateAMKPatientId(prescriptionObj.patient);
+
         var json = JSON.stringify(prescriptionObj);
         var encoder = new TextEncoder('utf-8');
         var bytes = encoder.encode(json);
@@ -409,7 +451,6 @@ var Prescription = {
                 var patient = result[1];
                 var filename = result[2];
 
-                var doctorSignData = Doctor.getSignatureBase64();
                 var now = new Date();
 
                 var prescriptionObj = {

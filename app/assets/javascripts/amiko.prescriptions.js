@@ -171,7 +171,7 @@ var Patient = {
             var year = birthdayParts[0];
             var month = birthdayParts[1];
             var date = birthdayParts[2];
-            birthdayString = date + '.' + month + '.' + year;
+            birthdayString = date.padStart(2,'0') + '.' + month.padStart(2,'0') + '.' + year;
         }
         var patient = {
             surname: document.getElementsByName('address-book-field-surname')[0].value,
@@ -1058,41 +1058,9 @@ var OAuth = {
                 lastUsedAt: new Date().toISOString()
             });
         },
-        makeQRCodeWithPrescription: function(prescription) {
+        makeQRCodeWithEPrescription: function(ePrescriptionObj) {
             var authHandle = OAuth.ADSwiss.getAuthHandle();
             if (!authHandle) return Promise.reject();
-            function formatDateForEPrescription(dateStr) {
-                // dd.mm.yyyy -> yyyy-mm-dd
-                var parts = dateStr.split('.');
-                if (parts.length !== 3) return null;
-                return parts[2] + '-' + parts[1] + '-' + parts[0];
-            }
-
-            var ePrescriptionObj = {
-                'Patient': {
-                    'FName': prescription.patient.given_name,
-                    'LName': prescription.patient.family_name,
-                    'BDt': formatDateForEPrescription(prescription.patient.birth_date),
-                    'Gender': prescription.patient.gender == 'm' ? 1 : 2,
-                    'Street': prescription.patient.postal_address,
-                    'Zip' : prescription.patient.zip_code,
-                    'City' : prescription.patient.city,
-                    'Lng': String(localStorage.getItem('language')) == 'fr' ? 'fr' : 'de',
-                    'Phone' : prescription.patient.phone_number,
-                    'Email' : prescription.patient.email_address,
-                    'Rcv' : prescription.patient.insurance_gln,
-                },
-                'Medicaments': prescription.medications.map(function(m){
-                    return {
-                        'Id': m.eancode,
-                        'IdType': 2 // GTIN
-                    };
-                }),
-                'MedType': 3, // Prescription
-                'Id': crypto.randomUUID(),
-                'Auth': prescription.operator.gln || '',
-                'Dt': new Date().toISOString()
-            };
 
             var encoder = new TextEncoder('utf-8');
             console.log('[PDF generation] Making EPrescription (1)');
@@ -1288,6 +1256,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('prescription-print').addEventListener('click',
         generatePDFWithEPrescriptionPrompt
     );
+    document.getElementById('prescription-scan-qr-code').addEventListener('click', function() {
+        scanQRCode();
+    });
     $(document).on('change', 'input.prescription-item-comment', function(e) {
         var index = $(e.target).data('prescription-item-index');
         var items = PrescriptionBasket.list();
@@ -1496,7 +1467,7 @@ function generatePDFWithEPrescriptionPrompt() {
             console.log('[PDF generation] auth handle', authHandle);
             if (authHandle) {
                 console.log('[PDF generation] making QR Code1');
-                return OAuth.ADSwiss.makeQRCodeWithPrescription(prescription)
+                return OAuth.ADSwiss.makeQRCodeWithEPrescription(EPrescription.fromPrescription(prescription))
                     .then(function(qrCode) {
                         return generatePDF(prescription, qrCode);
                     });
@@ -1673,3 +1644,37 @@ function sequencePromise(promiseFns) {
 }
 
 })();
+function scanQRCode() {
+    return (window.QrScanner ? Promise.resolve() : Promise.resolve($.getScript('/assets/javascripts/qr-scanner.umd.min.js')))
+    .then(function() {
+        var modal = document.querySelector('dialog#qrcode-scanner');
+        modal.showModal();
+
+        var videoElem = document.querySelector('#qrcode-scanner-video');
+        var qrScanner = new QrScanner(
+            videoElem,
+            detectedQRCode,
+            { }
+        );
+        qrScanner.start();
+
+        var gotQR = false;
+        function detectedQRCode(result) {
+            qrScanner.stop();
+            if (gotQR) {
+                console.log('hm....');
+                return;
+            }
+            gotQR = true;
+            EPrescription.fromString(result.data).then(function(ep) {
+                return EPrescription.toAMKPrescription(ep);
+            }).then(function (amk) {
+                amk.filename = 'RZ_11111111TODO.amk';
+                return Prescription.importAMKObjects([amk]);
+            })
+            .then(function() {
+                console.log('ok');
+            });
+        }
+    });
+}

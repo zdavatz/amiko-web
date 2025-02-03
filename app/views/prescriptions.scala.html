@@ -25,6 +25,7 @@
             <input id="prescription-import-all" type="file" accept=".zip,.amk">
         </label>
         <input id="prescription-print" type="button" value='Print'>
+        <input id="prescription-scan-qr-code" type="button" value='@messages("Scan qr code")'>
     </div>
 
     <dialog class="prescriptions-address-book">
@@ -188,6 +189,13 @@
             <button>@messages("cancel")</button>
         </form>
     </dialog>
+    <dialog id="qrcode-scanner">
+        <video id="qrcode-scanner-video" width="600px"></video>
+        <form class="dialog-action" method="dialog">
+            <button>@messages("cancel")</button>
+        </form>
+    </dialog>
+    <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.eprescriptions.js")"></script>
     <script>
         var XHRCSRFToken = '@csrfToken';
         $.ajaxSetup({

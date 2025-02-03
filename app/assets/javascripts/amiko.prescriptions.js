@@ -171,7 +171,7 @@ var Patient = {
             var year = birthdayParts[0];
             var month = birthdayParts[1];
             var date = birthdayParts[2];
-            birthdayString = date + '.' + month + '.' + year;
+            birthdayString = date.padStart(2,'0') + '.' + month.padStart(2,'0') + '.' + year;
         }
         var patient = {
             surname: document.getElementsByName('address-book-field-surname')[0].value,
@@ -297,14 +297,35 @@ var Patient = {
             var patient = prescription.patient;
             patientById[patient.patient_id] = patient;
         });
-        return Promise.all(Object.keys(patientById).map(function(patientId) {
-            var amkPatient = patientById[patientId];
-            var patient = Patient.fromAMKObject(amkPatient);
-            delete patient.id; // make it insert new patient
-            return Patient.upsert(patient).then(function(newPatientId) {
-                oldPatientIdToNewPatientId[patientId] = newPatientId;
-            });
-        })).then(function() {
+        return getPrescriptionDatabase()
+            .then(function(db) {
+                return new Promise(function(resolve, reject) {
+                    var req = db.transaction("patients").objectStore("patients").getAll();
+                    req.onsuccess = function(event) {
+                        resolve(event.target.result);
+                    };
+                    req.onerror = reject;
+                });
+            }).then(function(allSavedPatients) {
+                return Promise.all(Object.keys(patientById).map(function(patientId) {
+                    var amkPatient = patientById[patientId];
+                    var patient = Patient.fromAMKObject(amkPatient);
+                    var existingPatient = allSavedPatients.find(function(savedPatient) {
+                        return savedPatient.name === patient.name && savedPatient.surname === patient.surname && savedPatient.birthday === patient.birthday;
+                    });
+                    if (existingPatient) {
+                        patient.id = existingPatient.id;
+                    } else {
+                        delete patient.id; // make it insert new patient
+                    }
+                    return Patient.upsert(patient).then(function(newPatientId) {
+                        oldPatientIdToNewPatientId[patientId] = newPatientId;
+                    });
+                }));
+            })
+
+
+        .then(function() {
             return oldPatientIdToNewPatientId;
         });
     },
@@ -314,6 +335,25 @@ var Patient = {
         s += patient.street + "\n";
         s += patient.zip + " " + patient.city + "\n";
         return s;
+    },
+    generateAMKPatientId: function(amkPatient) {
+        // This function makes a id from birthday, lastname, and firstname
+        var birthDateString = amkPatient.birth_date || '';
+        var str = amkPatient.given_name.toLowerCase() + '.' + amkPatient.family_name.toLowerCase() + '.' + birthDateString;
+
+        function digestMessage(message) {
+            var msgUint8 = new TextEncoder().encode(message); // encode as (utf-8) Uint8Array
+            return window.crypto.subtle.digest("SHA-256", msgUint8).then(function(hashBuffer) {
+                // hash the message
+                var hashArray = Array.from(new Uint8Array(hashBuffer)); // convert buffer to byte array
+                var hashHex = hashArray
+                    .map((b) => b.toString(16).padStart(2, "0"))
+                    .join(""); // convert bytes to hex string
+                return hashHex;
+            });
+        }
+
+        return digestMessage(str);
     }
 };
 
@@ -349,10 +389,12 @@ var PrescriptionBasket = {
 var Prescription = {
     toAMKBlob: function(prescriptionObj) {
         prescriptionObj = Object.assign({}, prescriptionObj); // Shallow clone so we can
-        // Remove the extra fields, see Prescription.fromCurrentUIState
+        // Remove the extra fields, and replace patient_id (int) with hash, see Prescription.fromCurrentUIState
         delete prescriptionObj.patient_id;
         delete prescriptionObj.id;
         delete prescriptionObj.filename;
+        prescriptionObj.patient.patient_id = generateAMKPatientId(prescriptionObj.patient);
+
         var json = JSON.stringify(prescriptionObj);
         var encoder = new TextEncoder('utf-8');
         var bytes = encoder.encode(json);
@@ -409,7 +451,6 @@ var Prescription = {
                 var patient = result[1];
                 var filename = result[2];
 
-                var doctorSignData = Doctor.getSignatureBase64();
                 var now = new Date();
 
                 var prescriptionObj = {
@@ -561,6 +602,22 @@ var Prescription = {
                 };
             }));
         });
+    },
+    placeDateToDate: function(str) {
+        // dd.MM.yyyy (HH:mm:ss) -> Date
+        var parts = str.split('(');
+        if (parts.length !== 2) return null;
+        var dateParts = parts[0].trim().split('.');
+        var timeParts = parts[1].replace('(', '').split(':');
+        if (dateParts.length !== 3 || timeParts.length !== 3) return null;
+        var date = new Date();
+        date.setDate(dateParts[0]);
+        date.setMonth(dateParts[1]);
+        date.setFullYear(dateParts[2]);
+        date.setHours(timeParts[0]);
+        date.setMinutes(timeParts[1]);
+        date.setSeconds(timeParts[2]);
+        return date;
     }
 };
 var UI = {
@@ -771,6 +828,11 @@ var UI = {
                             .text(item.package)
                         )
                         .append(
+                            $('<div>')
+                            .addClass('prescription-item-eancode')
+                            .text(item.eancode)
+                        )
+                        .append(
                             $('<input>')
                                 .addClass('prescription-item-comment')
                                 .data('prescription-item-index', i)
@@ -783,14 +845,15 @@ var UI = {
     },
     Prescription: {
         reloadInfo: function() {
-            Doctor.read().then(function(profile) {
-                var div = document.getElementsByClassName('prescription-doctor-info')[0];
-                if (!profile) {
-                    div.innerText = '';
-                } else {
-                    div.innerText = profile.title + ' ' + profile.name + ' ' + profile.surname;
-                }
-            });
+            Doctor.read()
+                .then(function(profile) {
+                    var div = document.getElementsByClassName('prescription-doctor-info')[0];
+                    if (!profile) {
+                        div.innerText = '';
+                    } else {
+                        div.innerText = profile.title + ' ' + profile.name + ' ' + profile.surname;
+                    }
+                });
             var patientInfo = document.getElementsByClassName('prescription-patent-info')[0];
             var patientId = Patient.getCurrentId();
             if (patientId === null) {
@@ -821,24 +884,7 @@ var UI = {
                             .text(prescription.filename)
                             .addClass('prescriptions-right-list-item')
                             .on('click', function() {
-                                PrescriptionBasket.clear();
-                                prescription.medications.forEach(function(m) {
-                                    PrescriptionBasket.add({
-                                        title: m.title,
-                                        author: m.owner,
-                                        regnrs: m.regnrs,
-                                        atccode: m.atccode,
-                                        package: m.package,
-                                        eancode: m.eancode,
-                                        // TODO: note is legacy, remove it later
-                                        comment: m.note || m.comment || '',
-                                    });
-                                });
-                                UI.PrescriptionBasket.reloadList();
-                                Patient.setCurrentId(prescription.patient_id);
-                                Prescription.setCurrentId(prescription.id);
-                                var patientInfo = document.getElementsByClassName('prescription-patent-info')[0];
-                                patientInfo.innerText = prescription.patient.given_name + ' ' + prescription.patient.family_name;
+                                UI.Prescription.show(prescription);
                             })
                             .append(
                                 $('<button>').addClass('download-button').on('click', function (e) {
@@ -858,6 +904,26 @@ var UI = {
                         );
                     });
                 });
+        },
+        show: function(prescription) {
+            PrescriptionBasket.clear();
+            prescription.medications.forEach(function(m) {
+                PrescriptionBasket.add({
+                    title: m.title,
+                    author: m.owner,
+                    regnrs: m.regnrs,
+                    atccode: m.atccode,
+                    package: m.package,
+                    eancode: m.eancode,
+                    // TODO: note is legacy, remove it later
+                    comment: m.note || m.comment || '',
+                });
+            });
+            Patient.setCurrentId(prescription.patient_id);
+            Prescription.setCurrentId(prescription.id);
+            var patientInfo = document.getElementsByClassName('prescription-patent-info')[0];
+            patientInfo.innerText = prescription.patient.given_name + ' ' + prescription.patient.family_name;
+            return UI.Prescription.reloadInfo();
         }
     }
 };
@@ -1017,41 +1083,9 @@ var OAuth = {
                 lastUsedAt: new Date().toISOString()
             });
         },
-        makeQRCodeWithPrescription: function(prescription) {
+        makeQRCodeWithEPrescription: function(ePrescriptionObj) {
             var authHandle = OAuth.ADSwiss.getAuthHandle();
             if (!authHandle) return Promise.reject();
-            function formatDateForEPrescription(dateStr) {
-                // dd.mm.yyyy -> yyyy-mm-dd
-                var parts = dateStr.split('.');
-                if (parts.length !== 3) return null;
-                return parts[2] + '-' + parts[1] + '-' + parts[0];
-            }
-
-            var ePrescriptionObj = {
-                'Patient': {
-                    'FName': prescription.patient.given_name,
-                    'LName': prescription.patient.family_name,
-                    'BDt': formatDateForEPrescription(prescription.patient.birth_date),
-                    'Gender': prescription.patient.gender == 'm' ? 1 : 2,
-                    'Street': prescription.patient.postal_address,
-                    'Zip' : prescription.patient.zip_code,
-                    'City' : prescription.patient.city,
-                    'Lng': String(localStorage.getItem('language')) == 'fr' ? 'fr' : 'de',
-                    'Phone' : prescription.patient.phone_number,
-                    'Email' : prescription.patient.email_address,
-                    'Rcv' : prescription.patient.insurance_gln,
-                },
-                'Medicaments': prescription.medications.map(function(m){
-                    return {
-                        'Id': m.eancode,
-                        'IdType': 2 // GTIN
-                    };
-                }),
-                'MedType': 3, // Prescription
-                'Id': crypto.randomUUID(),
-                'Auth': prescription.operator.gln || '',
-                'Dt': new Date().toISOString()
-            };
 
             var encoder = new TextEncoder('utf-8');
             console.log('[PDF generation] Making EPrescription (1)');
@@ -1247,6 +1281,12 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('prescription-print').addEventListener('click',
         generatePDFWithEPrescriptionPrompt
     );
+    document.getElementById('prescription-scan-qr-code').addEventListener('click', function() {
+        EPrescription.scanQRCode();
+    });
+    document.querySelector('#qrcode-scanner button').addEventListener('click', function() {
+        EPrescription.stopScanningQRCode();
+    });
     $(document).on('change', 'input.prescription-item-comment', function(e) {
         var index = $(e.target).data('prescription-item-index');
         var items = PrescriptionBasket.list();
@@ -1455,7 +1495,7 @@ function generatePDFWithEPrescriptionPrompt() {
             console.log('[PDF generation] auth handle', authHandle);
             if (authHandle) {
                 console.log('[PDF generation] making QR Code1');
-                return OAuth.ADSwiss.makeQRCodeWithPrescription(prescription)
+                return OAuth.ADSwiss.makeQRCodeWithEPrescription(EPrescription.fromPrescription(prescription))
                     .then(function(qrCode) {
                         return generatePDF(prescription, qrCode);
                     });

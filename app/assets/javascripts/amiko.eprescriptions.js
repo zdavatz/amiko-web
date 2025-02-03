@@ -1,8 +1,66 @@
 var EPrescription = {
+    scanQRCode: function() {
+        return (window.QrScanner ? Promise.resolve() : Promise.resolve($.getScript('/assets/javascripts/qr-scanner.umd.min.js')))
+        .then(function() {
+            var modal = document.querySelector('dialog#qrcode-scanner');
+            modal.showModal();
+
+            var videoElem = document.querySelector('#qrcode-scanner-video');
+            var qrScanner = EPrescription.qrScanner || new QrScanner(
+                videoElem,
+                detectedQRCode,
+                { }
+            );
+            EPrescription.qrScanner = qrScanner;
+            qrScanner.start();
+
+            var gotQR = false;
+            function detectedQRCode(result) {
+                qrScanner.stop();
+                if (gotQR) {
+                    return;
+                }
+                gotQR = true;
+                EPrescription.fromString(result.data).then(function(ep) {
+                    return EPrescription.toAMKPrescription(ep);
+                }).then(function (amk) {
+                    var now = new Date();
+                    var filename = 'RZ_' +
+                        now.getFullYear() +
+                        ('0' + (now.getMonth() + 1)).slice(-2) +
+                        ('0' + now.getDate()).slice(-2) +
+                        ('0' + now.getHours()).slice(-2) +
+                        ('0' + now.getMinutes()).slice(-2) +
+                        ('0' + now.getSeconds()).slice(-2) +
+                        '.amk';
+                    amk.filename = filename;
+                    return Prescription.importAMKObjects([amk]);
+                })
+                .then(function(saveResults) {
+                    return Prescription.readComplete(saveResults[0]);
+                })
+                .then(UI.Prescription.show)
+                .finally(function() {
+                    modal.close();
+                });
+            }
+        });
+    },
+    qrScanner: null,
+    stopScanningQRCode: function() {
+        if (EPrescription.qrScanner) {
+            EPrescription.qrScanner.stop();
+        }
+    },
     fromString: function(string) {
         var prefix = 'https://eprescription.hin.ch';
         if (string.startsWith(prefix)) {
-            string = string.substring(prefix.length);
+            var sharpIndex = string.indexOf('#');
+            string = string.substring(sharpIndex === -1 ? prefix.length : sharpIndex + 1);
+            var andIndex = string.indexOf('&');
+            if (andIndex !== -1) {
+                string = string.substring(0, andIndex);
+            }
         }
         prefix = 'CHMED16A1';
         if (!string.startsWith(prefix)) {
@@ -98,7 +156,7 @@ var EPrescription = {
         var birthdateString = birthdate ?
             String(birthdate.getDate()).padStart(2,'0') + '.' + String(birthdate.getMonth()).padStart(2,'0') + '.' + birthdate.getFullYear() :
             '';
-        var patientIds = ePrescriptionObj['Patient']['Ids'];
+        var patientIds = ePrescriptionObj['Patient']['Ids'] || [];
         var insuranceGln = patientIds.length && patientIds[0]['Type'] === 1 ? patientIds[0]['Val'] : ePrescriptionObj['Patient']['Rcv'];
         var patientWithoutId = {
             // "patient_id": To be filled below

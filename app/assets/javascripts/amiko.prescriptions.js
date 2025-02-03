@@ -602,6 +602,22 @@ var Prescription = {
                 };
             }));
         });
+    },
+    placeDateToDate: function(str) {
+        // dd.MM.yyyy (HH:mm:ss) -> Date
+        var parts = str.split('(');
+        if (parts.length !== 2) return null;
+        var dateParts = parts[0].trim().split('.');
+        var timeParts = parts[1].replace('(', '').split(':');
+        if (dateParts.length !== 3 || timeParts.length !== 3) return null;
+        var date = new Date();
+        date.setDate(dateParts[0]);
+        date.setMonth(dateParts[1]);
+        date.setFullYear(dateParts[2]);
+        date.setHours(timeParts[0]);
+        date.setMinutes(timeParts[1]);
+        date.setSeconds(timeParts[2]);
+        return date;
     }
 };
 var UI = {
@@ -812,6 +828,11 @@ var UI = {
                             .text(item.package)
                         )
                         .append(
+                            $('<div>')
+                            .addClass('prescription-item-eancode')
+                            .text(item.eancode)
+                        )
+                        .append(
                             $('<input>')
                                 .addClass('prescription-item-comment')
                                 .data('prescription-item-index', i)
@@ -824,14 +845,15 @@ var UI = {
     },
     Prescription: {
         reloadInfo: function() {
-            Doctor.read().then(function(profile) {
-                var div = document.getElementsByClassName('prescription-doctor-info')[0];
-                if (!profile) {
-                    div.innerText = '';
-                } else {
-                    div.innerText = profile.title + ' ' + profile.name + ' ' + profile.surname;
-                }
-            });
+            Doctor.read()
+                .then(function(profile) {
+                    var div = document.getElementsByClassName('prescription-doctor-info')[0];
+                    if (!profile) {
+                        div.innerText = '';
+                    } else {
+                        div.innerText = profile.title + ' ' + profile.name + ' ' + profile.surname;
+                    }
+                });
             var patientInfo = document.getElementsByClassName('prescription-patent-info')[0];
             var patientId = Patient.getCurrentId();
             if (patientId === null) {
@@ -862,24 +884,7 @@ var UI = {
                             .text(prescription.filename)
                             .addClass('prescriptions-right-list-item')
                             .on('click', function() {
-                                PrescriptionBasket.clear();
-                                prescription.medications.forEach(function(m) {
-                                    PrescriptionBasket.add({
-                                        title: m.title,
-                                        author: m.owner,
-                                        regnrs: m.regnrs,
-                                        atccode: m.atccode,
-                                        package: m.package,
-                                        eancode: m.eancode,
-                                        // TODO: note is legacy, remove it later
-                                        comment: m.note || m.comment || '',
-                                    });
-                                });
-                                UI.PrescriptionBasket.reloadList();
-                                Patient.setCurrentId(prescription.patient_id);
-                                Prescription.setCurrentId(prescription.id);
-                                var patientInfo = document.getElementsByClassName('prescription-patent-info')[0];
-                                patientInfo.innerText = prescription.patient.given_name + ' ' + prescription.patient.family_name;
+                                UI.Prescription.show(prescription);
                             })
                             .append(
                                 $('<button>').addClass('download-button').on('click', function (e) {
@@ -899,6 +904,26 @@ var UI = {
                         );
                     });
                 });
+        },
+        show: function(prescription) {
+            PrescriptionBasket.clear();
+            prescription.medications.forEach(function(m) {
+                PrescriptionBasket.add({
+                    title: m.title,
+                    author: m.owner,
+                    regnrs: m.regnrs,
+                    atccode: m.atccode,
+                    package: m.package,
+                    eancode: m.eancode,
+                    // TODO: note is legacy, remove it later
+                    comment: m.note || m.comment || '',
+                });
+            });
+            Patient.setCurrentId(prescription.patient_id);
+            Prescription.setCurrentId(prescription.id);
+            var patientInfo = document.getElementsByClassName('prescription-patent-info')[0];
+            patientInfo.innerText = prescription.patient.given_name + ' ' + prescription.patient.family_name;
+            return UI.Prescription.reloadInfo();
         }
     }
 };
@@ -1257,7 +1282,10 @@ document.addEventListener('DOMContentLoaded', function() {
         generatePDFWithEPrescriptionPrompt
     );
     document.getElementById('prescription-scan-qr-code').addEventListener('click', function() {
-        scanQRCode();
+        EPrescription.scanQRCode();
+    });
+    document.querySelector('#qrcode-scanner button').addEventListener('click', function() {
+        EPrescription.stopScanningQRCode();
     });
     $(document).on('change', 'input.prescription-item-comment', function(e) {
         var index = $(e.target).data('prescription-item-index');
@@ -1644,37 +1672,3 @@ function sequencePromise(promiseFns) {
 }
 
 })();
-function scanQRCode() {
-    return (window.QrScanner ? Promise.resolve() : Promise.resolve($.getScript('/assets/javascripts/qr-scanner.umd.min.js')))
-    .then(function() {
-        var modal = document.querySelector('dialog#qrcode-scanner');
-        modal.showModal();
-
-        var videoElem = document.querySelector('#qrcode-scanner-video');
-        var qrScanner = new QrScanner(
-            videoElem,
-            detectedQRCode,
-            { }
-        );
-        qrScanner.start();
-
-        var gotQR = false;
-        function detectedQRCode(result) {
-            qrScanner.stop();
-            if (gotQR) {
-                console.log('hm....');
-                return;
-            }
-            gotQR = true;
-            EPrescription.fromString(result.data).then(function(ep) {
-                return EPrescription.toAMKPrescription(ep);
-            }).then(function (amk) {
-                amk.filename = 'RZ_11111111TODO.amk';
-                return Prescription.importAMKObjects([amk]);
-            })
-            .then(function() {
-                console.log('ok');
-            });
-        }
-    });
-}

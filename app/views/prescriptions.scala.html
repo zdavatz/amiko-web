@@ -190,8 +190,10 @@
         </form>
     </dialog>
     <dialog id="qrcode-scanner">
-        <div id="qrcode-scanner-reader" width="600px"></div>
         <video id="qrcode-scanner-video" width="600px"></video>
+        <form class="dialog-action" method="dialog">
+            <button>@messages("cancel")</button>
+        </form>
     </dialog>
     <script type="text/javascript" src="@routes.Assets.versioned("javascripts/amiko.eprescriptions.js")"></script>
     <script>

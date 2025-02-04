@@ -1445,7 +1445,6 @@ function importFromZip(file) {
         amks.sort(function(a, b) {
             return a.filename < b.filename ? -1 : 1;
         });
-        window.amks = amks;
         var clear = amks.length > 1 ?
             Promise.all([
                 Prescription.deleteAll(),
@@ -1670,5 +1669,9 @@ function sequencePromise(promiseFns) {
         return results;
     });
 }
+
+window.UI = UI;
+window.Prescription = Prescription;
+window.Patient = Patient;
 
 })();

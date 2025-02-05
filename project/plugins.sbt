@@ -10,6 +10,9 @@ addSbtPlugin("com.github.sbt" % "sbt-digest" % "2.0.0")
 addSbtPlugin("com.github.sbt" % "sbt-mocha" % "2.0.0")
 addSbtPlugin("io.github.irundaia" % "sbt-sassify" % "1.5.2")
 
+addSbtPlugin("com.github.sbt" % "sbt-web" % "1.5.8")
+addSbtPlugin("com.github.platypii" % "sbt-typescript" % "5.3.2")
+
 // Autoprefixer plugin
 // lazy val sbtAutoprefixer = uri("https://github.com/matthewrennie/sbt-autoprefixer.git")
 // lazy val root = project.in(file(".")).dependsOn(sbtAutoprefixer)

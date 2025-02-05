@@ -12,7 +12,16 @@ libraryDependencies ++= Seq(
   "org.xerial" % "sqlite-jdbc" % "3.45.2.0"
 )
 
-lazy val root = (project in file(".")).enablePlugins(PlayJava)
+resolvers += Resolver.bintrayRepo("webjars","maven")
+libraryDependencies ++= Seq(
+    "org.webjars.npm" % "types__jquery" % "3.5.32",
+    "org.webjars.npm" % "qr-scanner" % "1.4.2",
+    "org.webjars.npm" % "types__sizzle" % "2.3.9"
+)
+resolveFromWebjarsNodeModulesDir := true
+typescript / logLevel := Level.Debug
+
+lazy val root = (project in file(".")).enablePlugins(PlayJava).enablePlugins(SbtWeb)
 
 // Set engine type to NODE (see also SBT_OPTS)
 // Checks for package.json in project's base directory then causes npm to run
@@ -26,4 +35,3 @@ sources in (Compile, doc) := Seq.empty
 publishArtifact in (Compile, packageDoc) := false
 
 fork in run := false
-

@@ -1,0 +1,6 @@
+{
+    "compilerOptions": {
+        "module": "system",
+        "lib": ["es2018", "dom"]
+    }
+}

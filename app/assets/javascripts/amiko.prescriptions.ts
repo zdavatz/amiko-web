@@ -1,6 +1,22 @@
-(function() {
+import { EPrescription } from './amiko.eprescriptions.js';
+
+export type Doctor = {
+    title: string,
+    zsrnumber: string,
+    gln: string,
+    surname: string,
+    name: string,
+    street: string,
+    city: string,
+    country: string,
+    zip: string,
+    phone: string,
+    email: string,
+    iban: string,
+    vat: string,
+};
 var Doctor = {
-    toAMKObjectWithoutSign: function(profile) {
+    toAMKObjectWithoutSign: function(profile): Omit<AMKDoctor, 'signature'> {
         return {
             "title": profile.title,
             "gln": profile.gln,
@@ -36,19 +52,19 @@ var Doctor = {
     },
     fromCurrentUIState: function() {
         return {
-            title: document.getElementsByName('doctor-field-title')[0].value,
-            zsrnumber: document.getElementsByName('doctor-field-zsrnumber')[0].value,
-            gln: document.getElementsByName('doctor-field-gln')[0].value,
-            surname: document.getElementsByName('doctor-field-surname')[0].value,
-            name: document.getElementsByName('doctor-field-name')[0].value,
-            street: document.getElementsByName('doctor-field-street')[0].value,
-            city: document.getElementsByName('doctor-field-city')[0].value,
-            country: document.getElementsByName('doctor-field-country')[0].value,
-            zip: document.getElementsByName('doctor-field-zip')[0].value,
-            phone: document.getElementsByName('doctor-field-phone')[0].value,
-            email: document.getElementsByName('doctor-field-email')[0].value,
-            iban: document.getElementsByName('doctor-field-iban')[0].value,
-            vat: document.getElementsByName('doctor-field-vat')[0].value,
+            title: (document.getElementsByName('doctor-field-title')[0] as HTMLInputElement).value,
+            zsrnumber: (document.getElementsByName('doctor-field-zsrnumber')[0] as HTMLInputElement).value,
+            gln: (document.getElementsByName('doctor-field-gln')[0] as HTMLInputElement).value,
+            surname: (document.getElementsByName('doctor-field-surname')[0] as HTMLInputElement).value,
+            name: (document.getElementsByName('doctor-field-name')[0] as HTMLInputElement).value,
+            street: (document.getElementsByName('doctor-field-street')[0] as HTMLInputElement).value,
+            city: (document.getElementsByName('doctor-field-city')[0] as HTMLInputElement).value,
+            country: (document.getElementsByName('doctor-field-country')[0] as HTMLInputElement).value,
+            zip: (document.getElementsByName('doctor-field-zip')[0] as HTMLInputElement).value,
+            phone: (document.getElementsByName('doctor-field-phone')[0] as HTMLInputElement).value,
+            email: (document.getElementsByName('doctor-field-email')[0] as HTMLInputElement).value,
+            iban: (document.getElementsByName('doctor-field-iban')[0] as HTMLInputElement).value,
+            vat: (document.getElementsByName('doctor-field-vat')[0] as HTMLInputElement).value,
         };
     },
     saveFromCurrentUIState: function() {
@@ -66,7 +82,7 @@ var Doctor = {
             });
         });
     },
-    read: function() {
+    read: function(): Promise<Doctor> {
         return getPrescriptionDatabase().then(function (db) {
             return new Promise(function(resolve, reject) {
                 var req = db.transaction("doctor")
@@ -120,7 +136,28 @@ var Doctor = {
     }
 };
 
-var Patient = {
+export type Patient = {
+    id: number,
+    name: string,
+    surname: string,
+    birthday: string,
+    weight: string,
+    height: string,
+    sex: string,
+    street: string,
+    zip: string,
+    city: string,
+    country: string,
+    phone: string,
+    email: string,
+    bagnumber: string,
+    cardnumber: string,
+    cardexpiry: string,
+    gln: string,
+    // optional
+}
+
+export var Patient = {
     toAMKObject: function(patient) {
         return {
             "patient_id": String(patient.id),
@@ -164,8 +201,8 @@ var Patient = {
         };
     },
     fromCurrentUIState: function() {
-        var sexCheckbox = document.querySelector('input[name=address-book-field-sex]:checked');
-        var birthdayString = document.getElementsByName('address-book-field-birthday')[0].value || '';
+        var sexCheckbox = document.querySelector('input[name=address-book-field-sex]:checked') as HTMLInputElement;
+        var birthdayString = (document.getElementsByName('address-book-field-birthday')[0] as HTMLInputElement).value || '';
         var birthdayParts = birthdayString.split('-');
         if (birthdayParts.length === 3) {
             var year = birthdayParts[0];
@@ -174,22 +211,23 @@ var Patient = {
             birthdayString = date.padStart(2,'0') + '.' + month.padStart(2,'0') + '.' + year;
         }
         var patient = {
-            surname: document.getElementsByName('address-book-field-surname')[0].value,
-            name: document.getElementsByName('address-book-field-name')[0].value,
-            street: document.getElementsByName('address-book-field-street')[0].value,
-            city: document.getElementsByName('address-book-field-city')[0].value,
-            zip: document.getElementsByName('address-book-field-zip')[0].value,
-            country: document.getElementsByName('address-book-field-country')[0].value,
+            surname: (document.getElementsByName('address-book-field-surname')[0] as HTMLInputElement).value,
+            name: (document.getElementsByName('address-book-field-name')[0] as HTMLInputElement).value,
+            street: (document.getElementsByName('address-book-field-street')[0] as HTMLInputElement).value,
+            city: (document.getElementsByName('address-book-field-city')[0] as HTMLInputElement).value,
+            zip: (document.getElementsByName('address-book-field-zip')[0] as HTMLInputElement).value,
+            country: (document.getElementsByName('address-book-field-country')[0] as HTMLInputElement).value,
             birthday: birthdayString,
             sex: sexCheckbox ? sexCheckbox.value : "",
-            weight: document.getElementsByName('address-book-field-weight')[0].value,
-            height: document.getElementsByName('address-book-field-height')[0].value,
-            phone: document.getElementsByName('address-book-field-phone')[0].value,
-            email: document.getElementsByName('address-book-field-email')[0].value,
-            bagnumber: document.getElementsByName('address-book-field-bagnumber')[0].value,
-            cardnumber: document.getElementsByName('address-book-field-cardnumber')[0].value,
-            cardexpiry: document.getElementsByName('address-book-field-cardexpiry')[0].value,
-            gln: document.getElementsByName('address-book-field-gln')[0].value,
+            weight: (document.getElementsByName('address-book-field-weight')[0] as HTMLInputElement).value,
+            height: (document.getElementsByName('address-book-field-height')[0] as HTMLInputElement).value,
+            phone: (document.getElementsByName('address-book-field-phone')[0] as HTMLInputElement).value,
+            email: (document.getElementsByName('address-book-field-email')[0] as HTMLInputElement).value,
+            bagnumber: (document.getElementsByName('address-book-field-bagnumber')[0] as HTMLInputElement).value,
+            cardnumber: (document.getElementsByName('address-book-field-cardnumber')[0] as HTMLInputElement).value,
+            cardexpiry: (document.getElementsByName('address-book-field-cardexpiry')[0] as HTMLInputElement).value,
+            gln: (document.getElementsByName('address-book-field-gln')[0] as HTMLInputElement).value,
+            id: null,
         };
         var patientId = Patient.getCurrentId();
         if (patientId !== null) {
@@ -264,7 +302,7 @@ var Patient = {
             });
         });
     },
-    list: function() {
+    list: function(): Promise<Patient[]> {
         return getPrescriptionDatabase().then(function(db) {
             return new Promise(function(resolve, reject) {
                 var objectStore = db.transaction("patients").objectStore("patients");
@@ -276,7 +314,7 @@ var Patient = {
             });
         });
     },
-    read: function(id) {
+    read: function(id): Promise<Patient> {
         return getPrescriptionDatabase().then(function (db) {
             return new Promise(function(resolve, reject) {
                 var req = db.transaction("patients")
@@ -298,7 +336,7 @@ var Patient = {
             patientById[patient.patient_id] = patient;
         });
         return getPrescriptionDatabase()
-            .then(function(db) {
+            .then(function(db): Promise<Patient[]> {
                 return new Promise(function(resolve, reject) {
                     var req = db.transaction("patients").objectStore("patients").getAll();
                     req.onsuccess = function(event) {
@@ -386,17 +424,87 @@ var PrescriptionBasket = {
     }
 };
 
-var Prescription = {
+export type AMKDoctor = {
+    title: string,
+    gln: string,
+    given_name: string,
+    family_name: string,
+    postal_address: string,
+    city: string,
+    country: string,
+    zip_code: string,
+    phone_number: string,
+    email_address: string,
+    iban: string,
+    vat_number: string,
+    zsr_number: string,
+    signature: string,
+};
+
+export type AMKPatient = {
+    patient_id: string,
+    given_name: string,
+    family_name: string,
+    birth_date: string,
+    weight_kg: string,
+    height_cm: string,
+    gender: string,
+    postal_address: string,
+    zip_code: string,
+    city: string,
+    country: string,
+    phone_number: string,
+    email_address: string,
+    bag_number: string,
+    health_card_number: string,
+    health_card_expiry: string,
+    insurance_gln: string,
+}
+
+export type Medication = {
+    title: string,
+    owner: string,
+    regnrs: string,
+    atccode: string,
+    product_name: string,
+    package: string,
+    eancode: string,
+    // TODO: note is legacy, remove it later
+    comment: string,
+};
+
+export type AMKPrescription = {
+    // AMK fields
+    prescription_hash: string,
+    place_date: string,
+    operator: AMKDoctor,
+    patient: AMKPatient,
+    medications: Medication[],
+};
+export type WithoutSignature<T extends Pick<AMKPrescription, 'operator'>> = Omit<T, 'operator'> & {
+    operator: Omit<T['operator'], 'signature'>
+};
+
+export type AMKPrescriptionSimplified = WithoutSignature<AMKPrescription>;
+export type PrescriptionSimplified = WithoutSignature<Prescription>;
+export type Prescription = AMKPrescription & {
+    // Non-AMK extra fields
+    id?: number,
+    patient_id: number,
+    filename: string,
+};
+
+export var Prescription = {
     toAMKBlob: function(prescriptionObj) {
         prescriptionObj = Object.assign({}, prescriptionObj); // Shallow clone so we can
         // Remove the extra fields, and replace patient_id (int) with hash, see Prescription.fromCurrentUIState
         delete prescriptionObj.patient_id;
         delete prescriptionObj.id;
         delete prescriptionObj.filename;
-        prescriptionObj.patient.patient_id = generateAMKPatientId(prescriptionObj.patient);
+        prescriptionObj.patient.patient_id = Patient.generateAMKPatientId(prescriptionObj.patient);
 
         var json = JSON.stringify(prescriptionObj);
-        var encoder = new TextEncoder('utf-8');
+        var encoder = new TextEncoder();
         var bytes = encoder.encode(json);
         var binary = '';
         var len = bytes.byteLength;
@@ -419,7 +527,7 @@ var Prescription = {
         var utf16 = decoder.decode(new Uint8Array(charCodes));
         return JSON.parse(utf16);
     },
-    fromCurrentUIState: function(overwriteCurrent) {
+    fromCurrentUIState: function(overwriteCurrent?: boolean) {
         // The saved object is
         // amk prescription object with
         // + patient_id: number <- refers to a patient in the patient store
@@ -453,7 +561,7 @@ var Prescription = {
 
                 var now = new Date();
 
-                var prescriptionObj = {
+                var prescriptionObj: PrescriptionSimplified = {
                     // Non-AMK extra fields
                     patient_id: Number(patient.id),
                     filename: filename || "RZ_"+currentDateStr+".amk",
@@ -549,7 +657,7 @@ var Prescription = {
             });
         });
     },
-    listSimplified: function(patientId) {
+    listSimplified: function(patientId): Promise<PrescriptionSimplified[]> {
         if (!patientId) {
             return Promise.resolve([]);
         }
@@ -567,16 +675,28 @@ var Prescription = {
             });
         });
     },
-    makeComplete: function(simplifiedPrescription) {
+    list: function(): Promise<Prescription[]> {
+        return getPrescriptionDatabase().then(function(db) {
+            return new Promise(function (res, rej) {
+                var store = db.transaction("prescriptions").objectStore("prescriptions");
+                var getAllRequest = store.getAll();
+                getAllRequest.onsuccess = function() {
+                  res(getAllRequest.result);
+                };
+                getAllRequest.onerror = rej;
+            });
+        });
+    },
+    makeComplete: function<T extends Pick<AMKPrescription, "operator">>(simplifiedPrescription: WithoutSignature<T>): T {
         // We do not save the doctor's signature in the DB to save space,
         // this function add the signature back to a simplified prescription
         var doctorSignData = Doctor.getSignatureBase64();
         if (doctorSignData) {
-            simplifiedPrescription.operator.signature = doctorSignData;
+            (simplifiedPrescription.operator as any).signature = doctorSignData;
         }
-        return simplifiedPrescription;
+        return simplifiedPrescription as any;
     },
-    readComplete: function(prescriptionId) {
+    readComplete: function(prescriptionId): Promise<Prescription> {
         console.log('Reading Precription: ', prescriptionId);
         return getPrescriptionDatabase().then(function (db) {
             return new Promise(function(resolve, reject) {
@@ -585,7 +705,7 @@ var Prescription = {
                     .get(prescriptionId);
                 req.onsuccess = function(event) {
                     var p = event.target.result;
-                    var full = Prescription.makeComplete(p);
+                    var full = Prescription.makeComplete<Prescription>(p);
                     resolve(full);
                 };
                 req.onerror = reject;
@@ -620,33 +740,33 @@ var Prescription = {
         return date;
     }
 };
-var UI = {
+export var UI = {
     Doctor: {
         showModal: function() {
-            var modal = document.querySelector('dialog.prescriptions-doctor');
+            var modal = document.querySelector('dialog.prescriptions-doctor') as HTMLDialogElement;
             modal.showModal();
             Doctor.read().then(UI.Doctor.applyToModal);
             UI.Doctor.reloadOAuthState();
         },
         closeModal: function() {
-            var modal = document.querySelector('dialog.prescriptions-doctor');
+            var modal = document.querySelector('dialog.prescriptions-doctor') as HTMLDialogElement;
             modal.close();
         },
         applyToModal: function(profile) {
-            document.getElementsByName('doctor-field-title')[0].value = profile.title;
-            document.getElementsByName('doctor-field-zsrnumber')[0].value = profile.zsrnumber;
-            document.getElementsByName('doctor-field-gln')[0].value = profile.gln;
-            document.getElementsByName('doctor-field-surname')[0].value = profile.surname;
-            document.getElementsByName('doctor-field-name')[0].value = profile.name;
-            document.getElementsByName('doctor-field-street')[0].value = profile.street;
-            document.getElementsByName('doctor-field-city')[0].value = profile.city;
-            document.getElementsByName('doctor-field-country')[0].value = profile.country;
-            document.getElementsByName('doctor-field-zip')[0].value = profile.zip;
-            document.getElementsByName('doctor-field-phone')[0].value = profile.phone;
-            document.getElementsByName('doctor-field-email')[0].value = profile.email;
-            document.getElementsByName('doctor-field-iban')[0].value = profile.iban;
-            document.getElementsByName('doctor-field-vat')[0].value = profile.vat;
-            document.getElementById('doctor-sign-image').src = Doctor.getSignatureURL() || '';
+            (document.getElementsByName('doctor-field-title')[0] as HTMLInputElement).value = profile.title;
+            (document.getElementsByName('doctor-field-zsrnumber')[0] as HTMLInputElement).value = profile.zsrnumber;
+            (document.getElementsByName('doctor-field-gln')[0] as HTMLInputElement).value = profile.gln;
+            (document.getElementsByName('doctor-field-surname')[0] as HTMLInputElement).value = profile.surname;
+            (document.getElementsByName('doctor-field-name')[0] as HTMLInputElement).value = profile.name;
+            (document.getElementsByName('doctor-field-street')[0] as HTMLInputElement).value = profile.street;
+            (document.getElementsByName('doctor-field-city')[0] as HTMLInputElement).value = profile.city;
+            (document.getElementsByName('doctor-field-country')[0] as HTMLInputElement).value = profile.country;
+            (document.getElementsByName('doctor-field-zip')[0] as HTMLInputElement).value = profile.zip;
+            (document.getElementsByName('doctor-field-phone')[0] as HTMLInputElement).value = profile.phone;
+            (document.getElementsByName('doctor-field-email')[0] as HTMLInputElement).value = profile.email;
+            (document.getElementsByName('doctor-field-iban')[0] as HTMLInputElement).value = profile.iban;
+            (document.getElementsByName('doctor-field-vat')[0] as HTMLInputElement).value = profile.vat;
+            (document.getElementById('doctor-sign-image') as HTMLImageElement).src = Doctor.getSignatureURL() || '';
         },
         reloadOAuthState:function() {
             var oauthSDSContainer = $('#oauth-sds-status').empty();
@@ -700,7 +820,7 @@ var UI = {
     },
     Patient: {
         showModal: function() {
-            var modal = document.querySelector('dialog.prescriptions-address-book');
+            var modal = document.querySelector('dialog.prescriptions-address-book') as HTMLDialogElement;
             UI.Patient.fillModalPatientList();
             var pid = Patient.getCurrentId();
             if (pid) {
@@ -709,7 +829,7 @@ var UI = {
             modal.showModal();
         },
         closeModal: function() {
-            var modal = document.querySelector('dialog.prescriptions-address-book');
+            var modal = document.querySelector('dialog.prescriptions-address-book') as HTMLDialogElement;
             modal.close();
         },
         fillModal: function(id) {
@@ -731,26 +851,26 @@ var UI = {
             }
             Patient.setCurrentId(patient.id);
             Prescription.setCurrentId(null);
-            document.getElementsByName('address-book-field-surname')[0].value = patient.surname;
-            document.getElementsByName('address-book-field-name')[0].value = patient.name;
-            document.getElementsByName('address-book-field-street')[0].value = patient.street;
-            document.getElementsByName('address-book-field-city')[0].value = patient.city;
-            document.getElementsByName('address-book-field-zip')[0].value = patient.zip;
-            document.getElementsByName('address-book-field-country')[0].value = patient.country;
-            document.getElementsByName('address-book-field-birthday')[0].value = birthdayString;
-            document.querySelector('input[name=address-book-field-sex][value=m]').checked =
-            document.querySelector('input[name=address-book-field-sex][value=f]').checked = false;
+            (document.getElementsByName('address-book-field-surname')[0] as HTMLInputElement).value = patient.surname;
+            (document.getElementsByName('address-book-field-name')[0] as HTMLInputElement).value = patient.name;
+            (document.getElementsByName('address-book-field-street')[0] as HTMLInputElement).value = patient.street;
+            (document.getElementsByName('address-book-field-city')[0] as HTMLInputElement).value = patient.city;
+            (document.getElementsByName('address-book-field-zip')[0] as HTMLInputElement).value = patient.zip;
+            (document.getElementsByName('address-book-field-country')[0] as HTMLInputElement).value = patient.country;
+            (document.getElementsByName('address-book-field-birthday')[0] as HTMLInputElement).value = birthdayString;
+            (document.querySelector('input[name=address-book-field-sex][value=m]') as HTMLInputElement).checked =
+            (document.querySelector('input[name=address-book-field-sex][value=f]') as HTMLInputElement).checked = false;
             if (patient.sex === 'f' || patient.sex === 'm') {
-                document.querySelector('input[name=address-book-field-sex][value=' + patient.sex + ']').checked = true;
+                (document.querySelector('input[name=address-book-field-sex][value=' + patient.sex + ']') as HTMLInputElement).checked = true;
             }
-            document.getElementsByName('address-book-field-weight')[0].value = patient.weight;
-            document.getElementsByName('address-book-field-height')[0].value = patient.height;
-            document.getElementsByName('address-book-field-phone')[0].value = patient.phone;
-            document.getElementsByName('address-book-field-email')[0].value = patient.email;
-            document.getElementsByName('address-book-field-bagnumber')[0].value = patient.bagnumber;
-            document.getElementsByName('address-book-field-cardnumber')[0].value = patient.cardnumber;
-            document.getElementsByName('address-book-field-cardexpiry')[0].value = patient.cardexpiry;
-            document.getElementsByName('address-book-field-gln')[0].value = patient.gln;
+            (document.getElementsByName('address-book-field-weight')[0] as HTMLInputElement).value = patient.weight;
+            (document.getElementsByName('address-book-field-height')[0] as HTMLInputElement).value = patient.height;
+            (document.getElementsByName('address-book-field-phone')[0] as HTMLInputElement).value = patient.phone;
+            (document.getElementsByName('address-book-field-email')[0] as HTMLInputElement).value = patient.email;
+            (document.getElementsByName('address-book-field-bagnumber')[0] as HTMLInputElement).value = patient.bagnumber;
+            (document.getElementsByName('address-book-field-cardnumber')[0] as HTMLInputElement).value = patient.cardnumber;
+            (document.getElementsByName('address-book-field-cardexpiry')[0] as HTMLInputElement).value = patient.cardexpiry;
+            (document.getElementsByName('address-book-field-gln')[0] as HTMLInputElement).value = patient.gln;
         },
         fillModalPatientList: function() {
             return Patient.list().then(function(patients) {
@@ -787,23 +907,23 @@ var UI = {
             UI.Prescription.reloadInfo();
         },
         resetForm: function() {
-            document.getElementsByName('address-book-field-surname')[0].value = '';
-            document.getElementsByName('address-book-field-name')[0].value = '';
-            document.getElementsByName('address-book-field-street')[0].value = '';
-            document.getElementsByName('address-book-field-city')[0].value = '';
-            document.getElementsByName('address-book-field-zip')[0].value = '';
-            document.getElementsByName('address-book-field-country')[0].value = '';
-            document.getElementsByName('address-book-field-birthday')[0].value = '';
-            document.querySelector('input[name=address-book-field-sex][value=m]').checked =
-            document.querySelector('input[name=address-book-field-sex][value=f]').checked = false;
-            document.getElementsByName('address-book-field-weight')[0].value = '';
-            document.getElementsByName('address-book-field-height')[0].value = '';
-            document.getElementsByName('address-book-field-phone')[0].value = '';
-            document.getElementsByName('address-book-field-email')[0].value = '';
-            document.getElementsByName('address-book-field-bagnumber')[0].value = '';
-            document.getElementsByName('address-book-field-cardnumber')[0].value = '';
-            document.getElementsByName('address-book-field-cardexpiry')[0].value = '';
-            document.getElementsByName('address-book-field-gln')[0].value = '';
+            (document.getElementsByName('address-book-field-surname')[0] as HTMLInputElement).value = '';
+            (document.getElementsByName('address-book-field-name')[0] as HTMLInputElement).value = '';
+            (document.getElementsByName('address-book-field-street')[0] as HTMLInputElement).value = '';
+            (document.getElementsByName('address-book-field-city')[0] as HTMLInputElement).value = '';
+            (document.getElementsByName('address-book-field-zip')[0] as HTMLInputElement).value = '';
+            (document.getElementsByName('address-book-field-country')[0] as HTMLInputElement).value = '';
+            (document.getElementsByName('address-book-field-birthday')[0] as HTMLInputElement).value = '';
+            (document.querySelector('input[name=address-book-field-sex][value=m]') as HTMLInputElement).checked =
+            (document.querySelector('input[name=address-book-field-sex][value=f]') as HTMLInputElement).checked = false;
+            (document.getElementsByName('address-book-field-weight')[0] as HTMLInputElement).value = '';
+            (document.getElementsByName('address-book-field-height')[0] as HTMLInputElement).value = '';
+            (document.getElementsByName('address-book-field-phone')[0] as HTMLInputElement).value = '';
+            (document.getElementsByName('address-book-field-email')[0] as HTMLInputElement).value = '';
+            (document.getElementsByName('address-book-field-bagnumber')[0] as HTMLInputElement).value = '';
+            (document.getElementsByName('address-book-field-cardnumber')[0] as HTMLInputElement).value = '';
+            (document.getElementsByName('address-book-field-cardexpiry')[0] as HTMLInputElement).value = '';
+            (document.getElementsByName('address-book-field-gln')[0] as HTMLInputElement).value = '';
         }
     },
     PrescriptionBasket: {
@@ -847,14 +967,14 @@ var UI = {
         reloadInfo: function() {
             Doctor.read()
                 .then(function(profile) {
-                    var div = document.getElementsByClassName('prescription-doctor-info')[0];
+                    var div = document.getElementsByClassName('prescription-doctor-info')[0] as HTMLElement;
                     if (!profile) {
                         div.innerText = '';
                     } else {
                         div.innerText = profile.title + ' ' + profile.name + ' ' + profile.surname;
                     }
                 });
-            var patientInfo = document.getElementsByClassName('prescription-patent-info')[0];
+            var patientInfo = document.getElementsByClassName('prescription-patent-info')[0] as HTMLElement;
             var patientId = Patient.getCurrentId();
             if (patientId === null) {
                 patientInfo.innerText = '';
@@ -921,7 +1041,7 @@ var UI = {
             });
             Patient.setCurrentId(prescription.patient_id);
             Prescription.setCurrentId(prescription.id);
-            var patientInfo = document.getElementsByClassName('prescription-patent-info')[0];
+            var patientInfo = document.getElementsByClassName('prescription-patent-info')[0] as HTMLElement;
             patientInfo.innerText = prescription.patient.given_name + ' ' + prescription.patient.family_name;
             return UI.Prescription.reloadInfo();
         }
@@ -1087,7 +1207,7 @@ var OAuth = {
             var authHandle = OAuth.ADSwiss.getAuthHandle();
             if (!authHandle) return Promise.reject();
 
-            var encoder = new TextEncoder('utf-8');
+            var encoder = new TextEncoder();
             console.log('[PDF generation] Making EPrescription (1)');
             var bodyStream = new ReadableStream({
                 start: function(controller) {
@@ -1102,7 +1222,7 @@ var OAuth = {
                return new Promise(function(res) {
                     var reader = new FileReader();
                     reader.onload = function() {
-                        var dataUrl = reader.result;
+                        var dataUrl = reader.result as string;
                         var base64 = dataUrl.split(',')[1];
                         res(base64);
                     };
@@ -1152,7 +1272,7 @@ function getPrescriptionDatabase() {
     return new Promise(function(resolve, reject) {
         var request = window.indexedDB.open("prescriptions", 2);
         request.onerror = function(event) {
-            console.error('Cannot open database', request.errorCode);
+            console.error('Cannot open database', request);
             reject(event);
         };
         request.onsuccess = function(event) {
@@ -1161,7 +1281,7 @@ function getPrescriptionDatabase() {
             resolve(db);
         };
         request.onupgradeneeded = function(event) {
-            var db = event.target.result;
+            var db = (event.target as any).result;
             // Version 1
             if (event.oldVersion <= 0) {
                 var _doctorStore = db.createObjectStore("doctor");
@@ -1182,7 +1302,7 @@ function didPickDoctorSignatureImage(file) {
 
     var reader = new FileReader();
     reader.onload = function() {
-        var dataURL = reader.result;
+        var dataURL = reader.result as string;
         var image = new Image();
         image.onload = function() {
             var ratio;
@@ -1206,7 +1326,7 @@ function didPickDoctorSignatureImage(file) {
             }
             Doctor.setSignatureWithURL(url);
             console.log('sign url', url);
-            var signDisplay = document.getElementById('doctor-sign-image');
+            var signDisplay = document.getElementById('doctor-sign-image') as HTMLImageElement;
             signDisplay.src = url;
         };
         image.src = dataURL;
@@ -1214,7 +1334,8 @@ function didPickDoctorSignatureImage(file) {
     reader.readAsDataURL(file);
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+// document.addEventListener('DOMContentLoaded', function() {
+function main() {
     if (!document.URL.endsWith('/prescription') && !document.URL.endsWith('/rezept')) {
         return;
     }
@@ -1230,8 +1351,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.getElementById('doctor-sign-input').addEventListener('change', function(e) {
         console.log(e);
-        if (!e.target.files.length) return;
-        didPickDoctorSignatureImage(e.target.files[0]);
+        if (!(e.target as HTMLInputElement).files.length) return;
+        didPickDoctorSignatureImage((e.target as HTMLInputElement).files[0]);
     });
     document.getElementById('patient-save').addEventListener('click', function() {
         Patient.saveFromCurrentUIState();
@@ -1247,7 +1368,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (Prescription.getCurrentId()) {
             // Ask if save new prescription
-            var modal = document.getElementById('prescriptions-save-confirm');
+            var modal = document.getElementById('prescriptions-save-confirm') as HTMLDialogElement;
             modal.showModal();
         } else {
             // Just save new prescription
@@ -1257,12 +1378,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.getElementById('prescription-save-new').addEventListener('click', function() {
         Prescription.saveFromCurrentUIState(false).then(UI.Prescription.reloadList);
-        var modal = document.getElementById('prescriptions-save-confirm');
+        var modal = document.getElementById('prescriptions-save-confirm') as HTMLDialogElement;
         modal.close();
     });
     document.getElementById('prescription-save-overwrite').addEventListener('click', function() {
         Prescription.saveFromCurrentUIState(true).then(UI.Prescription.reloadList);
-        var modal = document.getElementById('prescriptions-save-confirm');
+        var modal = document.getElementById('prescriptions-save-confirm') as HTMLDialogElement;
         modal.close();
     });
     document.getElementById('prescription-create').addEventListener('click', function() {
@@ -1275,8 +1396,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.getElementById('prescription-import-all').addEventListener('change', function(e) {
         console.log(e);
-        if (!e.currentTarget.files.length) return;
-        importFromZip(e.currentTarget.files[0]);
+        if (!(e.currentTarget as HTMLInputElement).files.length) return;
+        importFromZip((e.currentTarget as HTMLInputElement).files[0]);
     });
     document.getElementById('prescription-print').addEventListener('click',
         generatePDFWithEPrescriptionPrompt
@@ -1313,7 +1434,7 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.removeItem('ePrescription-flow-next');
         generatePDFWithEPrescriptionPrompt();
     }
-});
+}
 
 function downloadBlob(blob, filename) {
     var url = URL.createObjectURL(blob);
@@ -1327,20 +1448,12 @@ function downloadBlob(blob, filename) {
 }
 
 function exportEverything() {
-    (window.JSZip ? Promise.resolve() : Promise.resolve(
+    ((window as any).JSZip ? Promise.resolve() : Promise.resolve(
         $.getScript('/assets/javascripts/jszip.min.js')
     ))
-    .then(getPrescriptionDatabase)
-    .then(function(db) {
+    .then(function() {
         return Promise.all([
-            new Promise(function (res, rej) {
-                var store = db.transaction("prescriptions").objectStore("prescriptions");
-                var getAllRequest = store.getAll();
-                getAllRequest.onsuccess = function() {
-                  res(getAllRequest.result);
-                };
-                getAllRequest.onerror = rej;
-            }),
+            Prescription.list(),
             Favourites.getRegNrs(),
             Favourites.getFullTextHashes(),
         ]);
@@ -1379,7 +1492,7 @@ function importFromZip(file) {
     var amksPromise;
     var otherPromiseFns = [];
     if (file.name.endsWith('.zip')) {
-        amksPromise = (window.JSZip ? Promise.resolve() : Promise.resolve(
+        amksPromise = ((window as any).JSZip ? Promise.resolve() : Promise.resolve(
             $.getScript('/assets/javascripts/jszip.min.js')
         ))
         .then(function() {
@@ -1522,7 +1635,7 @@ function generatePDF(prescription, qrCodeImage) {
     if (!prescription) return Promise.reject('No prescription');
     console.log('[PDF generation] Loading JSPDF');
     var margin = 20;
-    return (window.jspdf ? Promise.resolve() : Promise.resolve(
+    return ((window as any).jspdf ? Promise.resolve() : Promise.resolve(
         $.getScript('/assets/javascripts/jspdf.umd.min.js')
     ))
     .then(function() {
@@ -1639,7 +1752,7 @@ function generatePDF(prescription, qrCodeImage) {
         return originY;
     }
 
-    function measureText(doc, str, width) {
+    function measureText(doc, str, width?: number) {
         if (!width) width = 210;
         var fontSize = doc.getFontSize();
         var lineHeightFactor = doc.getLineHeightFactor();
@@ -1670,8 +1783,23 @@ function sequencePromise(promiseFns) {
     });
 }
 
-window.UI = UI;
-window.Prescription = Prescription;
-window.Patient = Patient;
+main();
 
-})();
+declare var PrescriptionLocalization: {
+    prescription_please_choose_patient: string,
+    prescription_confirm_clear: string,
+    prescription_imported: string,
+    export_to_zip: string,
+    pdf_page_num: string,
+    login_with_hin_adswiss: string,
+    login_with_hin_sds: string,
+    logout_from_hin_adswiss: string,
+    logout_from_hin_sds: string,
+    import_profile: string,
+    sign_eprescription_confirm: string,
+};
+declare var adswissAppName: string;
+declare var XHRCSRFToken: string;
+declare var JSZip: any;
+declare var Favourites: any; // TODO
+declare var jspdf: any;

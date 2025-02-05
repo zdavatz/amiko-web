@@ -1,12 +1,15 @@
-var EPrescription = {
+import { UI, Patient, Prescription, AMKPrescription, AMKPatient } from './amiko.prescriptions.js';
+import type QrScanner from 'qr-scanner/qr-scanner.umd.min.js';
+
+export var EPrescription = {
     scanQRCode: function() {
-        return (window.QrScanner ? Promise.resolve() : Promise.resolve($.getScript('/assets/javascripts/qr-scanner.umd.min.js')))
+        return ((window as any).QrScanner ? Promise.resolve() : Promise.resolve($.getScript('/assets/javascripts/qr-scanner.umd.min.js')))
         .then(function() {
-            var modal = document.querySelector('dialog#qrcode-scanner');
+            var modal = document.querySelector('dialog#qrcode-scanner') as HTMLDialogElement;
             modal.showModal();
 
             var videoElem = document.querySelector('#qrcode-scanner-video');
-            var qrScanner = EPrescription.qrScanner || new QrScanner(
+            var qrScanner = EPrescription.qrScanner || new (window as any).QrScanner(
                 videoElem,
                 detectedQRCode,
                 { }
@@ -33,7 +36,7 @@ var EPrescription = {
                         ('0' + now.getMinutes()).slice(-2) +
                         ('0' + now.getSeconds()).slice(-2) +
                         '.amk';
-                    amk.filename = filename;
+                    (amk as AMKPrescription & {filename: string}).filename = filename;
                     return Prescription.importAMKObjects([amk]);
                 })
                 .then(function(saveResults) {
@@ -137,7 +140,7 @@ var EPrescription = {
         if (!date.getTime()) return null;
         return date;
     },
-    toAMKPrescription: function(ePrescriptionObj) {
+    toAMKPrescription: function(ePrescriptionObj): Promise<AMKPrescription> {
         var date = EPrescription.parseDateString(ePrescriptionObj['Dt']) || new Date();
         // Normally place_date is composed with doctor's name or city,
         // however it's not available in ePrescription, instead we put the ZSR nummber here
@@ -158,8 +161,8 @@ var EPrescription = {
             '';
         var patientIds = ePrescriptionObj['Patient']['Ids'] || [];
         var insuranceGln = patientIds.length && patientIds[0]['Type'] === 1 ? patientIds[0]['Val'] : ePrescriptionObj['Patient']['Rcv'];
-        var patientWithoutId = {
-            // "patient_id": To be filled below
+        var patientWithoutId: Omit<AMKPatient, 'patient_id'> = {
+            // "patient_id": // To be filled below
             "given_name": ePrescriptionObj['Patient']['FName'] || "",
             "family_name": ePrescriptionObj['Patient']['LName'] || "",
             "birth_date": birthdateString,
@@ -169,7 +172,13 @@ var EPrescription = {
             "postal_address": ePrescriptionObj['Patient']['Street'] || "",
             "city": ePrescriptionObj['Patient']['City'] || "",
             "zip_code": ePrescriptionObj['Patient']['Zip'] || "",
-            "insurance_gln": insuranceGln || ""
+            "insurance_gln": insuranceGln || "",
+            "country": "",
+            "weight_kg": "",
+            "height_cm": "",
+            "bag_number": "",
+            "health_card_number": "",
+            "health_card_expiry": "",
         };
         return Patient.generateAMKPatientId(patientWithoutId).then(function (patientId) {
             var patient = Object.assign({}, patientWithoutId, { patient_id: patientId });
@@ -179,6 +188,18 @@ var EPrescription = {
                 "operator": {
                     "gln": ePrescriptionObj['Auth'] || "",
                     "zsr_number": ePrescriptionObj['Zsr'] || "",
+                    "title": "",
+                    "given_name": "",
+                    "family_name": "",
+                    "postal_address": "",
+                    "city": "",
+                    "country": "",
+                    "zip_code": "",
+                    "phone_number": "",
+                    "email_address": "",
+                    "iban": "",
+                    "vat_number": "",
+                    "signature": "",
                 },
                 "patient": patient,
                 "medications": ePrescriptionObj['Medicaments'].map(function(m) {

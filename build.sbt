@@ -19,7 +19,7 @@ libraryDependencies ++= Seq(
     "org.webjars.npm" % "types__sizzle" % "2.3.9"
 )
 resolveFromWebjarsNodeModulesDir := true
-typescript / logLevel := Level.Debug
+// typescript / logLevel := Level.Debug
 
 lazy val root = (project in file(".")).enablePlugins(PlayJava).enablePlugins(SbtWeb)
 

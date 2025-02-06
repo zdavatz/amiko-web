@@ -712,3 +712,7 @@ input[type="search"]::-webkit-search-results-decoration {
         font-size: 1.0em;
     }
 }
+
+#qrcode-scanner video {
+    width: 100%;
+}

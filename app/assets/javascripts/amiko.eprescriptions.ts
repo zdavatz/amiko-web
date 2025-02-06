@@ -12,7 +12,10 @@ export var EPrescription = {
             var qrScanner = EPrescription.qrScanner || new (window as any).QrScanner(
                 videoElem,
                 detectedQRCode,
-                { }
+                {
+                    highlightScanRegion: true,
+                    highlightCodeOutline: true,
+                }
             );
             EPrescription.qrScanner = qrScanner;
             qrScanner.start();

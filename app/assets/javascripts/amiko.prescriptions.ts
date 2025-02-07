@@ -1434,6 +1434,9 @@ function main() {
         localStorage.removeItem('ePrescription-flow-next');
         generatePDFWithEPrescriptionPrompt();
     }
+
+    // No idea why, but if section-ids is fixed, the div disappear on iOS
+    $('#section-ids').css('position', 'relative');
 }
 
 function downloadBlob(blob, filename) {

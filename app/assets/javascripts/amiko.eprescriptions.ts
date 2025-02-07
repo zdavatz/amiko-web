@@ -22,7 +22,8 @@ export var EPrescription = {
 
             var gotQR = false;
             function detectedQRCode(result) {
-                qrScanner.stop();
+                qrScanner.destroy();
+                EPrescription.qrScanner = null;
                 if (gotQR) {
                     return;
                 }
@@ -55,7 +56,8 @@ export var EPrescription = {
     qrScanner: null,
     stopScanningQRCode: function() {
         if (EPrescription.qrScanner) {
-            EPrescription.qrScanner.stop();
+            EPrescription.qrScanner.destroy();
+            EPrescription.qrScanner = null;
         }
     },
     fromString: function(string) {

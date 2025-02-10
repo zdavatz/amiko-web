@@ -1,33 +1,23 @@
 import { UI, Patient, Prescription, AMKPrescription, AMKPatient } from './amiko.prescriptions.js';
-import type QrScanner from 'qr-scanner/qr-scanner.umd.min.js';
+
+declare var QrcodeDecoder: any;
 
 export var EPrescription = {
     scanQRCode: function() {
-        return ((window as any).QrScanner ? Promise.resolve() : Promise.resolve($.getScript('/assets/javascripts/qr-scanner.umd.min.js')))
+        return ((window as any).QrcodeDecoder ? Promise.resolve() : Promise.resolve($.getScript('/assets/javascripts/qrcode-decoder.min.js')))
         .then(function() {
             var modal = document.querySelector('dialog#qrcode-scanner') as HTMLDialogElement;
             modal.showModal();
 
-            var videoElem = document.querySelector('#qrcode-scanner-video');
-            var qrScanner = EPrescription.qrScanner || new (window as any).QrScanner(
-                videoElem,
-                detectedQRCode,
-                {
-                    highlightScanRegion: true,
-                    highlightCodeOutline: true,
-                }
-            );
+            var videoElem = document.querySelector('#qrcode-scanner-video') as HTMLVideoElement;
+            videoElem.disablePictureInPicture = true;
+            videoElem.playsInline = true;
+            videoElem.muted = true;
+            var qrScanner = EPrescription.qrScanner || new QrcodeDecoder.default();
             EPrescription.qrScanner = qrScanner;
-            qrScanner.start();
-
-            var gotQR = false;
-            function detectedQRCode(result) {
-                qrScanner.destroy();
+            qrScanner.decodeFromCamera(videoElem).then(function(result) {
+                qrScanner.stop();
                 EPrescription.qrScanner = null;
-                if (gotQR) {
-                    return;
-                }
-                gotQR = true;
                 EPrescription.fromString(result.data).then(function(ep) {
                     return EPrescription.toAMKPrescription(ep);
                 }).then(function (amk) {
@@ -50,13 +40,14 @@ export var EPrescription = {
                 .finally(function() {
                     modal.close();
                 });
-            }
+            });
+            videoElem.play();
         });
     },
     qrScanner: null,
     stopScanningQRCode: function() {
         if (EPrescription.qrScanner) {
-            EPrescription.qrScanner.destroy();
+            EPrescription.qrScanner.stop();
             EPrescription.qrScanner = null;
         }
     },

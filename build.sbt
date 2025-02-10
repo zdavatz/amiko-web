@@ -15,7 +15,6 @@ libraryDependencies ++= Seq(
 resolvers += Resolver.bintrayRepo("webjars","maven")
 libraryDependencies ++= Seq(
     "org.webjars.npm" % "types__jquery" % "3.5.32",
-    "org.webjars.npm" % "qr-scanner" % "1.4.2",
     "org.webjars.npm" % "types__sizzle" % "2.3.9"
 )
 resolveFromWebjarsNodeModulesDir := true

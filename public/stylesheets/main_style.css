@@ -450,6 +450,8 @@ a.atc-code:hover {
 
 .prescriptions dialog form[method="dialog"] button,
 .prescriptions dialog form[method="dialog"] input,
+.prescriptions dialog button,
+.prescriptions dialog input[type="file"],
 .prescriptions .prescription-actions input[type="button"] {
     border: solid 1px var(--lines-color);
     color: var(--text-color-normal);
@@ -654,6 +656,31 @@ dialog.prescriptions-doctor {
     filter: invert(1);
 }
 
+#prescription-upload-qr-code-mobile {
+    position: relative;
+    height: 20px;
+    width: 20px;
+    display: inline-block;
+    background: url(/assets/images/qrcode.png);
+    border: none;
+    color: transparent;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    vertical-align: middle;
+    cursor: pointer;
+    -webkit-filter: invert(1);
+    filter: invert(1);
+}
+
+#prescription-upload-qr-code-mobile input[type=file] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
 @media (prefers-color-scheme: light) {
     #prescription-export-all, #prescription-import-all-label, #prescription-print {
        -webkit-filter: invert(1);
@@ -662,6 +689,10 @@ dialog.prescriptions-doctor {
     #prescription-scan-qr-code {
        -webkit-filter: invert(0);
        filter: invert(0);
+    }
+    #prescription-upload-qr-code-mobile {
+        -webkit-filter: invert(0);
+        filter: invert(0);
     }
 }
 

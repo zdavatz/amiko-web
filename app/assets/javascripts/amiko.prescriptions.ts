@@ -1402,11 +1402,23 @@ function main() {
     document.getElementById('prescription-print').addEventListener('click',
         generatePDFWithEPrescriptionPrompt
     );
-    document.getElementById('prescription-scan-qr-code').addEventListener('click', function() {
+    document.getElementById('prescription-scan-qr-code')?.addEventListener('click', function() {
+        var modal = document.getElementById('qrcode-chooser') as HTMLDialogElement;
+        modal.showModal();
+    });
+    document.getElementById('qrcode-scan-button').addEventListener('click', function() {
+        var modal = document.getElementById('qrcode-chooser') as HTMLDialogElement;
+        modal.close();
         EPrescription.scanQRCode();
     });
     document.querySelector('#qrcode-scanner button').addEventListener('click', function() {
         EPrescription.stopScanningQRCode();
+    });
+    document.querySelector('#prescription-upload-qr-code-input').addEventListener('change', function(event) {
+        const file = (event.target as HTMLInputElement).files[0];
+        if (!file) {
+            return;
+        }
     });
     $(document).on('change', 'input.prescription-item-comment', function(e) {
         var index = $(e.target).data('prescription-item-index');

@@ -1419,6 +1419,7 @@ function main() {
         if (!file) {
             return;
         }
+        EPrescription.scanImage(file);
     });
     $(document).on('change', 'input.prescription-item-comment', function(e) {
         var index = $(e.target).data('prescription-item-index');

@@ -44,6 +44,19 @@ export var EPrescription = {
             videoElem.play();
         });
     },
+    scanImage: function(file) {
+        return ((window as any).QrcodeDecoder ? Promise.resolve() : Promise.resolve($.getScript('/assets/javascripts/qrcode-decoder.min.js')))
+        .then(function() {
+            var qrScanner = EPrescription.qrScanner || new QrcodeDecoder.default();
+            var image = new Image();
+            image.onload = function() {
+                qrScanner.decodeFromImage(image).then(function() {
+                    console.log('arg', arguments);
+                })
+            };
+            image.src = URL.createObjectURL(file);
+        });
+    },
     qrScanner: null,
     stopScanningQRCode: function() {
         if (EPrescription.qrScanner) {

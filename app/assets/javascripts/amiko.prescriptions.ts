@@ -1409,7 +1409,7 @@ function main() {
     document.getElementById('qrcode-scan-button').addEventListener('click', function() {
         var modal = document.getElementById('qrcode-chooser') as HTMLDialogElement;
         modal.close();
-        EPrescription.scanQRCode();
+        // EPrescription.scanQRCode();
     });
     document.querySelector('#qrcode-scanner button').addEventListener('click', function() {
         EPrescription.stopScanningQRCode();
@@ -1419,7 +1419,9 @@ function main() {
         if (!file) {
             return;
         }
-        EPrescription.scanImage(file);
+        EPrescription.scanQRCodeImage(file).catch(()=> {
+            alert('No QRCode found');
+        });
     });
     $(document).on('change', 'input.prescription-item-comment', function(e) {
         var index = $(e.target).data('prescription-item-index');

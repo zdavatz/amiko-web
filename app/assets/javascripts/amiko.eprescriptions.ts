@@ -3,7 +3,10 @@ import { UI, Patient, Prescription, AMKPrescription, AMKPatient } from './amiko.
 declare var QrcodeDecoder: any;
 
 export var EPrescription = {
-    scanQRCode: function() {
+    scanQRCodeWithCamera: function() {
+        // This function is not currently used.
+        // The camera on iPhone cannot focus well and therefore is pretty useless for scanning QRCode
+        // We switched to a file input, let the user take a picture / choose from library
         return ((window as any).QrcodeDecoder ? Promise.resolve() : Promise.resolve($.getScript('/assets/javascripts/qrcode-decoder.min.js')))
         .then(function() {
             var modal = document.querySelector('dialog#qrcode-scanner') as HTMLDialogElement;
@@ -18,44 +21,76 @@ export var EPrescription = {
             qrScanner.decodeFromCamera(videoElem).then(function(result) {
                 qrScanner.stop();
                 EPrescription.qrScanner = null;
-                EPrescription.fromString(result.data).then(function(ep) {
-                    return EPrescription.toAMKPrescription(ep);
-                }).then(function (amk) {
-                    var now = new Date();
-                    var filename = 'RZ_' +
-                        now.getFullYear() +
-                        ('0' + (now.getMonth() + 1)).slice(-2) +
-                        ('0' + now.getDate()).slice(-2) +
-                        ('0' + now.getHours()).slice(-2) +
-                        ('0' + now.getMinutes()).slice(-2) +
-                        ('0' + now.getSeconds()).slice(-2) +
-                        '.amk';
-                    (amk as AMKPrescription & {filename: string}).filename = filename;
-                    return Prescription.importAMKObjects([amk]);
-                })
-                .then(function(saveResults) {
-                    return Prescription.readComplete(saveResults[0]);
-                })
-                .then(UI.Prescription.show)
-                .finally(function() {
-                    modal.close();
-                });
+                EPrescription.importFromString(result.data)
+                    .finally(function() {
+                        modal.close();
+                    });
             });
             videoElem.play();
         });
     },
-    scanImage: function(file) {
+    scanQRCodeImage: function(file) {
+        // I cannot find a reliable QRCode scanner library,
+        // so here is it using multiple libraries.
+        return EPrescription.scanWithDecoder(file)
+            .catch(()=> {
+                console.log('Cannot found with decoder, falling back to zxing');
+                return EPrescription.scanWithZXing(file);
+            })
+            .then(EPrescription.importFromString);
+    },
+    scanWithDecoder: function(file) {
         return ((window as any).QrcodeDecoder ? Promise.resolve() : Promise.resolve($.getScript('/assets/javascripts/qrcode-decoder.min.js')))
-        .then(function() {
-            var qrScanner = EPrescription.qrScanner || new QrcodeDecoder.default();
-            var image = new Image();
-            image.onload = function() {
-                qrScanner.decodeFromImage(image).then(function() {
-                    console.log('arg', arguments);
+        .then(()=>
+            new Promise((res, rej)=> {
+                var qrScanner = EPrescription.qrScanner || new QrcodeDecoder.default();
+                var image = new Image();
+                image.onload = function() {
+                    qrScanner.decodeFromImage(image).then(function(result) {
+                        if (!result) {
+                            console.log('No QRCode found with decoder');
+                            rej(null);
+                            return;
+                        }
+                        EPrescription.qrScanner = null;
+                        console.log('QRCode found with decoder');
+                        res(result.data);
+                    });
+                };
+                image.src = URL.createObjectURL(file);
+            })
+        );
+    },
+    scanWithZXing: function(file) {
+        return ((window as any).ZXing ? Promise.resolve() : Promise.resolve($.getScript('/assets/javascripts/zxing-library-0.21.3.js')))
+        .then(()=>
+            Promise.race([
+                // For some reason, this library sometimes doesn't response, we add a 1s timeout just in case
+                new Promise((_res, rej)=> {
+                    setTimeout(rej, 1000);
+                }),
+                new Promise((res, rej)=> {
+                    var image = new Image();
+                    image.onload = function() {
+                        var codeReader = new (window as any).ZXing.BrowserQRCodeReader();
+                        console.log('decoding...');
+                        codeReader.decodeFromImage(image).then((result)=> {
+                            if (result && result.text) {
+                                console.log('found with zxing');
+                                res(result.text);
+                            } else {
+                                console.log('No QRCode found with zxing');
+                                rej(null);
+                            }
+                        }).catch((e)=> {
+                            console.log('No QRCode found with zxing');
+                            rej(e);
+                        });
+                    };
+                    image.src = URL.createObjectURL(file);
                 })
-            };
-            image.src = URL.createObjectURL(file);
-        });
+            ])
+        );
     },
     qrScanner: null,
     stopScanningQRCode: function() {
@@ -63,6 +98,27 @@ export var EPrescription = {
             EPrescription.qrScanner.stop();
             EPrescription.qrScanner = null;
         }
+    },
+    importFromString: function(data) {
+        return EPrescription.fromString(data).then(function(ep) {
+            return EPrescription.toAMKPrescription(ep);
+        }).then(function (amk) {
+            var now = new Date();
+            var filename = 'RZ_' +
+                now.getFullYear() +
+                ('0' + (now.getMonth() + 1)).slice(-2) +
+                ('0' + now.getDate()).slice(-2) +
+                ('0' + now.getHours()).slice(-2) +
+                ('0' + now.getMinutes()).slice(-2) +
+                ('0' + now.getSeconds()).slice(-2) +
+                '.amk';
+            (amk as AMKPrescription & {filename: string}).filename = filename;
+            return Prescription.importAMKObjects([amk]);
+        })
+        .then(function(saveResults) {
+            return Prescription.readComplete(saveResults[0]);
+        })
+        .then(UI.Prescription.show);
     },
     fromString: function(string) {
         var prefix = 'https://eprescription.hin.ch';
@@ -220,3 +276,11 @@ export var EPrescription = {
         });
     }
 };
+
+// $('.prescription-actions').append($('<input type="file">').on('change', (event)=> {
+//     const file = (event.target as HTMLInputElement).files[0];
+//     if (!file) {
+//         return;
+//     }
+//     EPrescription.scanImage(file);
+// }));

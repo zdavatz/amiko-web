@@ -25,7 +25,10 @@
             <input id="prescription-import-all" type="file" accept=".zip,.amk">
         </label>
         <input id="prescription-print" type="button" value='Print'>
-        <input id="prescription-scan-qr-code" type="button" value='@messages("Scan qr code")'>
+        <!-- <input id="prescription-scan-qr-code" type="button" value='@messages("Scan qr code")'> -->
+        <span id="prescription-upload-qr-code-mobile">
+            <input id="prescription-upload-qr-code-input" type="file">
+        </span>
     </div>
 
     <dialog class="prescriptions-address-book">
@@ -189,8 +192,22 @@
             <button>@messages("cancel")</button>
         </form>
     </dialog>
+    <dialog id="qrcode-chooser">
+        <p>
+            <button id="qrcode-scan-button">@messages("qrcode_use_camera")</button>
+        </p>
+        <p>
+            <span>@messages("qrcode_or_choose_a_file")</span>
+            <input type="file" id="qrcode-file-chooser">
+        </p>
+        <p>
+            <form class="dialog-action" method="dialog">
+                <button>@messages("close")</button>
+            </form>
+        </p>
+    </dialog>
     <dialog id="qrcode-scanner">
-        <video id="qrcode-scanner-video"></video>
+        <video id="qrcode-scanner-video" autoplay></video>
         <form class="dialog-action" method="dialog">
             <button>@messages("cancel")</button>
         </form>

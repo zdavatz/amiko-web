@@ -1,6 +1,7 @@
 import { UI, Patient, Prescription, AMKPrescription, AMKPatient } from './amiko.prescriptions.js';
 
 declare var QrcodeDecoder: any;
+declare var pdfjsLib: any;
 
 export var EPrescription = {
     scanQRCodeWithCamera: function() {
@@ -29,39 +30,99 @@ export var EPrescription = {
             videoElem.play();
         });
     },
-    scanQRCodeImage: function(file) {
+    scanAndImportQRCodeFromFile: function(file) {
+        if (file.type === 'application/pdf') {
+            return EPrescription.findImagesFromPDF(file).then(async (images) => {
+                for (const image of images) {
+                    try {
+                        await EPrescription.scanAndImportQRCodeImage(image);
+                        return;
+                    } catch {
+                        // noop, try the next image
+                    }
+                }
+                throw new Error('No QR Code found');
+            });
+        }
+        return new Promise((res, rej)=> {
+            var image = new Image();
+            image.onload = function() {
+                EPrescription.scanAndImportQRCodeImage(image).then(res).catch(rej);
+            };
+            image.src = URL.createObjectURL(file);
+        });
+    },
+    findImagesFromPDF: async function(file: File): Promise<HTMLImageElement[]> {
+        const [_, pdf] = await Promise.all([
+            ((window as any).pdfjsLib ? Promise.resolve() : Promise.resolve($.getScript('/assets/javascripts/qrcode-decoder.min.js'))),
+            new Promise((res)=> {
+                var fileReader = new FileReader();
+                fileReader.onload = function() {
+                    var typedArray = new Uint8Array(this.result as ArrayBuffer);
+                    res(typedArray);
+                };
+                fileReader.readAsArrayBuffer(file);
+            })
+            .then(typedArray => {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = '/assets/javascripts/pdf.worker.mjs';
+                return pdfjsLib.getDocument(typedArray).promise;
+            }),
+        ]);
+
+        const page1 = await pdf.getPage(1);
+        const ops = await page1.getOperatorList();
+        const imageArgs = ops.fnArray.map((fn, i)=> (fn === pdfjsLib.OPS.paintImageXObject) ? ops.argsArray[i][0] : null).filter(a => a);
+        const bitmaps = imageArgs.map(arg=> {
+            try {
+                return page1.objs.get(arg)?.bitmap;
+            } catch (_e) {
+                return null;
+            }
+        }).filter(a => a);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const result = [];
+        for (const bitmap of bitmaps) {
+            canvas.width = bitmap.width;
+            canvas.height = bitmap.height;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height);
+            const url = canvas.toDataURL();
+            const image = new Image();
+            await new Promise(res => {
+                image.onload = ()=> res(image);
+                image.src = url;
+            });
+            result.push(image);
+        }
+        return result;
+    },
+    scanAndImportQRCodeImage: function(imageElement: HTMLImageElement) {
         // I cannot find a reliable QRCode scanner library,
         // so here is it using multiple libraries.
-        return EPrescription.scanWithDecoder(file)
+        return EPrescription.scanImageWithDecoder(imageElement)
             .catch(()=> {
                 console.log('Cannot found with decoder, falling back to zxing');
-                return EPrescription.scanWithZXing(file);
+                return EPrescription.scanImageWithZXing(imageElement);
             })
             .then(EPrescription.importFromString);
     },
-    scanWithDecoder: function(file) {
+    scanImageWithDecoder: function(image: HTMLImageElement): Promise<string> {
         return ((window as any).QrcodeDecoder ? Promise.resolve() : Promise.resolve($.getScript('/assets/javascripts/qrcode-decoder.min.js')))
-        .then(()=>
-            new Promise((res, rej)=> {
-                var qrScanner = EPrescription.qrScanner || new QrcodeDecoder.default();
-                var image = new Image();
-                image.onload = function() {
-                    qrScanner.decodeFromImage(image).then(function(result) {
-                        if (!result) {
-                            console.log('No QRCode found with decoder');
-                            rej(null);
-                            return;
-                        }
-                        EPrescription.qrScanner = null;
-                        console.log('QRCode found with decoder');
-                        res(result.data);
-                    });
-                };
-                image.src = URL.createObjectURL(file);
-            })
-        );
+        .then(()=> {
+            var qrScanner = EPrescription.qrScanner || new QrcodeDecoder.default();
+            return qrScanner.decodeFromImage(image);
+        }).then(function(result) {
+            if (!result) {
+                console.log('No QRCode found with decoder');
+                return Promise.reject(null);
+            }
+            EPrescription.qrScanner = null;
+            console.log('QRCode found with decoder');
+            return result.data;
+        });
     },
-    scanWithZXing: function(file) {
+    scanImageWithZXing: function(image: HTMLImageElement): Promise<string> {
         return ((window as any).ZXing ? Promise.resolve() : Promise.resolve($.getScript('/assets/javascripts/zxing-library-0.21.3.js')))
         .then(()=>
             Promise.race([
@@ -69,28 +130,20 @@ export var EPrescription = {
                 new Promise((_res, rej)=> {
                     setTimeout(rej, 1000);
                 }),
-                new Promise((res, rej)=> {
-                    var image = new Image();
-                    image.onload = function() {
-                        var codeReader = new (window as any).ZXing.BrowserQRCodeReader();
-                        console.log('decoding...');
-                        codeReader.decodeFromImage(image).then((result)=> {
-                            if (result && result.text) {
-                                console.log('found with zxing');
-                                res(result.text);
-                            } else {
-                                console.log('No QRCode found with zxing');
-                                rej(null);
-                            }
-                        }).catch((e)=> {
-                            console.log('No QRCode found with zxing');
-                            rej(e);
-                        });
-                    };
-                    image.src = URL.createObjectURL(file);
-                })
+                new (window as any).ZXing.BrowserQRCodeReader().decodeFromImage(image)
             ])
-        );
+        ).then((result)=> {
+            if (result && result.text) {
+                console.log('found with zxing');
+                return result.text;
+            } else {
+                console.log('No QRCode found with zxing');
+                return Promise.reject(null);
+            }
+        }).catch((e)=> {
+            console.log('No QRCode found with zxing');
+            return Promise.reject(e);
+        });
     },
     qrScanner: null,
     stopScanningQRCode: function() {

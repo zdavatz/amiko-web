@@ -240,6 +240,7 @@ export var EPrescription = {
         return ePrescriptionObj;
     },
     parseDateString: function(dateString) {
+        if (!dateString) return null;
         var date = new Date(dateString);
         if (date.getTime()) return date;
         // Sometimes we get invalid date string like: 2024-11-1300:00:00+2:00

@@ -1419,7 +1419,8 @@ function main() {
         if (!file) {
             return;
         }
-        EPrescription.scanQRCodeImage(file).catch(()=> {
+        EPrescription.scanAndImportQRCodeFromFile(file).catch((e)=> {
+            console.error(e);
             alert('No QRCode found');
         });
     });

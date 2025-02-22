@@ -380,6 +380,10 @@ export var Patient = {
         var str = amkPatient.given_name.toLowerCase() + '.' + amkPatient.family_name.toLowerCase() + '.' + birthDateString;
 
         function digestMessage(message) {
+            if (!window.crypto.subtle) {
+                // No crypto in insecure env, use the raw string for debug
+                return Promise.resolve(message);
+            }
             var msgUint8 = new TextEncoder().encode(message); // encode as (utf-8) Uint8Array
             return window.crypto.subtle.digest("SHA-256", msgUint8).then(function(hashBuffer) {
                 // hash the message
@@ -566,7 +570,7 @@ export var Prescription = {
                     patient_id: Number(patient.id),
                     filename: filename || "RZ_"+currentDateStr+".amk",
                     // AMK fields
-                    prescription_hash: crypto.randomUUID(),
+                    prescription_hash: crypto.randomUUID ? crypto.randomUUID() : String(Math.random()),
                     place_date: profile.city + ', ' +
                         // dd.MM.yyyy (HH:mm:ss)
                         ('0' + now.getDate()).slice(-2) + '.' +

@@ -37,7 +37,8 @@ export var EPrescription = {
                     try {
                         await EPrescription.scanAndImportQRCodeImage(image);
                         return;
-                    } catch {
+                    } catch (e) {
+                        console.error(e);
                         // noop, try the next image
                     }
                 }
@@ -53,32 +54,34 @@ export var EPrescription = {
         });
     },
     findImagesFromPDF: async function(file: File): Promise<HTMLImageElement[]> {
-        const [_, pdf] = await Promise.all([
-            ((window as any).pdfjsLib ? Promise.resolve() : Promise.resolve($.getScript('/assets/javascripts/qrcode-decoder.min.js'))),
-            new Promise((res)=> {
-                var fileReader = new FileReader();
-                fileReader.onload = function() {
-                    var typedArray = new Uint8Array(this.result as ArrayBuffer);
-                    res(typedArray);
-                };
-                fileReader.readAsArrayBuffer(file);
-            })
-            .then(typedArray => {
-                pdfjsLib.GlobalWorkerOptions.workerSrc = '/assets/javascripts/pdf.worker.mjs';
-                return pdfjsLib.getDocument(typedArray).promise;
-            }),
-        ]);
+        const typedArray = await new Promise((res)=> {
+            var fileReader = new FileReader();
+            fileReader.onload = function() {
+                var typedArray = new Uint8Array(this.result as ArrayBuffer);
+                res(typedArray);
+            };
+            fileReader.readAsArrayBuffer(file);
+        });
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '/assets/javascripts/pdf.worker.mjs';
+        const pdf = await pdfjsLib.getDocument(typedArray).promise;
+        (window as any).pdf = pdf;
+
 
         const page1 = await pdf.getPage(1);
         const ops = await page1.getOperatorList();
+        await pdf.loadingTask.promise;
         const imageArgs = ops.fnArray.map((fn, i)=> (fn === pdfjsLib.OPS.paintImageXObject) ? ops.argsArray[i][0] : null).filter(a => a);
-        const bitmaps = imageArgs.map(arg=> {
+        const bitmaps = (await Promise.all(imageArgs.map(async (arg)=> {
             try {
-                return page1.objs.get(arg)?.bitmap;
+                const bitmapObj = await new Promise(res=> {
+                    page1.objs.get(arg, res)
+                }) as any;
+                // Sometimes it might me a video frame, need to convert it:
+                return await createImageBitmap(bitmapObj?.bitmap);
             } catch (_e) {
                 return null;
             }
-        }).filter(a => a);
+        }))).filter(a => a);
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         const result = [];
@@ -233,7 +236,7 @@ export var EPrescription = {
                 };
             }),
             'MedType': 3, // Prescription
-            'Id': crypto.randomUUID(),
+            'Id': crypto.randomUUID ? crypto.randomUUID() : String(Math.random()),
             'Auth': prescription.operator.gln || '',
             'Dt': new Date().toISOString()
         };
@@ -302,7 +305,7 @@ export var EPrescription = {
         return Patient.generateAMKPatientId(patientWithoutId).then(function (patientId) {
             var patient = Object.assign({}, patientWithoutId, { patient_id: patientId });
             return {
-                "prescription_hash": crypto.randomUUID(),
+                "prescription_hash": crypto.randomUUID ? crypto.randomUUID() : String(Math.random()),
                 "place_date": placeDate,
                 "operator": {
                     "gln": ePrescriptionObj['Auth'] || "",

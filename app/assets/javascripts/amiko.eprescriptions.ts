@@ -37,7 +37,8 @@ export var EPrescription = {
                     try {
                         await EPrescription.scanAndImportQRCodeImage(image);
                         return;
-                    } catch {
+                    } catch (e) {
+                        console.error(e);
                         // noop, try the next image
                     }
                 }
@@ -235,7 +236,7 @@ export var EPrescription = {
                 };
             }),
             'MedType': 3, // Prescription
-            'Id': crypto.randomUUID(),
+            'Id': crypto.randomUUID ? crypto.randomUUID() : String(Math.random()),
             'Auth': prescription.operator.gln || '',
             'Dt': new Date().toISOString()
         };
@@ -304,7 +305,7 @@ export var EPrescription = {
         return Patient.generateAMKPatientId(patientWithoutId).then(function (patientId) {
             var patient = Object.assign({}, patientWithoutId, { patient_id: patientId });
             return {
-                "prescription_hash": crypto.randomUUID(),
+                "prescription_hash": crypto.randomUUID ? crypto.randomUUID() : String(Math.random()),
                 "place_date": placeDate,
                 "operator": {
                     "gln": ePrescriptionObj['Auth'] || "",

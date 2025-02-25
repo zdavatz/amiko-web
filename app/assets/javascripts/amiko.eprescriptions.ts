@@ -108,6 +108,26 @@ export var EPrescription = {
                 console.log('Cannot found with decoder, falling back to zxing');
                 return EPrescription.scanImageWithZXing(imageElement);
             })
+            .catch(()=> {
+                // Sometimes it returns null even if the entire image (600x600) is a QRCode
+                // However It somehow works when the image is reduced to 300x300, not sure why.
+                console.log('Try again with resized image');
+                const smallerCanvas = document.createElement('canvas');
+                smallerCanvas.width = imageElement.width / 2;
+                smallerCanvas.height = imageElement.height / 2;
+                const ctx = smallerCanvas.getContext('2d');
+                ctx.drawImage(imageElement, 0, 0, imageElement.width / 2, imageElement.height / 2);
+                return new Promise<HTMLImageElement>(res => {
+                    const smallerImage = new Image();
+                    smallerImage.onload = ()=> res(smallerImage);
+                    smallerImage.src = smallerCanvas.toDataURL();
+                })
+                .then((smallerImage)=>
+                    EPrescription.scanImageWithDecoder(smallerImage).catch(()=>
+                        EPrescription.scanImageWithZXing(smallerImage)
+                    )
+                );
+            })
             .then(EPrescription.importFromString);
     },
     scanImageWithDecoder: function(image: HTMLImageElement): Promise<string> {

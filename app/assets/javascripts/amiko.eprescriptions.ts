@@ -5,21 +5,19 @@ declare var pdfjsLib: any;
 
 export var EPrescription = {
     scanQRCodeWithCamera: function() {
-        // This function is not currently used.
-        // The camera on iPhone cannot focus well and therefore is pretty useless for scanning QRCode
-        // We switched to a file input, let the user take a picture / choose from library
+        var videoElem = document.querySelector('#qrcode-scanner-video') as HTMLVideoElement;
         return ((window as any).QrcodeDecoder ? Promise.resolve() : Promise.resolve($.getScript('/assets/javascripts/qrcode-decoder.min.js')))
         .then(function() {
             var modal = document.querySelector('dialog#qrcode-scanner') as HTMLDialogElement;
             modal.showModal();
 
-            var videoElem = document.querySelector('#qrcode-scanner-video') as HTMLVideoElement;
             videoElem.disablePictureInPicture = true;
             videoElem.playsInline = true;
             videoElem.muted = true;
+            videoElem.hidden = false;
             var qrScanner = EPrescription.qrScanner || new QrcodeDecoder.default();
             EPrescription.qrScanner = qrScanner;
-            qrScanner.decodeFromCamera(videoElem).then(function(result) {
+            const promise = qrScanner.decodeFromCamera(videoElem).then(function(result) {
                 qrScanner.stop();
                 EPrescription.qrScanner = null;
                 EPrescription.importFromString(result.data)
@@ -28,6 +26,9 @@ export var EPrescription = {
                     });
             });
             videoElem.play();
+            return promise;
+        }).catch(()=> {
+            videoElem.hidden = true;
         });
     },
     scanAndImportQRCodeFromFile: function(file) {
@@ -98,6 +99,21 @@ export var EPrescription = {
             });
             result.push(image);
         }
+
+        // var viewport = page1.getViewport(1.0);
+        // canvas.height = viewport.height || 3000;
+        // canvas.width = viewport.width || 3000;
+        // const task = page1.render({canvasContext: ctx, viewport: viewport})
+        // task.onError = (e)=> console.error(e);
+        // await task.promise;
+        // const url = canvas.toDataURL();
+        // const fullImage = new Image();
+        // await new Promise(res => {
+        //     fullImage.onload = ()=> res(fullImage);
+        //     fullImage.src = url;
+        // });
+        // result.push(fullImage);
+
         return result;
     },
     scanAndImportQRCodeImage: function(imageElement: HTMLImageElement) {
@@ -107,6 +123,26 @@ export var EPrescription = {
             .catch(()=> {
                 console.log('Cannot found with decoder, falling back to zxing');
                 return EPrescription.scanImageWithZXing(imageElement);
+            })
+            .catch(()=> {
+                // Sometimes it returns null even if the entire image (600x600) is a QRCode
+                // However It somehow works when the image is reduced to 300x300, not sure why.
+                console.log('Try again with resized image');
+                const smallerCanvas = document.createElement('canvas');
+                smallerCanvas.width = imageElement.width / 2;
+                smallerCanvas.height = imageElement.height / 2;
+                const ctx = smallerCanvas.getContext('2d');
+                ctx.drawImage(imageElement, 0, 0, imageElement.width / 2, imageElement.height / 2);
+                return new Promise<HTMLImageElement>(res => {
+                    const smallerImage = new Image();
+                    smallerImage.onload = ()=> res(smallerImage);
+                    smallerImage.src = smallerCanvas.toDataURL();
+                })
+                .then((smallerImage)=>
+                    EPrescription.scanImageWithDecoder(smallerImage).catch(()=>
+                        EPrescription.scanImageWithZXing(smallerImage)
+                    )
+                );
             })
             .then(EPrescription.importFromString);
     },

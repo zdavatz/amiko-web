@@ -67,5 +67,4 @@ logout_from_hin_sds = Ausloggen von (SDS)
 import_profile = Profil importieren
 sign_eprescription_confirm = Möchten Sie Ihr ERezept unterschreiben?
 favourites = Favoriten
-qrcode_use_camera = Scannen mit Kamera
-qrcode_or_choose_a_file = oder einem Datei wählen:
+scan_file = Datei scannen

@@ -68,5 +68,4 @@ logout_from_hin_sds = Déconnexion de HIN (SDS)
 import_profile = Profil d'importation
 sign_eprescription_confirm = Voulez-vous signer numériquement votre ordonnance?
 favourites = Favoris
-qrcode_use_camera = Scanner avec l'appareil photo
-qrcode_or_choose_a_file = ou choisir un fichier:
+scan_file = Fichier de scannage

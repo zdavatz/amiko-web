@@ -746,6 +746,8 @@ input[type="search"]::-webkit-search-results-decoration {
 
 #qrcode-scanner {
     min-width: 90%;
+    top: 80px;
+    bottom: 80px;
 }
 
 #qrcode-scanner video {

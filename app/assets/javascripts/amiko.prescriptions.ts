@@ -1407,23 +1407,26 @@ function main() {
         generatePDFWithEPrescriptionPrompt
     );
     document.getElementById('prescription-scan-qr-code')?.addEventListener('click', function() {
-        var modal = document.getElementById('qrcode-chooser') as HTMLDialogElement;
-        modal.showModal();
-    });
-    document.getElementById('qrcode-scan-button').addEventListener('click', function() {
-        var modal = document.getElementById('qrcode-chooser') as HTMLDialogElement;
-        modal.close();
-        // EPrescription.scanQRCode();
+        EPrescription.scanQRCodeWithCamera().catch(()=> {
+            console.log('alright');
+        });
     });
     document.querySelector('#qrcode-scanner button').addEventListener('click', function() {
         EPrescription.stopScanningQRCode();
+        var modal = document.querySelector('dialog#qrcode-scanner') as HTMLDialogElement;
+        modal.close();
     });
     document.querySelector('#prescription-upload-qr-code-input').addEventListener('change', function(event) {
         const file = (event.target as HTMLInputElement).files[0];
         if (!file) {
             return;
         }
-        EPrescription.scanAndImportQRCodeFromFile(file).catch((e)=> {
+        EPrescription.scanAndImportQRCodeFromFile(file)
+        .then(()=> {
+            var modal = document.querySelector('dialog#qrcode-scanner') as HTMLDialogElement;
+            modal.close();
+        })
+        .catch((e)=> {
             console.error(e);
             alert('No QRCode found');
         });

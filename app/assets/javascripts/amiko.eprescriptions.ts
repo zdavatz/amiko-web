@@ -222,26 +222,31 @@ export var EPrescription = {
                 string = string.substring(0, andIndex);
             }
         }
+        prefix = 'CHMED16A0';
+        if (string.startsWith(prefix)) {
+            string = string.substring(prefix.length);
+            return Promise.resolve(JSON.parse(string));
+        }
         prefix = 'CHMED16A1';
-        if (!string.startsWith(prefix)) {
-            return Promise.reject(new Error('Invalid prefix'));
-        }
-        string = string.substring(prefix.length);
+        if (string.startsWith(prefix)) {
+            string = string.substring(prefix.length);
 
-        var byteCharacters = atob(string);
-        var byteArrays = [];
-        for (let i = 0; i < byteCharacters.length; i++) {
-            byteArrays.push(byteCharacters.charCodeAt(i));
-        }
-        var byteArray = new Uint8Array(byteArrays);
-        var blob = new Blob([byteArray], { type: 'text/plain' });
+            var byteCharacters = atob(string);
+            var byteArrays = [];
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteArrays.push(byteCharacters.charCodeAt(i));
+            }
+            var byteArray = new Uint8Array(byteArrays);
+            var blob = new Blob([byteArray], { type: 'text/plain' });
 
-        var ds = new DecompressionStream("gzip");
-        var decompressedStream = blob.stream().pipeThrough(ds);
-        return new Response(decompressedStream).json().then(function(a) {
-            // console.log('json', a);
-            return a;
-        });
+            var ds = new DecompressionStream("gzip");
+            var decompressedStream = blob.stream().pipeThrough(ds);
+            return new Response(decompressedStream).json().then(function(a) {
+                // console.log('json', a);
+                return a;
+            });
+        }
+        return Promise.reject(new Error('Invalid prefix'));
     },
     fromPrescription: function(prescription) {
         function formatDateForEPrescription(dateStr) {

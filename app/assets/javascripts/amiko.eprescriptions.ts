@@ -100,6 +100,7 @@ export var EPrescription = {
             result.push(image);
         }
 
+        // Export the entire pdf as image, this is slow:
         // var viewport = page1.getViewport(1.0);
         // canvas.height = viewport.height || 3000;
         // canvas.width = viewport.width || 3000;
@@ -119,11 +120,10 @@ export var EPrescription = {
     scanAndImportQRCodeImage: function(imageElement: HTMLImageElement) {
         // I cannot find a reliable QRCode scanner library,
         // so here is it using multiple libraries.
-        return EPrescription.scanImageWithDecoder(imageElement)
-            .catch(()=> {
-                console.log('Cannot found with decoder, falling back to zxing');
-                return EPrescription.scanImageWithZXing(imageElement);
-            })
+        return Promise.any([
+            EPrescription.scanImageWithDecoder(imageElement),
+            EPrescription.scanImageWithZXing(imageElement)
+        ])
             .catch(()=> {
                 // Sometimes it returns null even if the entire image (600x600) is a QRCode
                 // However It somehow works when the image is reduced to 300x300, not sure why.
@@ -139,9 +139,10 @@ export var EPrescription = {
                     smallerImage.src = smallerCanvas.toDataURL();
                 })
                 .then((smallerImage)=>
-                    EPrescription.scanImageWithDecoder(smallerImage).catch(()=>
+                    Promise.any([
+                        EPrescription.scanImageWithDecoder(smallerImage),
                         EPrescription.scanImageWithZXing(smallerImage)
-                    )
+                    ])
                 );
             })
             .then(EPrescription.importFromString);

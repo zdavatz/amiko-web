@@ -1417,10 +1417,14 @@ function main() {
         modal.close();
     });
     document.querySelector('#prescription-upload-qr-code-input').addEventListener('change', function(event) {
-        const file = (event.target as HTMLInputElement).files[0];
+        const target = event.target as HTMLInputElement
+        const file = target.files[0];
         if (!file) {
             return;
         }
+        const status = document.querySelector('p.qrcode-scanner-status') as HTMLParagraphElement;
+        status.innerText = 'Loading...';
+        target.disabled = true;
         EPrescription.scanAndImportQRCodeFromFile(file)
         .then(()=> {
             var modal = document.querySelector('dialog#qrcode-scanner') as HTMLDialogElement;
@@ -1429,6 +1433,10 @@ function main() {
         .catch((e)=> {
             console.error(e);
             alert('No QRCode found');
+        })
+        .finally(()=> {
+            target.disabled = false;
+            status.innerText = '';
         });
     });
     $(document).on('change', 'input.prescription-item-comment', function(e) {

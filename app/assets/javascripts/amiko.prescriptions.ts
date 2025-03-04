@@ -1435,6 +1435,7 @@ function main() {
             alert('No QRCode found');
         })
         .finally(()=> {
+            target.value = null;
             target.disabled = false;
             status.innerText = '';
         });

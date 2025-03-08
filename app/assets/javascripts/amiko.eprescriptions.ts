@@ -262,7 +262,7 @@ export var EPrescription = {
                 'FName': prescription.patient.given_name,
                 'LName': prescription.patient.family_name,
                 'BDt': formatDateForEPrescription(prescription.patient.birth_date),
-                'Gender': prescription.patient.gender == 'm' ? 1 : 2,
+                'Gender': prescription.patient.gender === 'm' ? 1 : 2,
                 'Street': prescription.patient.postal_address,
                 'Zip' : prescription.patient.zip_code,
                 'City' : prescription.patient.city,

@@ -864,8 +864,11 @@ export var UI = {
             (document.getElementsByName('address-book-field-birthday')[0] as HTMLInputElement).value = birthdayString;
             (document.querySelector('input[name=address-book-field-sex][value=m]') as HTMLInputElement).checked =
             (document.querySelector('input[name=address-book-field-sex][value=f]') as HTMLInputElement).checked = false;
-            if (patient.sex === 'f' || patient.sex === 'm') {
-                (document.querySelector('input[name=address-book-field-sex][value=' + patient.sex + ']') as HTMLInputElement).checked = true;
+            if (patient.sex === 'f' || patient.sex === 'woman') {
+                (document.querySelector('input[name=address-book-field-sex][value=f]') as HTMLInputElement).checked = true;
+            }
+            if (patient.sex === 'm' || patient.sex === 'man') {
+                (document.querySelector('input[name=address-book-field-sex][value=m]') as HTMLInputElement).checked = true;
             }
             (document.getElementsByName('address-book-field-weight')[0] as HTMLInputElement).value = patient.weight;
             (document.getElementsByName('address-book-field-height')[0] as HTMLInputElement).value = patient.height;

@@ -324,7 +324,19 @@ export var EPrescription = {
             String(birthdate.getDate()).padStart(2,'0') + '.' + String(birthdate.getMonth()).padStart(2,'0') + '.' + birthdate.getFullYear() :
             '';
         var patientIds = ePrescriptionObj['Patient']['Ids'] || [];
-        var insuranceGln = patientIds.length && patientIds[0]['Type'] === 1 ? patientIds[0]['Val'] : ePrescriptionObj['Patient']['Rcv'];
+        var patientId = patientIds.length && patientIds[0]['Type'] === 1 ? patientIds[0]['Val'] : null;
+        var healthCardNumber = null, insuranceGln = null;
+
+        if (!patientId) {
+            patientId = ePrescriptionObj['Patient']['Rcv'];
+        }
+        if (patientId) {
+            if (patientId.includes('.') || patientId.length === 20) {
+                healthCardNumber = patientId;
+            } else if (patientId.length === 13) {
+                insuranceGln = patientId;
+            }
+        }
         var patientWithoutId: Omit<AMKPatient, 'patient_id'> = {
             // "patient_id": // To be filled below
             "given_name": ePrescriptionObj['Patient']['FName'] || "",
@@ -341,7 +353,7 @@ export var EPrescription = {
             "weight_kg": "",
             "height_cm": "",
             "bag_number": "",
-            "health_card_number": "",
+            "health_card_number": healthCardNumber || "",
             "health_card_expiry": "",
         };
         return Patient.generateAMKPatientId(patientWithoutId).then(function (patientId) {

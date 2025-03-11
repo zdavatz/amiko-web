@@ -126,9 +126,9 @@ var Doctor = {
     stringForPrescriptionPrinting: function(profile) {
         var s = "";
         if (profile.title) {
-            s += profile.title + " ";
+            s += (profile.title || '') + " ";
         }
-        s += profile.name + " " + profile.surname;
+        s += (profile.name || '') + " " + (profile.surname || '');
         s += "\n" + profile.street;
         s += "\n" + profile.zip + " " + profile.city;
         if (profile.email) s += "\n" + profile.email;
@@ -758,19 +758,19 @@ export var UI = {
             modal.close();
         },
         applyToModal: function(profile) {
-            (document.getElementsByName('doctor-field-title')[0] as HTMLInputElement).value = profile.title;
-            (document.getElementsByName('doctor-field-zsrnumber')[0] as HTMLInputElement).value = profile.zsrnumber;
-            (document.getElementsByName('doctor-field-gln')[0] as HTMLInputElement).value = profile.gln;
-            (document.getElementsByName('doctor-field-surname')[0] as HTMLInputElement).value = profile.surname;
-            (document.getElementsByName('doctor-field-name')[0] as HTMLInputElement).value = profile.name;
-            (document.getElementsByName('doctor-field-street')[0] as HTMLInputElement).value = profile.street;
-            (document.getElementsByName('doctor-field-city')[0] as HTMLInputElement).value = profile.city;
-            (document.getElementsByName('doctor-field-country')[0] as HTMLInputElement).value = profile.country;
-            (document.getElementsByName('doctor-field-zip')[0] as HTMLInputElement).value = profile.zip;
-            (document.getElementsByName('doctor-field-phone')[0] as HTMLInputElement).value = profile.phone;
-            (document.getElementsByName('doctor-field-email')[0] as HTMLInputElement).value = profile.email;
-            (document.getElementsByName('doctor-field-iban')[0] as HTMLInputElement).value = profile.iban;
-            (document.getElementsByName('doctor-field-vat')[0] as HTMLInputElement).value = profile.vat;
+            (document.getElementsByName('doctor-field-title')[0] as HTMLInputElement).value = profile.title || '';
+            (document.getElementsByName('doctor-field-zsrnumber')[0] as HTMLInputElement).value = profile.zsrnumber || '';
+            (document.getElementsByName('doctor-field-gln')[0] as HTMLInputElement).value = profile.gln || '';
+            (document.getElementsByName('doctor-field-surname')[0] as HTMLInputElement).value = profile.surname || '';
+            (document.getElementsByName('doctor-field-name')[0] as HTMLInputElement).value = profile.name || '';
+            (document.getElementsByName('doctor-field-street')[0] as HTMLInputElement).value = profile.street || '';
+            (document.getElementsByName('doctor-field-city')[0] as HTMLInputElement).value = profile.city || '';
+            (document.getElementsByName('doctor-field-country')[0] as HTMLInputElement).value = profile.country || '';
+            (document.getElementsByName('doctor-field-zip')[0] as HTMLInputElement).value = profile.zip || '';
+            (document.getElementsByName('doctor-field-phone')[0] as HTMLInputElement).value = profile.phone || '';
+            (document.getElementsByName('doctor-field-email')[0] as HTMLInputElement).value = profile.email || '';
+            (document.getElementsByName('doctor-field-iban')[0] as HTMLInputElement).value = profile.iban || '';
+            (document.getElementsByName('doctor-field-vat')[0] as HTMLInputElement).value = profile.vat || '';
             (document.getElementById('doctor-sign-image') as HTMLImageElement).src = Doctor.getSignatureURL() || '';
         },
         reloadOAuthState:function() {
@@ -979,7 +979,7 @@ export var UI = {
                     if (!profile) {
                         div.innerText = '';
                     } else {
-                        div.innerText = profile.title + ' ' + profile.name + ' ' + profile.surname;
+                        div.innerText = (profile.title || '') + ' ' + (profile.name || '') + ' ' + (profile.surname || '');
                     }
                 });
             var patientInfo = document.getElementsByClassName('prescription-patent-info')[0] as HTMLElement;

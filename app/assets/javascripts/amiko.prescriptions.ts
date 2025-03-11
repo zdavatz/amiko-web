@@ -1,4 +1,4 @@
-import { EPrescription } from './amiko.eprescriptions.js';
+import * as EPrescription from './amiko.eprescriptions.js';
 
 export type Doctor = {
     title: string,
@@ -499,25 +499,26 @@ export type Prescription = AMKPrescription & {
 };
 
 export var Prescription = {
-    toAMKBlob: function(prescriptionObj) {
+    toAMKBlob: async function (prescriptionObj): Promise<Blob> {
         prescriptionObj = Object.assign({}, prescriptionObj); // Shallow clone so we can
         // Remove the extra fields, and replace patient_id (int) with hash, see Prescription.fromCurrentUIState
-        delete prescriptionObj.patient_id;
         delete prescriptionObj.id;
         delete prescriptionObj.filename;
-        prescriptionObj.patient.patient_id = Patient.generateAMKPatientId(prescriptionObj.patient);
+        prescriptionObj.patient.patient_id = await Patient.generateAMKPatientId(
+            prescriptionObj.patient,
+        );
 
         var json = JSON.stringify(prescriptionObj);
         var encoder = new TextEncoder();
         var bytes = encoder.encode(json);
-        var binary = '';
+        var binary = "";
         var len = bytes.byteLength;
         for (var i = 0; i < len; i++) {
-            binary += String.fromCharCode( bytes[i] );
+            binary += String.fromCharCode(bytes[i]);
         }
         var str = btoa(binary);
         var blob = new Blob([str], {
-            type: 'document/amk'
+            type: "document/amk",
         });
         return blob;
     },
@@ -1017,7 +1018,9 @@ export var UI = {
                                 $('<button>').addClass('download-button').on('click', function (e) {
                                     e.stopPropagation();
                                     Prescription.readComplete(prescription.id).then(function(obj) {
-                                        var blob = Prescription.toAMKBlob(obj);
+                                        return Prescription.toAMKBlob(obj);
+                                    })
+                                    .then(blob => {
                                         downloadBlob(blob, prescription.filename);
                                     });
                                 })
@@ -1485,45 +1488,45 @@ function downloadBlob(blob, filename) {
     document.body.removeChild(element);
 }
 
-function exportEverything() {
-    ((window as any).JSZip ? Promise.resolve() : Promise.resolve(
-        $.getScript('/assets/javascripts/jszip.min.js')
-    ))
-    .then(function() {
-        return Promise.all([
+async function exportEverything() {
+    await ((window as any).JSZip
+        ? Promise.resolve()
+        : Promise.resolve($.getScript("/assets/javascripts/jszip.min.js")));
+
+    const [simplifiedPrescriptions, favRegnrs, ftFavRegnrs] = await Promise.all(
+        [
             Prescription.list(),
             Favourites.getRegNrs(),
             Favourites.getFullTextHashes(),
-        ]);
-    })
-    .then(function(results) {
-        var simplifiedPrescriptions = results[0];
-        var favRegnrs = results[1];
-        var ftFavRegnrs = results[2];
-        var zip = new JSZip();
-        simplifiedPrescriptions.forEach(function(prescription) {
-            var obj = Prescription.makeComplete(prescription);
-            var blob = Prescription.toAMKBlob(obj);
-            zip.file(prescription.filename, blob);
-        });
-        zip.file('favourites.json', JSON.stringify(favRegnrs));
-        zip.file('ft-favourites.json', JSON.stringify(ftFavRegnrs));
-        return zip.generateAsync({type:"blob"});
-    })
-    .then(function(blob) {
-        // dd.mm.yyyy-hh.mm.ss.zip
-        var now = new Date();
-        var filename =
-            ('0' + now.getDate()).slice(-2) + '.' +
-            ('0' + (now.getMonth() + 1)).slice(-2) + '.' +
-            now.getFullYear() +
-            '-' +
-            ('0' + now.getHours()).slice(-2) + '.' +
-            ('0' + now.getMinutes()).slice(-2) + '.' +
-            ('0' + now.getSeconds()).slice(-2) +
-            '.zip';
-        downloadBlob(blob, filename);
-    });
+        ],
+    );
+
+    var zip = new JSZip();
+    for (const prescription of simplifiedPrescriptions) {
+        var obj = Prescription.makeComplete(prescription);
+        var prescriptionBlob = await Prescription.toAMKBlob(obj);
+        zip.file(prescription.filename, prescriptionBlob);
+    }
+    zip.file("favourites.json", JSON.stringify(favRegnrs));
+    zip.file("ft-favourites.json", JSON.stringify(ftFavRegnrs));
+    const blob = await zip.generateAsync({ type: "blob" });
+
+    // dd.mm.yyyy-hh.mm.ss.zip
+    var now = new Date();
+    var filename =
+        ("0" + now.getDate()).slice(-2) +
+        "." +
+        ("0" + (now.getMonth() + 1)).slice(-2) +
+        "." +
+        now.getFullYear() +
+        "-" +
+        ("0" + now.getHours()).slice(-2) +
+        "." +
+        ("0" + now.getMinutes()).slice(-2) +
+        "." +
+        ("0" + now.getSeconds()).slice(-2) +
+        ".zip";
+    downloadBlob(blob, filename);
 }
 
 function importFromZip(file) {
@@ -1645,7 +1648,7 @@ function generatePDFWithEPrescriptionPrompt() {
             console.log('[PDF generation] auth handle', authHandle);
             if (authHandle) {
                 console.log('[PDF generation] making QR Code1');
-                return OAuth.ADSwiss.makeQRCodeWithEPrescription(EPrescription.fromPrescription(prescription))
+                return OAuth.ADSwiss.makeQRCodeWithEPrescription(EPrescription.EPrescription.fromPrescription(prescription))
                     .then(function(qrCode) {
                         return generatePDF(prescription, qrCode);
                     });

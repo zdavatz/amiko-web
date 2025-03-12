@@ -40,6 +40,7 @@ GET     /de                         controllers.MainController.setLang(request: 
 GET     /fr                         controllers.MainController.setLang(request: Request, lang: String="fr")
 
 POST    /lang/:lang                 controllers.MainController.setLang(request: Request, lang: String)
+POST    /zurrose/prescription       controllers.MainController.forwardZurrosePrescription(request: Request)
 
 GET     /oauth/sds                  controllers.OAuthController.sdsAuth(request: Request)
 GET     /oauth/adswiss              controllers.OAuthController.adswissAuth(request: Request)

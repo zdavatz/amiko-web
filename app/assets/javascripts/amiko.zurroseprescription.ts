@@ -1,6 +1,8 @@
 import * as EPrescription from "./amiko.eprescriptions.js";
 import { Plain } from "./types";
 
+declare var XHRCSRFToken: string;
+
 function yyyyMMdd(date: Date) {
     return (
         date.getFullYear() +
@@ -99,7 +101,7 @@ class ZurRosePatientAddress extends ZurRoseAddress {
     }
 
     toXML(doc: XMLDocument): Element {
-        const element = doc.createElement("patientAddress");
+        const element = doc.createElementNS("http://estudio.clustertec.ch/schemas/prescription", "patientAddress");
         super.writeBodyToXMLElement(element);
 
         element.setAttribute(
@@ -140,7 +142,7 @@ class ZurRosePrescriptorAddress extends ZurRoseAddress {
     }
 
     toXML(doc: XMLDocument): Element {
-        const element = doc.createElement("prescriptorAddress");
+        const element = doc.createElementNS("http://estudio.clustertec.ch/schemas/prescription", "prescriptorAddress");
         super.writeBodyToXMLElement(element);
 
         element.setAttribute("langCode", String(this.langCode));
@@ -214,7 +216,7 @@ class ZurRoseProduct {
         this.posology = arg.posology;
     }
     toXML(doc: XMLDocument): Element {
-        const element = doc.createElement("product");
+        const element = doc.createElementNS("http://estudio.clustertec.ch/schemas/prescription", "product");
 
         if (this.pharmacode !== undefined) {
             element.setAttribute("pharmacode", this.pharmacode);
@@ -291,7 +293,7 @@ class ZurRoseProduct {
             );
         }
 
-        const insuranceElement = doc.createElement("insurance");
+        const insuranceElement = doc.createElementNS("http://estudio.clustertec.ch/schemas/prescription", "insurance");
         element.appendChild(insuranceElement);
 
         if (this.insuranceEanId !== undefined) {
@@ -342,7 +344,7 @@ class ZurRosePosology {
     }
 
     toXML(doc: XMLDocument): Element {
-        const element = doc.createElement("posology");
+        const element = doc.createElementNS("http://estudio.clustertec.ch/schemas/prescription", "posology");
 
         if (this.qtyMorning !== undefined) {
             element.setAttribute("qtyMorning", String(this.qtyMorning));
@@ -410,11 +412,13 @@ export class ZurRosePrescription {
 
     toXML(): XMLDocument {
         const doc = document.implementation.createDocument(
-            null,
+            "http://estudio.clustertec.ch/schemas/prescription",
             "prescription",
         );
         const root = doc.documentElement;
 
+        root.setAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
+        root.setAttribute("xsi:schemaLocation", "http://estudio.clustertec.ch/schemas/prescription/ prescription.xsd");
         root.setAttribute("issueDate", yyyyMMdd(this.issueDate));
         root.setAttribute(
             "validity",
@@ -461,8 +465,8 @@ export class ZurRosePrescription {
             ePrescription.patientIds[0].type === 1
                 ? ePrescription.patientIds[0].value
                 : null;
-        var healthCardNumber = null,
-            insuranceGln = null;
+        let healthCardNumber: string | undefined = undefined,
+            insuranceGln: string | undefined = undefined;
 
         if (!patientId) {
             patientId = ePrescription.patientReceiverGLN;
@@ -535,8 +539,8 @@ export class ZurRosePrescription {
                     }
                 }
                 const product = {
-                    eanId: m.idType === 2 ? m.medicamentId : "",
-                    pharmacode: m.idType === 3 ? m.medicamentId : "",
+                    eanId: m.idType === 2 ? m.medicamentId : undefined,
+                    pharmacode: m.idType === 3 ? m.medicamentId : undefined,
                     quantity: m.nbPack || 1,
                     remark: m.appInstr,
                     insuranceBillingType: 1,
@@ -560,5 +564,20 @@ export class ZurRosePrescription {
         const mapping = await res.json();
         ZurRosePrescription.zipToKantonMap = mapping;
         return mapping;
+    }
+
+    async send() {
+        const string = new XMLSerializer().serializeToString(this.toXML());
+        console.log(string);
+        const res = await fetch("/zurrose/prescription", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/xml',
+                "Csrf-Token": XHRCSRFToken,
+            },
+            body: string
+        });
+        const resText = await res.text();
+        console.log(resText);
     }
 }

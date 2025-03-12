@@ -1,4 +1,5 @@
 import * as EPrescription from "./amiko.eprescriptions.js";
+import { AMKPrescriptionSimplified, Patient, Prescription } from "./amiko.prescriptions.js";
 import { Plain } from "./types";
 
 declare var XHRCSRFToken: string;
@@ -225,7 +226,7 @@ class ZurRoseProduct {
             element.setAttribute("eanId", this.eanId);
         }
         if (this.description !== undefined) {
-            element.setAttribute("description", this.description);
+            element.setAttribute("description", this.description.slice(0, 50));
         }
         element.setAttribute("repetition", this.repetition ? "true" : "false");
         if (this.nrOfRepetitions !== undefined) {
@@ -335,13 +336,6 @@ class ZurRosePosology {
     qtyNightString?: string; // optional
     posologyText?: string; // optional
     label?: number; // optional, boolean
-
-    constructor() {
-        this.qtyMorning = -1;
-        this.qtyMidday = -1;
-        this.qtyEvening = -1;
-        this.qtyNight = -1;
-    }
 
     toXML(doc: XMLDocument): Element {
         const element = doc.createElementNS("http://estudio.clustertec.ch/schemas/prescription", "posology");
@@ -455,10 +449,10 @@ export class ZurRosePrescription {
     static async fromEPrescription(
         ePrescription: EPrescription.EPrescription,
     ): Promise<ZurRosePrescription> {
-        const mapping = await ZurRosePrescription.getZipToKantonMap();
+        const zipToKanton = await ZurRosePrescription.getZipToKantonMap();
 
         var patientZip = ePrescription.patientZip || "";
-        var kanton = mapping[patientZip];
+        var kanton = zipToKanton[patientZip];
 
         var patientId =
             ePrescription.patientIds.length &&
@@ -555,6 +549,71 @@ export class ZurRosePrescription {
             }),
         });
     }
+
+    static async fromPrescription(prescription: AMKPrescriptionSimplified): Promise<ZurRosePrescription> {
+        const zipToKanton = await ZurRosePrescription.getZipToKantonMap();
+        const zp = new ZurRosePrescription({
+            issueDate: Prescription.placeDateToDate(prescription.place_date),
+            prescriptionNr: String(Math.random()).slice(2,11), // 9 digits
+            remark: '',
+            validity: undefined,
+            user: '',
+            password: '',
+            deliveryType: ZurRosePrescriptionDeliveryType.Patient,
+            ignoreInteractions: false,
+            interactionsWithOldPres: false,
+            prescriptorAddress: new ZurRosePrescriptorAddress({
+                zsrId: prescription.operator.zsr_number,
+                firstName: prescription.operator.given_name,
+                lastName: prescription.operator.family_name,
+                eanId: prescription.operator.gln,
+                kanton: zipToKanton[prescription.operator.zip_code],
+                email: prescription.operator.email_address,
+                phoneNrBusiness: prescription.operator.phone_number,
+                langCode: String(localStorage.getItem("language")) == "fr"
+                    ? 2 // fr
+                    : 1, // de
+                clientNrClustertec: '888870',
+                street: prescription.operator.postal_address,
+                zipCode: prescription.operator.zip_code,
+                city: prescription.operator.city,
+            }),
+            patientAddress: new ZurRosePatientAddress({
+                lastName: prescription.patient.family_name,
+                firstName: prescription.patient.given_name,
+                street: prescription.patient.postal_address,
+                city: prescription.patient.city,
+                kanton: zipToKanton[prescription.patient.zip_code],
+                zipCode: prescription.patient.zip_code,
+                birthday: Patient.parseBirthDateString(prescription.patient.birth_date) || undefined,
+                sex: prescription.patient.gender === 'm' || prescription.patient.gender === 'man' ? 1 : 2,
+                phoneNrHome: prescription.patient.phone_number,
+                email: prescription.patient.email_address,
+                langCode: String(localStorage.getItem("language")) == "fr"
+                    ? 2 // fr
+                    : 1, // de
+                coverCardId: prescription.patient.health_card_number,
+                patientNr: "",
+            }),
+            products: (prescription.medications || []).map(m => {
+                const pos = new ZurRosePosology();
+                pos.posologyText = m.comment;
+                pos.label = 1;
+                const product = new ZurRoseProduct({
+                    eanId: m.eancode,
+                    quantity: 1,
+                    insuranceBillingType: 1,
+                    insuranceEanId: prescription.patient.insurance_gln,
+                    repetition: false,
+                    description: m.package,
+                    posology: [pos],
+                });
+                return product;
+            }),
+        });
+        return zp;
+    }
+
     static zipToKantonMap: Record<string, string> | null = null;
     static async getZipToKantonMap(): Promise<Record<string, string>> {
         if (ZurRosePrescription.zipToKantonMap) {

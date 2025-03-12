@@ -1,4 +1,5 @@
 import * as EPrescription from './amiko.eprescriptions.js';
+import { ZurRosePrescription } from './amiko.zurroseprescription.js';
 
 export type Doctor = {
     title: string,
@@ -396,6 +397,24 @@ export var Patient = {
         }
 
         return digestMessage(str);
+    },
+    parseBirthDateString: function(str: string): Date | null {
+        // dd.MM.yyyy -> Date
+        var birthdayParts = (str || '').split('.');
+        if (birthdayParts.length === 3) {
+            var year = birthdayParts[2];
+            var month = birthdayParts[1];
+            var day = birthdayParts[0];
+            var date = new Date();
+            date.setDate(parseInt(day));
+            date.setMonth(parseInt(month) -1 );
+            date.setFullYear(parseInt(year));
+            date.setHours(0);
+            date.setMinutes(0);
+            date.setSeconds(0);
+            return date;
+        }
+        return null;
     }
 };
 
@@ -586,7 +605,7 @@ export var Prescription = {
                     patient: Patient.toAMKObject(patient),
                     medications: PrescriptionBasket.list().map(item => {
                         var titleComponents = item.package.split('[');
-                        titleComponents = titleComponents[0].split(',');
+                        titleComponents = (titleComponents[0] || '').split(',');
                         return {
                             title: item.title,
                             owner: item.author,
@@ -728,7 +747,7 @@ export var Prescription = {
             }));
         });
     },
-    placeDateToDate: function(str) {
+    placeDateToDate: function(str: string): Date {
         // dd.MM.yyyy (HH:mm:ss) -> Date
         var parts = str.split('(');
         if (parts.length !== 2) return null;
@@ -736,12 +755,12 @@ export var Prescription = {
         var timeParts = parts[1].replace('(', '').split(':');
         if (dateParts.length !== 3 || timeParts.length !== 3) return null;
         var date = new Date();
-        date.setDate(dateParts[0]);
-        date.setMonth(dateParts[1]);
-        date.setFullYear(dateParts[2]);
-        date.setHours(timeParts[0]);
-        date.setMinutes(timeParts[1]);
-        date.setSeconds(timeParts[2]);
+        date.setDate(parseInt(dateParts[0]));
+        date.setMonth(parseInt(dateParts[1]));
+        date.setFullYear(parseInt(dateParts[2]));
+        date.setHours(parseInt(timeParts[0]));
+        date.setMinutes(parseInt(timeParts[1]));
+        date.setSeconds(parseInt(timeParts[2]));
         return date;
     }
 };

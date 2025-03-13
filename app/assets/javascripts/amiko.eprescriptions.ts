@@ -6,6 +6,7 @@ import {
     AMKPatient,
     PrescriptionSimplified,
 } from "./amiko.prescriptions.js";
+import { ZurRosePrescription } from "./amiko.zurroseprescription.js";
 
 declare var QrcodeDecoder: any;
 declare var pdfjsLib: any;
@@ -259,7 +260,17 @@ export async function importFromString(data: string) {
     (amk as AMKPrescription & { filename: string }).filename = filename;
     const saveResults = await Prescription.importAMKObjects([amk]);
     const prescription = await Prescription.readComplete(saveResults[0]);
-    return UI.Prescription.show(prescription);
+    await UI.Prescription.show(prescription);
+    const shouldSend = confirm('Send to ZurRose?');
+    if (shouldSend) {
+        const zp = await ZurRosePrescription.fromEPrescription(ep);
+        try {
+            await zp.send();
+            alert('Sent to ZurRose');
+        } catch (e) {
+            alert('Error: ' + e);
+        }
+    }
 }
 
 export function parseDateString(dateString: string): Date | null {

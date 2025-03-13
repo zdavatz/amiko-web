@@ -551,7 +551,7 @@ export var Prescription = {
         var utf16 = decoder.decode(new Uint8Array(charCodes));
         return JSON.parse(utf16);
     },
-    fromCurrentUIState: function(overwriteCurrent?: boolean) {
+    fromCurrentUIState: function(overwriteCurrent?: boolean): Promise<PrescriptionSimplified> {
         // The saved object is
         // amk prescription object with
         // + patient_id: number <- refers to a patient in the patient store
@@ -604,7 +604,7 @@ export var Prescription = {
                     operator: Doctor.toAMKObjectWithoutSign(profile),
                     patient: Patient.toAMKObject(patient),
                     medications: PrescriptionBasket.list().map(item => {
-                        var titleComponents = item.package.split('[');
+                        var titleComponents = (item.package || '').split('[');
                         titleComponents = (titleComponents[0] || '').split(',');
                         return {
                             title: item.title,
@@ -637,7 +637,7 @@ export var Prescription = {
             localStorage.currentPrescriptionId = prescriptionId;
         }
     },
-    saveFromCurrentUIState: function(overwriteCurrent) {
+    saveFromCurrentUIState: function(overwriteCurrent: boolean) {
         return Prescription.fromCurrentUIState(overwriteCurrent).then(Prescription.save).then(Prescription.setCurrentId);
     },
     save: function(prescription) {
@@ -1435,6 +1435,16 @@ function main() {
         EPrescription.scanQRCodeWithCamera().catch(()=> {
             console.log('alright');
         });
+    });
+    document.getElementById('prescription-send-to-zurrose')?.addEventListener('click', async () => {
+        const prescription = await Prescription.fromCurrentUIState();
+        const zp = await ZurRosePrescription.fromPrescription(prescription);
+        try {
+            await zp.send();
+            alert('Sent to ZurRose');
+        } catch (e) {
+            alert('Error: ' + e);
+        }
     });
     document.querySelector('#qrcode-scanner button').addEventListener('click', function() {
         EPrescription.stopScanningQRCode();

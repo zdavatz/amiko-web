@@ -627,7 +627,7 @@ export class ZurRosePrescription {
 
     async send() {
         const string = new XMLSerializer().serializeToString(this.toXML());
-        console.log(string);
+        console.log('Sending XML to ZurRose', string);
         const res = await fetch("/zurrose/prescription", {
             method: 'POST',
             headers: {
@@ -637,6 +637,19 @@ export class ZurRosePrescription {
             body: string
         });
         const resText = await res.text();
-        console.log(resText);
+        console.log('Got response from ZurRose', resText);
+        if (resText.length) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(resText, "application/xml");
+            const root = doc.documentElement;
+            if (root.tagName === 'prescriptionResponse') {
+                const errorCode = root.getAttribute('errorCode');
+                const errorMessage = root.getAttribute('errorMessage');
+                if (errorCode !== '0' && errorMessage) {
+                    return Promise.reject(errorMessage);
+                }
+            }
+        }
+        return Promise.resolve();
     }
 }

@@ -7,6 +7,7 @@ import {
     PrescriptionSimplified,
 } from "./amiko.prescriptions.js";
 import { ZurRosePrescription } from "./amiko.zurroseprescription.js";
+import { PrescriptionLocalization } from "./types.js";
 
 declare var QrcodeDecoder: any;
 declare var pdfjsLib: any;
@@ -261,14 +262,14 @@ export async function importFromString(data: string) {
     const saveResults = await Prescription.importAMKObjects([amk]);
     const prescription = await Prescription.readComplete(saveResults[0]);
     await UI.Prescription.show(prescription);
-    const shouldSend = confirm('Send to ZurRose?');
+    const shouldSend = confirm(PrescriptionLocalization.send_to_zurrose + '?');
     if (shouldSend) {
         const zp = await ZurRosePrescription.fromEPrescription(ep);
         try {
             await zp.send();
-            alert('Sent to ZurRose');
+            alert(PrescriptionLocalization.prescription_is_sent_to_zurrose);
         } catch (e) {
-            alert('Error: ' + e);
+            alert(PrescriptionLocalization.error + ': ' + e);
         }
     }
 }

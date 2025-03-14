@@ -1,5 +1,6 @@
 import * as EPrescription from './amiko.eprescriptions.js';
 import { ZurRosePrescription } from './amiko.zurroseprescription.js';
+import { PrescriptionLocalization } from './types.js';
 
 export type Doctor = {
     title: string,
@@ -1441,9 +1442,9 @@ function main() {
         const zp = await ZurRosePrescription.fromPrescription(prescription);
         try {
             await zp.send();
-            alert('Sent to ZurRose');
+            alert(PrescriptionLocalization.prescription_is_sent_to_zurrose);
         } catch (e) {
-            alert('Error: ' + e);
+            alert(PrescriptionLocalization.error + ': ' + e);
         }
     });
     document.querySelector('#qrcode-scanner button').addEventListener('click', function() {
@@ -1855,19 +1856,6 @@ function sequencePromise(promiseFns) {
 
 main();
 
-declare var PrescriptionLocalization: {
-    prescription_please_choose_patient: string,
-    prescription_confirm_clear: string,
-    prescription_imported: string,
-    export_to_zip: string,
-    pdf_page_num: string,
-    login_with_hin_adswiss: string,
-    login_with_hin_sds: string,
-    logout_from_hin_adswiss: string,
-    logout_from_hin_sds: string,
-    import_profile: string,
-    sign_eprescription_confirm: string,
-};
 declare var adswissAppName: string;
 declare var XHRCSRFToken: string;
 declare var JSZip: any;

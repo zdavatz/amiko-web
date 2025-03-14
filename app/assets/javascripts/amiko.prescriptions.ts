@@ -750,14 +750,16 @@ export var Prescription = {
     },
     placeDateToDate: function(str: string): Date {
         // dd.MM.yyyy (HH:mm:ss) -> Date
+        var parts = str.split(',');
+        str = parts[parts.length - 1].trim();
         var parts = str.split('(');
         if (parts.length !== 2) return null;
         var dateParts = parts[0].trim().split('.');
-        var timeParts = parts[1].replace('(', '').split(':');
+        var timeParts = parts[1].replaceAll(/[\(\)]/g, '').split(':');
         if (dateParts.length !== 3 || timeParts.length !== 3) return null;
         var date = new Date();
         date.setDate(parseInt(dateParts[0]));
-        date.setMonth(parseInt(dateParts[1]));
+        date.setMonth(parseInt(dateParts[1]) - 1);
         date.setFullYear(parseInt(dateParts[2]));
         date.setHours(parseInt(timeParts[0]));
         date.setMinutes(parseInt(timeParts[1]));

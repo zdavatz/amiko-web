@@ -1,4 +1,6 @@
-import { EPrescription } from './amiko.eprescriptions.js';
+import * as EPrescription from './amiko.eprescriptions.js';
+import { ZurRosePrescription } from './amiko.zurroseprescription.js';
+import { PrescriptionLocalization } from './types.js';
 
 export type Doctor = {
     title: string,
@@ -126,9 +128,9 @@ var Doctor = {
     stringForPrescriptionPrinting: function(profile) {
         var s = "";
         if (profile.title) {
-            s += profile.title + " ";
+            s += (profile.title || '') + " ";
         }
-        s += profile.name + " " + profile.surname;
+        s += (profile.name || '') + " " + (profile.surname || '');
         s += "\n" + profile.street;
         s += "\n" + profile.zip + " " + profile.city;
         if (profile.email) s += "\n" + profile.email;
@@ -396,6 +398,24 @@ export var Patient = {
         }
 
         return digestMessage(str);
+    },
+    parseBirthDateString: function(str: string): Date | null {
+        // dd.MM.yyyy -> Date
+        var birthdayParts = (str || '').split('.');
+        if (birthdayParts.length === 3) {
+            var year = birthdayParts[2];
+            var month = birthdayParts[1];
+            var day = birthdayParts[0];
+            var date = new Date();
+            date.setDate(parseInt(day));
+            date.setMonth(parseInt(month) -1 );
+            date.setFullYear(parseInt(year));
+            date.setHours(0);
+            date.setMinutes(0);
+            date.setSeconds(0);
+            return date;
+        }
+        return null;
     }
 };
 
@@ -499,25 +519,26 @@ export type Prescription = AMKPrescription & {
 };
 
 export var Prescription = {
-    toAMKBlob: function(prescriptionObj) {
+    toAMKBlob: async function (prescriptionObj): Promise<Blob> {
         prescriptionObj = Object.assign({}, prescriptionObj); // Shallow clone so we can
         // Remove the extra fields, and replace patient_id (int) with hash, see Prescription.fromCurrentUIState
-        delete prescriptionObj.patient_id;
         delete prescriptionObj.id;
         delete prescriptionObj.filename;
-        prescriptionObj.patient.patient_id = Patient.generateAMKPatientId(prescriptionObj.patient);
+        prescriptionObj.patient.patient_id = await Patient.generateAMKPatientId(
+            prescriptionObj.patient,
+        );
 
         var json = JSON.stringify(prescriptionObj);
         var encoder = new TextEncoder();
         var bytes = encoder.encode(json);
-        var binary = '';
+        var binary = "";
         var len = bytes.byteLength;
         for (var i = 0; i < len; i++) {
-            binary += String.fromCharCode( bytes[i] );
+            binary += String.fromCharCode(bytes[i]);
         }
         var str = btoa(binary);
         var blob = new Blob([str], {
-            type: 'document/amk'
+            type: "document/amk",
         });
         return blob;
     },
@@ -531,7 +552,7 @@ export var Prescription = {
         var utf16 = decoder.decode(new Uint8Array(charCodes));
         return JSON.parse(utf16);
     },
-    fromCurrentUIState: function(overwriteCurrent?: boolean) {
+    fromCurrentUIState: function(overwriteCurrent?: boolean): Promise<PrescriptionSimplified> {
         // The saved object is
         // amk prescription object with
         // + patient_id: number <- refers to a patient in the patient store
@@ -584,8 +605,8 @@ export var Prescription = {
                     operator: Doctor.toAMKObjectWithoutSign(profile),
                     patient: Patient.toAMKObject(patient),
                     medications: PrescriptionBasket.list().map(item => {
-                        var titleComponents = item.package.split('[');
-                        titleComponents = titleComponents[0].split(',');
+                        var titleComponents = (item.package || '').split('[');
+                        titleComponents = (titleComponents[0] || '').split(',');
                         return {
                             title: item.title,
                             owner: item.author,
@@ -617,7 +638,7 @@ export var Prescription = {
             localStorage.currentPrescriptionId = prescriptionId;
         }
     },
-    saveFromCurrentUIState: function(overwriteCurrent) {
+    saveFromCurrentUIState: function(overwriteCurrent: boolean) {
         return Prescription.fromCurrentUIState(overwriteCurrent).then(Prescription.save).then(Prescription.setCurrentId);
     },
     save: function(prescription) {
@@ -727,20 +748,22 @@ export var Prescription = {
             }));
         });
     },
-    placeDateToDate: function(str) {
+    placeDateToDate: function(str: string): Date {
         // dd.MM.yyyy (HH:mm:ss) -> Date
+        var parts = str.split(',');
+        str = parts[parts.length - 1].trim();
         var parts = str.split('(');
         if (parts.length !== 2) return null;
         var dateParts = parts[0].trim().split('.');
-        var timeParts = parts[1].replace('(', '').split(':');
+        var timeParts = parts[1].replaceAll(/[\(\)]/g, '').split(':');
         if (dateParts.length !== 3 || timeParts.length !== 3) return null;
         var date = new Date();
-        date.setDate(dateParts[0]);
-        date.setMonth(dateParts[1]);
-        date.setFullYear(dateParts[2]);
-        date.setHours(timeParts[0]);
-        date.setMinutes(timeParts[1]);
-        date.setSeconds(timeParts[2]);
+        date.setDate(parseInt(dateParts[0]));
+        date.setMonth(parseInt(dateParts[1]) - 1);
+        date.setFullYear(parseInt(dateParts[2]));
+        date.setHours(parseInt(timeParts[0]));
+        date.setMinutes(parseInt(timeParts[1]));
+        date.setSeconds(parseInt(timeParts[2]));
         return date;
     }
 };
@@ -757,19 +780,19 @@ export var UI = {
             modal.close();
         },
         applyToModal: function(profile) {
-            (document.getElementsByName('doctor-field-title')[0] as HTMLInputElement).value = profile.title;
-            (document.getElementsByName('doctor-field-zsrnumber')[0] as HTMLInputElement).value = profile.zsrnumber;
-            (document.getElementsByName('doctor-field-gln')[0] as HTMLInputElement).value = profile.gln;
-            (document.getElementsByName('doctor-field-surname')[0] as HTMLInputElement).value = profile.surname;
-            (document.getElementsByName('doctor-field-name')[0] as HTMLInputElement).value = profile.name;
-            (document.getElementsByName('doctor-field-street')[0] as HTMLInputElement).value = profile.street;
-            (document.getElementsByName('doctor-field-city')[0] as HTMLInputElement).value = profile.city;
-            (document.getElementsByName('doctor-field-country')[0] as HTMLInputElement).value = profile.country;
-            (document.getElementsByName('doctor-field-zip')[0] as HTMLInputElement).value = profile.zip;
-            (document.getElementsByName('doctor-field-phone')[0] as HTMLInputElement).value = profile.phone;
-            (document.getElementsByName('doctor-field-email')[0] as HTMLInputElement).value = profile.email;
-            (document.getElementsByName('doctor-field-iban')[0] as HTMLInputElement).value = profile.iban;
-            (document.getElementsByName('doctor-field-vat')[0] as HTMLInputElement).value = profile.vat;
+            (document.getElementsByName('doctor-field-title')[0] as HTMLInputElement).value = profile.title || '';
+            (document.getElementsByName('doctor-field-zsrnumber')[0] as HTMLInputElement).value = profile.zsrnumber || '';
+            (document.getElementsByName('doctor-field-gln')[0] as HTMLInputElement).value = profile.gln || '';
+            (document.getElementsByName('doctor-field-surname')[0] as HTMLInputElement).value = profile.surname || '';
+            (document.getElementsByName('doctor-field-name')[0] as HTMLInputElement).value = profile.name || '';
+            (document.getElementsByName('doctor-field-street')[0] as HTMLInputElement).value = profile.street || '';
+            (document.getElementsByName('doctor-field-city')[0] as HTMLInputElement).value = profile.city || '';
+            (document.getElementsByName('doctor-field-country')[0] as HTMLInputElement).value = profile.country || '';
+            (document.getElementsByName('doctor-field-zip')[0] as HTMLInputElement).value = profile.zip || '';
+            (document.getElementsByName('doctor-field-phone')[0] as HTMLInputElement).value = profile.phone || '';
+            (document.getElementsByName('doctor-field-email')[0] as HTMLInputElement).value = profile.email || '';
+            (document.getElementsByName('doctor-field-iban')[0] as HTMLInputElement).value = profile.iban || '';
+            (document.getElementsByName('doctor-field-vat')[0] as HTMLInputElement).value = profile.vat || '';
             (document.getElementById('doctor-sign-image') as HTMLImageElement).src = Doctor.getSignatureURL() || '';
         },
         reloadOAuthState:function() {
@@ -978,7 +1001,7 @@ export var UI = {
                     if (!profile) {
                         div.innerText = '';
                     } else {
-                        div.innerText = profile.title + ' ' + profile.name + ' ' + profile.surname;
+                        div.innerText = (profile.title || '') + ' ' + (profile.name || '') + ' ' + (profile.surname || '');
                     }
                 });
             var patientInfo = document.getElementsByClassName('prescription-patent-info')[0] as HTMLElement;
@@ -1017,7 +1040,9 @@ export var UI = {
                                 $('<button>').addClass('download-button').on('click', function (e) {
                                     e.stopPropagation();
                                     Prescription.readComplete(prescription.id).then(function(obj) {
-                                        var blob = Prescription.toAMKBlob(obj);
+                                        return Prescription.toAMKBlob(obj);
+                                    })
+                                    .then(blob => {
                                         downloadBlob(blob, prescription.filename);
                                     });
                                 })
@@ -1414,6 +1439,16 @@ function main() {
             console.log('alright');
         });
     });
+    document.getElementById('prescription-send-to-zurrose')?.addEventListener('click', async () => {
+        const prescription = await Prescription.fromCurrentUIState();
+        const zp = await ZurRosePrescription.fromPrescription(prescription);
+        try {
+            await zp.send();
+            alert(PrescriptionLocalization.prescription_is_sent_to_zurrose);
+        } catch (e) {
+            alert(PrescriptionLocalization.error + ': ' + e);
+        }
+    });
     document.querySelector('#qrcode-scanner button').addEventListener('click', function() {
         EPrescription.stopScanningQRCode();
         var modal = document.querySelector('dialog#qrcode-scanner') as HTMLDialogElement;
@@ -1485,45 +1520,45 @@ function downloadBlob(blob, filename) {
     document.body.removeChild(element);
 }
 
-function exportEverything() {
-    ((window as any).JSZip ? Promise.resolve() : Promise.resolve(
-        $.getScript('/assets/javascripts/jszip.min.js')
-    ))
-    .then(function() {
-        return Promise.all([
+async function exportEverything() {
+    await ((window as any).JSZip
+        ? Promise.resolve()
+        : Promise.resolve($.getScript("/assets/javascripts/jszip.min.js")));
+
+    const [simplifiedPrescriptions, favRegnrs, ftFavRegnrs] = await Promise.all(
+        [
             Prescription.list(),
             Favourites.getRegNrs(),
             Favourites.getFullTextHashes(),
-        ]);
-    })
-    .then(function(results) {
-        var simplifiedPrescriptions = results[0];
-        var favRegnrs = results[1];
-        var ftFavRegnrs = results[2];
-        var zip = new JSZip();
-        simplifiedPrescriptions.forEach(function(prescription) {
-            var obj = Prescription.makeComplete(prescription);
-            var blob = Prescription.toAMKBlob(obj);
-            zip.file(prescription.filename, blob);
-        });
-        zip.file('favourites.json', JSON.stringify(favRegnrs));
-        zip.file('ft-favourites.json', JSON.stringify(ftFavRegnrs));
-        return zip.generateAsync({type:"blob"});
-    })
-    .then(function(blob) {
-        // dd.mm.yyyy-hh.mm.ss.zip
-        var now = new Date();
-        var filename =
-            ('0' + now.getDate()).slice(-2) + '.' +
-            ('0' + (now.getMonth() + 1)).slice(-2) + '.' +
-            now.getFullYear() +
-            '-' +
-            ('0' + now.getHours()).slice(-2) + '.' +
-            ('0' + now.getMinutes()).slice(-2) + '.' +
-            ('0' + now.getSeconds()).slice(-2) +
-            '.zip';
-        downloadBlob(blob, filename);
-    });
+        ],
+    );
+
+    var zip = new JSZip();
+    for (const prescription of simplifiedPrescriptions) {
+        var obj = Prescription.makeComplete(prescription);
+        var prescriptionBlob = await Prescription.toAMKBlob(obj);
+        zip.file(prescription.filename, prescriptionBlob);
+    }
+    zip.file("favourites.json", JSON.stringify(favRegnrs));
+    zip.file("ft-favourites.json", JSON.stringify(ftFavRegnrs));
+    const blob = await zip.generateAsync({ type: "blob" });
+
+    // dd.mm.yyyy-hh.mm.ss.zip
+    var now = new Date();
+    var filename =
+        ("0" + now.getDate()).slice(-2) +
+        "." +
+        ("0" + (now.getMonth() + 1)).slice(-2) +
+        "." +
+        now.getFullYear() +
+        "-" +
+        ("0" + now.getHours()).slice(-2) +
+        "." +
+        ("0" + now.getMinutes()).slice(-2) +
+        "." +
+        ("0" + now.getSeconds()).slice(-2) +
+        ".zip";
+    downloadBlob(blob, filename);
 }
 
 function importFromZip(file) {
@@ -1645,7 +1680,7 @@ function generatePDFWithEPrescriptionPrompt() {
             console.log('[PDF generation] auth handle', authHandle);
             if (authHandle) {
                 console.log('[PDF generation] making QR Code1');
-                return OAuth.ADSwiss.makeQRCodeWithEPrescription(EPrescription.fromPrescription(prescription))
+                return OAuth.ADSwiss.makeQRCodeWithEPrescription(EPrescription.EPrescription.fromPrescription(prescription))
                     .then(function(qrCode) {
                         return generatePDF(prescription, qrCode);
                     });
@@ -1823,19 +1858,6 @@ function sequencePromise(promiseFns) {
 
 main();
 
-declare var PrescriptionLocalization: {
-    prescription_please_choose_patient: string,
-    prescription_confirm_clear: string,
-    prescription_imported: string,
-    export_to_zip: string,
-    pdf_page_num: string,
-    login_with_hin_adswiss: string,
-    login_with_hin_sds: string,
-    logout_from_hin_adswiss: string,
-    logout_from_hin_sds: string,
-    import_profile: string,
-    sign_eprescription_confirm: string,
-};
 declare var adswissAppName: string;
 declare var XHRCSRFToken: string;
 declare var JSZip: any;

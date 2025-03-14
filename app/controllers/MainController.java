@@ -19,11 +19,9 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 package controllers;
 
+import akka.stream.Materializer;
 import models.*;
 import com.typesafe.config.Config;
-import play.api.i18n.I18nSupport;
-import play.api.i18n.MessagesProvider;
-import play.data.DynamicForm;
 import play.data.FormFactory;
 import play.db.NamedDatabase;
 import play.db.Database;
@@ -34,6 +32,7 @@ import play.i18n.Lang;
 import views.html.*;
 import views.html.helper.CSRF;
 
+import java.security.NoSuchAlgorithmException;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -70,6 +69,7 @@ public class MainController extends Controller {
     @Inject private Config configuration;
     @Inject WSClient ws;
     @Inject private MessagesApi messagesApi;
+    @Inject Materializer materializer;
 
     /**
      * Table columns used for fast queries
@@ -184,6 +184,19 @@ public class MainController extends Controller {
         Lang l = Lang.forCode(lang);
         request = request.withTransientLang(l);
         return index(request, "").withLang(l, messagesApi);
+    }
+
+    public CompletionStage<Result> forwardZurrosePrescription(Http.Request request) throws Exception {
+        var body = request.body().asXml();
+        return ws
+            .url("https://estudio.zur-rose.ch/estudio/prescriptioncert")
+            .setContentType("application/xml")
+            .post(body)
+            .thenApply((response)-> {
+                var rbody = response.getBody();
+                System.out.println("response body " + rbody);
+                return ok(rbody);
+            });
     }
 
     /**
@@ -961,4 +974,3 @@ public class MainController extends Controller {
         return entry;
     }
 }
-

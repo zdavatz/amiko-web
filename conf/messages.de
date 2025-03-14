@@ -69,3 +69,6 @@ import_profile = Profil importieren
 sign_eprescription_confirm = Möchten Sie Ihr ERezept unterschreiben?
 favourites = Favoriten
 scan_file = Datei scannen
+send_to_zurrose = Senden an ZurRose
+prescription_is_sent_to_zurrose = Rezept wurde an ZurRose übermittelt.
+error = Fehler

@@ -69,3 +69,6 @@ import_profile = Profil d'importation
 sign_eprescription_confirm = Voulez-vous signer numériquement votre ordonnance?
 favourites = Favoris
 scan_file = Fichier de scannage
+send_to_zurrose = Envoyer à ZurRose
+prescription_is_sent_to_zurrose = La recette a été envoyée à ZurRose.
+error = Erreur

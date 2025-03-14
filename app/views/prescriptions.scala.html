@@ -26,6 +26,7 @@
         </label>
         <input id="prescription-print" type="button" value='Print'>
         <input id="prescription-scan-qr-code" type="button" value='@messages("Scan qr code")'>
+        <input id="prescription-send-to-zurrose" type="button" value="@messages("send_to_zurrose")">
     </div>
 
     <dialog class="prescriptions-address-book">
@@ -217,7 +218,10 @@
             logout_from_hin_adswiss: "@messages("logout_from_hin_adswiss")",
             logout_from_hin_sds: "@messages("logout_from_hin_sds")",
             import_profile: "@messages("import_profile")",
-            sign_eprescription_confirm: "@messages("sign_eprescription_confirm")"
+            sign_eprescription_confirm: "@messages("sign_eprescription_confirm")",
+            send_to_zurrose: "@messages("send_to_zurrose")",
+            prescription_is_sent_to_zurrose: "@messages("prescription_is_sent_to_zurrose")",
+            error: "@messages("error")"
         };
         var adswissAppName = "@adswissAppName";
     </script>

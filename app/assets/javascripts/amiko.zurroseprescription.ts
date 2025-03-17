@@ -645,11 +645,12 @@ export class ZurRosePrescription {
             if (root.tagName === 'prescriptionResponse') {
                 const errorCode = root.getAttribute('errorCode');
                 const errorMessage = root.getAttribute('errorMessage');
-                if (errorCode !== '0' && errorMessage) {
-                    return Promise.reject(errorMessage);
+                if (errorCode === '0') {
+                    return Promise.resolve();
                 }
+                return Promise.reject(errorMessage);
             }
         }
-        return Promise.resolve();
+        return Promise.reject('Unexpected response: ' + resText);
     }
 }

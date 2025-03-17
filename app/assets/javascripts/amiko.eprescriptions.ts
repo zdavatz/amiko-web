@@ -184,6 +184,10 @@ export async function scanAndImportQRCodeImage(imageElement: HTMLImageElement) {
                 ]),
             );
         })
+        .catch (e => {
+            console.log('Error: ' + e);
+            throw new Error('No QRCode Found');
+        })
         .then(importFromString);
 }
 

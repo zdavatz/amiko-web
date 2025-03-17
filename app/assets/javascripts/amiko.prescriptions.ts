@@ -1470,7 +1470,7 @@ function main() {
         })
         .catch((e)=> {
             console.error(e);
-            alert('No QRCode found');
+            alert('Error: ' + e.message);
         })
         .finally(()=> {
             target.value = null;

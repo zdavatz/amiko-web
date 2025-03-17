@@ -745,9 +745,15 @@ input[type="search"]::-webkit-search-results-decoration {
 }
 
 #qrcode-scanner {
-    min-width: 90%;
+    min-width: 60%;
     top: 80px;
     bottom: 80px;
+}
+
+@supports (-webkit-touch-callout: none) {
+    #qrcode-scanner {
+        min-width: 90%;
+    }
 }
 
 #qrcode-scanner video {

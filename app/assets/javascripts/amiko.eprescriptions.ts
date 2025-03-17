@@ -43,6 +43,9 @@ export async function scanQRCodeWithCamera() {
                 importFromString(result.data).finally(function () {
                     modal.close();
                 });
+            })
+            .catch(()=> {
+                videoElem.hidden = true;
             });
         videoElem.play();
         return promise;
@@ -180,6 +183,10 @@ export async function scanAndImportQRCodeImage(imageElement: HTMLImageElement) {
                     scanImageWithZXing(smallerImage),
                 ]),
             );
+        })
+        .catch (e => {
+            console.log('Error: ' + e);
+            throw new Error('No QRCode Found');
         })
         .then(importFromString);
 }

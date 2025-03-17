@@ -43,6 +43,9 @@ export async function scanQRCodeWithCamera() {
                 importFromString(result.data).finally(function () {
                     modal.close();
                 });
+            })
+            .catch(()=> {
+                videoElem.hidden = true;
             });
         videoElem.play();
         return promise;

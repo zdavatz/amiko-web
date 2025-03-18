@@ -272,12 +272,13 @@ export async function importFromString(data: string) {
     const shouldSend = confirm(PrescriptionLocalization.send_to_zurrose + '?');
     if (shouldSend) {
         const zp = await ZurRosePrescription.fromEPrescription(ep);
-        try {
-            await zp.send();
+        // Not awaiting this, as it might take a long time before timeout
+        zp.send().then(()=> {
             alert(PrescriptionLocalization.prescription_is_sent_to_zurrose);
-        } catch (e) {
+        })
+        .catch(e => {
             alert(PrescriptionLocalization.error + ': ' + e);
-        }
+        });
     }
 }
 

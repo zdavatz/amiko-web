@@ -297,9 +297,7 @@ class ZurRoseProduct {
         const insuranceElement = doc.createElementNS("http://estudio.clustertec.ch/schemas/prescription", "insurance");
         element.appendChild(insuranceElement);
 
-        if (this.insuranceEanId !== undefined) {
-            insuranceElement.setAttribute("eanId", this.insuranceEanId);
-        }
+        insuranceElement.setAttribute("eanId", this.insuranceEanId || "");
         if (this.insuranceBsvNr !== undefined) {
             insuranceElement.setAttribute("bsvNr", this.insuranceBsvNr);
         }
@@ -543,7 +541,7 @@ export class ZurRosePrescription {
                         ? yyyyMMdd(validityRepetition)
                         : undefined,
                     repetition,
-                    posology: [],
+                    posology: [pos],
                 };
                 return new ZurRoseProduct(product);
             }),

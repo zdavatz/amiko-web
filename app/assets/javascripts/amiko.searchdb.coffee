@@ -426,10 +426,11 @@ $ ->
     search_query = setSearchQuery(language, search_type)
     localStorage.setItem 'search-type', type
     console.log "search type = " + getSearchTypeStr(type) + " for " + typed_input
-    $('.twitter-typeahead').typeahead('val', '').typeahead('val', typed_input)
-    if typed_input == ''
-      # Force update
-      typeaheadCtrl.data('tt-typeahead').menu.datasets[0].update('')
+    # To force typeahead to reload the results, we have to make some changes to the query to trigger the event
+    # However, when the input value is changed, it also updates typed_input, which means we lost the original value we want to reload to
+    # Here we put the value in another variable so it doesn't get lost when typeahead('val', '') is called
+    current_input = typed_input
+    $('.twitter-typeahead').typeahead('val', '').typeahead('val', current_input)
 
   $('#article-button').on 'click', ->
     setSearchType(SearchType.Title)

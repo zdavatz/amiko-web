@@ -95,7 +95,7 @@ class ZurRosePatientAddress extends ZurRoseAddress {
         this.langCode = arg.langCode;
         this.coverCardId = arg.coverCardId;
         this.sex = arg.sex;
-        this.patientNr = arg.patientNr;
+        this.patientNr = arg.patientNr || '0';
         this.phoneNrMobile = arg.phoneNrMobile;
         this.room = arg.room;
         this.section = arg.section;
@@ -297,7 +297,7 @@ class ZurRoseProduct {
         const insuranceElement = doc.createElementNS("http://estudio.clustertec.ch/schemas/prescription", "insurance");
         element.appendChild(insuranceElement);
 
-        insuranceElement.setAttribute("eanId", this.insuranceEanId || "");
+        insuranceElement.setAttribute("eanId", this.insuranceEanId || "1");
         if (this.insuranceBsvNr !== undefined) {
             insuranceElement.setAttribute("bsvNr", this.insuranceBsvNr);
         }

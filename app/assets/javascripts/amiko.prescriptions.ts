@@ -234,6 +234,9 @@ export var Patient = {
         var patientId = Patient.getCurrentId();
         if (patientId !== null) {
             patient.id = patientId;
+        } else {
+            // Need to delete property otherwise we cannot save in IndexedDB
+            delete patient.id;
         }
         return patient;
     },

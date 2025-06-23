@@ -145,7 +145,7 @@ public class MainController extends Controller {
         return ok(index.render("", "", "", "", "", vc, messages));
     }
 
-    public Result prescription(Http.Request request, String lang, String key) {
+    public Result prescription(Http.Request request) {
         ViewContext vc = getViewContext(request);
         Messages messages = messagesApi.preferred(request);
         play.filters.csrf.CSRF.Token token = CSRF.getToken(request.asScala());
@@ -157,6 +157,15 @@ public class MainController extends Controller {
         }
         String html = prescriptions.render(messages, token.value(), adswissAppName).toString();
         return ok(index.render(html, "<div id='prescriptions-right-list'></div>", "", "", "", vc, messages));
+    }
+
+    public Result prescriptionImport(Http.Request request) {
+        ViewContext vc = getViewContext(request);
+        Messages messages = messagesApi.preferred(request);
+        play.filters.csrf.CSRF.Token token = CSRF.getToken(request.asScala());
+        String acceptedParentOrigin = configuration.getString("feature.js_prescription_import_origin");
+        return ok(importpage.render(token.value(), acceptedParentOrigin))
+            .withHeaders(Http.HeaderNames.X_FRAME_OPTIONS, "ALLOW-FROM localhost:8080");
     }
 
     /**

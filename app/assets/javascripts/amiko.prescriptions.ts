@@ -555,6 +555,17 @@ export var Prescription = {
         var utf16 = decoder.decode(new Uint8Array(charCodes));
         return JSON.parse(utf16);
     },
+    generateAMKFileName: function() {
+        var now = new Date();
+        var currentDateStr = '' +
+            now.getFullYear() +
+            ('0' + (now.getMonth() + 1)).slice(-2) +
+            ('0' + now.getDate()).slice(-2) +
+            ('0' + now.getHours()).slice(-2) +
+            ('0' + now.getMinutes()).slice(-2) +
+            ('0' + now.getSeconds()).slice(-2);
+        return "RZ_"+currentDateStr+".amk";
+    },
     fromCurrentUIState: function(overwriteCurrent?: boolean): Promise<PrescriptionSimplified> {
         // The saved object is
         // amk prescription object with
@@ -569,13 +580,7 @@ export var Prescription = {
             return;
         }
         var now = new Date();
-        var currentDateStr = '' +
-            now.getFullYear() +
-            ('0' + (now.getMonth() + 1)).slice(-2) +
-            ('0' + now.getDate()).slice(-2) +
-            ('0' + now.getHours()).slice(-2) +
-            ('0' + now.getMinutes()).slice(-2) +
-            ('0' + now.getSeconds()).slice(-2);
+
         var filenamePromise = optionalPrescriptionId ? Prescription.readComplete(optionalPrescriptionId).then(p => p.filename) : Promise.resolve(null);
         return Promise.all([
                 Doctor.read(),
@@ -592,7 +597,7 @@ export var Prescription = {
                 var prescriptionObj: PrescriptionSimplified = {
                     // Non-AMK extra fields
                     patient_id: Number(patient.id),
-                    filename: filename || "RZ_"+currentDateStr+".amk",
+                    filename: filename || Prescription.generateAMKFileName(),
                     // AMK fields
                     prescription_hash: crypto.randomUUID ? crypto.randomUUID() : String(Math.random()),
                     place_date: profile.city + ', ' +

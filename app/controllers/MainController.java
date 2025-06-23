@@ -145,7 +145,7 @@ public class MainController extends Controller {
         return ok(index.render("", "", "", "", "", vc, messages));
     }
 
-    public Result prescription(Http.Request request, String lang, String key) {
+    public Result prescription(Http.Request request) {
         ViewContext vc = getViewContext(request);
         Messages messages = messagesApi.preferred(request);
         play.filters.csrf.CSRF.Token token = CSRF.getToken(request.asScala());

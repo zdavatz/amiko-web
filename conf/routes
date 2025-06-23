@@ -21,8 +21,8 @@ GET     /fr/interactions/:basket       controllers.MainController.interactionsBa
 
 
 GET     /fi/id/:id                  controllers.MainController.fachinfoId(request: Request, lang: String?="de", id: Long)
-GET     /rezept                     controllers.MainController.prescription(request: Request, lang: String?="de", key: String?="")
-GET     /prescription               controllers.MainController.prescription(request: Request, lang: String?="fr", key: String?="")
+GET     /rezept                     controllers.MainController.prescription(request: Request)
+GET     /prescription               controllers.MainController.prescription(request: Request)
 
 GET     /fii                        controllers.MainController.getFachinfo(lang: String?="de", id: Long)
 

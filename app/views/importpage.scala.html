@@ -1,0 +1,12 @@
+@(csrfToken: String, acceptedParentOrigin: String)
+
+<div class="status">Loading...</div>
+
+<script>
+	var XHRCSRFToken = "@csrfToken";
+	var acceptedParentOrigin = "@acceptedParentOrigin";
+</script>
+
+<script type="text/javascript" src="@routes.Assets.versioned("javascripts/system.min.js")"></script>
+<script type="systemjs-module" src="@routes.Assets.versioned("javascripts/amiko.prescriptions.js")"></script>
+<script type="systemjs-module" src="@routes.Assets.versioned("javascripts/amiko.import.js")"></script>

@@ -160,12 +160,33 @@ public class MainController extends Controller {
     }
 
     public Result prescriptionImport(Http.Request request) {
-        ViewContext vc = getViewContext(request);
-        Messages messages = messagesApi.preferred(request);
-        play.filters.csrf.CSRF.Token token = CSRF.getToken(request.asScala());
-        String acceptedParentOrigin = configuration.getString("feature.js_prescription_import_origin");
-        return ok(importpage.render(token.value(), acceptedParentOrigin))
-            .withHeaders(Http.HeaderNames.X_FRAME_OPTIONS, "ALLOW-FROM localhost:8080");
+        var origin = request.header("origin");
+        System.out.println("got origin" + origin);
+        String acceptedParentOrigin = configuration.getString("feature.prescription_import_origin");
+        if (!origin.orElse("").equals(acceptedParentOrigin)) {
+            return badRequest("Bad Origin");
+        }
+        var body = request.body().asFormUrlEncoded();
+        var requestPrescriptions = body.get("prescriptions");
+        var prescriptionArr = play.libs.Json.newArray();
+        for (String prescriptionStr : requestPrescriptions) {
+            try {
+                var parsed = play.libs.Json.parse(prescriptionStr);
+                prescriptionArr.add(parsed);
+            } catch (Exception e) {
+                return badRequest("Prescription is not JSON");
+            }
+        }
+        var redirectDests = body.get("redirectDest");
+        var redirectDest = redirectDests == null || redirectDests.length == 0 ? null : redirectDests[0];
+        if (redirectDest != null && !redirectDest.startsWith(acceptedParentOrigin)) {
+            return badRequest("Invalid redirect dest");
+        }
+        if (redirectDest == null) {
+            redirectDest = "/prescription";
+        }
+
+        return ok(importpage.render(prescriptionArr.toString(), redirectDest));
     }
 
     /**

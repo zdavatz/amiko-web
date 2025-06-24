@@ -1,10 +1,10 @@
-@(csrfToken: String, acceptedParentOrigin: String)
+@(prescriptions: String, redirect_dest: String)
 
 <div class="status">Loading...</div>
 
 <script>
-	var XHRCSRFToken = "@csrfToken";
-	var acceptedParentOrigin = "@acceptedParentOrigin";
+	var prescriptions = @Html(prescriptions);
+	var redirectDest = "@redirect_dest";
 </script>
 
 <script type="text/javascript" src="@routes.Assets.versioned("javascripts/system.min.js")"></script>

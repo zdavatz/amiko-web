@@ -555,8 +555,7 @@ export var Prescription = {
         var utf16 = decoder.decode(new Uint8Array(charCodes));
         return JSON.parse(utf16);
     },
-    generateAMKFileName: function() {
-        var now = new Date();
+    generateAMKFileName: function(now = new Date()) {
         var currentDateStr = '' +
             now.getFullYear() +
             ('0' + (now.getMonth() + 1)).slice(-2) +

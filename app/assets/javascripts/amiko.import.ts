@@ -1,38 +1,26 @@
 import { Prescription } from './amiko.prescriptions.js';
 
-function main() {
+async function main() {
     var statusElement = document.querySelector('.status');
 
-    window.addEventListener('message', async (event) => {
-        console.log('got event', event);
-        if (event.origin !== acceptedParentOrigin) return;
-        var data = event.data;
-        if (data.type === 'INSERT_PRESCRIPTION') {
-            if (!data.data) {
-                statusElement.textContent = 'data is needed in message';
-                window.parent.postMessage(
-                    {type:'INSERT_PRESCRIPTION', status: 'error'},
-                    acceptedParentOrigin
-                );
-                return;
-            }
-            data.data.filename = Prescription.generateAMKFileName();
-            var importResult = await Prescription.importAMKObjects([data.data]);
-            console.log('Imported prescription id', importResult)
-            statusElement.textContent = 'Imported AMK: ' + data.data.filename;
-            window.parent.postMessage(
-                {type:'INSERT_PRESCRIPTION', status: 'success'},
-                acceptedParentOrigin
-            );
+    if ((window as any).prescriptions && typeof Array.isArray(prescriptions)) {
+        var totalCount = prescriptions.length;
+        for (var prescription of prescriptions) {
+            var placeDateStr = prescription['place_date'];
+            if (!placeDateStr) continue;
+            var date = Prescription.placeDateToDate(placeDateStr);
+            if (!date) continue;
+            prescription.filename = Prescription.generateAMKFileName(date);
         }
-      },
-      false,
-    );
+        var importResult = await Prescription.importAMKObjects(prescriptions);
+        console.log('Imported prescription id', importResult)
+        statusElement.textContent = 'Imported AMK: ' + prescriptions.map(p => p.filename).join(', ');
 
-    statusElement.textContent = 'Ready for message';
-    console.log('Ready for message');
+        location.href = redirectDest;
+    }
 }
 
 window.addEventListener('load', main);
 
-declare var acceptedParentOrigin: string;
+declare var prescriptions: Prescription[];
+declare var redirectDest: string;

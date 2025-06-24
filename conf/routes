@@ -23,7 +23,8 @@ GET     /fr/interactions/:basket       controllers.MainController.interactionsBa
 GET     /fi/id/:id                  controllers.MainController.fachinfoId(request: Request, lang: String?="de", id: Long)
 GET     /rezept                     controllers.MainController.prescription(request: Request)
 GET     /prescription               controllers.MainController.prescription(request: Request)
-GET     /import                     controllers.MainController.prescriptionImport(request: Request)
++ nocsrf
+POST    /import                     controllers.MainController.prescriptionImport(request: Request)
 
 GET     /fii                        controllers.MainController.getFachinfo(lang: String?="de", id: Long)
 

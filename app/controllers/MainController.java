@@ -285,7 +285,7 @@ public class MainController extends Controller {
             return retrieveFachinfo(request, lang, m, type, key, "");
     }
 
-    public Result getPriceComparison(Http.Request request, String lang, String gtin, String key, String sort) {
+    public Result getPriceComparison(Http.Request request, String lang, String gtin, String key, String sort, String reverse) {
         Medication m = getMedicationWithEan(lang, gtin);
         Package thePackage = null;
         for (Package p : m.parsedPackages()) {
@@ -342,7 +342,68 @@ public class MainController extends Controller {
             }
         }
 
-        // TODO: Sort
+        Collections.sort(comparisons, (PriceComparison pc1, PriceComparison pc2) -> {
+            if (sort.equals("name")) {
+                return pc1.package_.name.compareTo(pc2.package_.name);
+            } else if (sort.equals("size")) {
+                return pc1.package_.dosage.compareTo(pc2.package_.dosage);
+            } else if (sort.equals("auth")) {
+                return pc1.package_.medication.getAuth().compareTo(pc2.package_.medication.getAuth());
+            } else if (sort.equals("percentage")) {
+                return new Double(pc1.priceDifferenceInPercentage).compareTo(new Double(pc2.priceDifferenceInPercentage));
+            } else if (sort.equals("sb")) {
+                String sb1 = pc1.package_.selbstbehalt();
+                String sb2 = pc2.package_.selbstbehalt();
+                Double d1 = 0d, d2 = 0d;
+                try {
+                    d1 = Double.parseDouble(sb1.replace("%", ""));
+                } catch (NumberFormatException e) {
+                    // Handle invalid input gracefully
+                }
+                try {
+                    d2 = Double.parseDouble(sb2.replace("%", ""));
+                } catch (NumberFormatException e) {
+                    // Handle invalid input gracefully
+                }
+                return d1.compareTo(d2);
+            }
+            // Price, or default
+            String p1 = pc1.package_.pp.replace("CHF ", "");
+            String p2 = pc2.package_.pp.replace("CHF ", "");
+            Double d1 = 0d, d2 = 0d;
+            try {
+                d1 = Double.parseDouble(p1);
+            } catch (NumberFormatException e) {
+                // Handle invalid input gracefully
+            }
+            try {
+                d2 = Double.parseDouble(p2);
+            } catch (NumberFormatException e) {
+                // Handle invalid input gracefully
+            }
+            return d1.compareTo(d2);
+        });
+
+        if (reverse.equals("true")) {
+            Collections.reverse(comparisons);
+        }
+
+        System.out.print("sort: " + sort);
+        if (sort.equals("")) {
+            int indexOfThePackage = 0;
+            PriceComparison thePc = null;
+            for (int i = 0; i < comparisons.size(); i++) {
+                if (comparisons.get(i).package_.gtin == thePackage.gtin) {
+                    indexOfThePackage = i;
+                    break;
+                }
+            }
+            System.out.print("indexOfThePackage: " + indexOfThePackage);
+            if (indexOfThePackage != 0) {
+                comparisons.remove(indexOfThePackage);
+                comparisons.add(0, thePc);
+            }
+        }
 
         String content = "<table><thead><tr><th>Name</th><th>Auth</th><th>Size</th><th>Price</th><th>Percentage</th><th>SbL</th><tr></thead><tbody>";
         for (PriceComparison pc : comparisons) {

@@ -61,7 +61,7 @@ public class Package {
                 return flag.substring(3);
             }
         }
-        return null;
+        return "";
     }
 
     public boolean isGeneric() {

@@ -18,6 +18,7 @@ $ ->
     # Invisible search type for favourites initialisation
     Regnrs: 7
     FullTextHashes: 8
+    PriceComparison: 9
 
   #
   # Functions
@@ -35,6 +36,8 @@ $ ->
       return "therapy"
     else if type == SearchType.FullText
       return "fulltext"
+    else if type == SearchType.PriceComparison
+      return "pricecomparison"
 
   disableButton = (type) ->
     if type == SearchType.Title
@@ -49,6 +52,8 @@ $ ->
       $('#therapy-button').removeClass('active')
     else if type == SearchType.FullText
       $('#fulltext-button').removeClass('active')
+    else if type == SearchType.PriceComparison
+      $('#price-comparison-button').removeClass('active')
 
   setSearchQuery = (lang, type) ->
     if type == SearchType.Title
@@ -67,6 +72,8 @@ $ ->
       return '/regnrs?lang=' + lang + '&regnrs='
     else if type == SearchType.FullTextHashes
       return '/fulltext_hash?lang=' + lang + '&hashes='
+    else if type == SearchType.PriceComparison
+      return '/name?lang=' + lang + '&name='
     return '/name?lang=' + lang + '&name='
 
   getParams = ->
@@ -164,7 +171,7 @@ $ ->
 
   typeaheadCtrl = $('#input-form .twitter-typeahead')
 
-  packInfoDataForPrescriptionBasket = (data, packinfo) ->
+  packInfoData = (data, packinfo) ->
     JSON.stringify({
       eancode: data.eancode,
       package: packinfo.title,
@@ -242,7 +249,7 @@ $ ->
         favouritesButton = '<div class="add-favourites-button ' + (if Favourites.cached.has(data.regnrs) then '--favourited' else '') + '" data-regnrs="' + data.regnrs + '"></div>'
         if search_type == SearchType.Title
           packsStr = (packinfo)->
-            "<p class='article-packinfo' style='color:#{packinfo.color};' data-prescription='#{packInfoDataForPrescriptionBasket(data, packinfo)}'>
+            "<p class='article-packinfo --prescription' style='color:#{packinfo.color};' data-packinfo='#{packInfoData(data, packinfo)}'>
               #{packinfo.title}
             </p>"
           "<div style='display:table;vertical-align:middle;'>" + favouritesButton + "\
@@ -270,6 +277,19 @@ $ ->
             '" data-hash="' + data.hash + '"></div>'
           "<div style='display:table;vertical-align:middle;' class='typeahead-suggestion-wrapper'>" + favFTButton +
           "<p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>"
+        else if search_type == SearchType.PriceComparison
+          packsStr = (packinfo)->
+            "<p class='article-packinfo --price-comparison' style='color:#{packinfo.color};' data-packinfo='#{packInfoData(data, packinfo)}'>
+                #{packinfo.title}
+            </p>"
+          "<div style='display:table;vertical-align:middle;'>" + favouritesButton + "\
+          <p style='color:var(--text-color-light);font-size:1.0em;'><b>#{data.title}</b></p>\
+          <span style='font-size:0.85em;'>#{data.packinfos.map(packsStr).join('')}</span></div>"
+
+  $(document).on 'click', 'p.article-packinfo.--price-comparison', (e) ->
+    data = $(e.currentTarget).data('packinfo');
+    url = '/' + language + '/price_comparison?gtin=' + data.eancode + '&key=' + typed_input
+    window.location.assign url
 
   typeaheadCtrl.on 'typeahead:asyncrequest', (event, selection) ->
     typed_input = $('.twitter-typeahead').typeahead('val')
@@ -307,6 +327,12 @@ $ ->
           console.log selection.hash + ' -> ' + fulltext_key + ' with language = ' + language
         .fail (jqHXR, textStatus) ->
           alert('ajax error')
+      else if search_type == SearchType.PriceComparison
+        # COMPENDIUM search
+        localStorage.setItem 'compendium-selection-id', selection.id
+        localStorage.setItem 'compendium-selection-ean', selection.eancode
+        _search_type = getSearchTypeStr(search_type)
+        window.location.assign '/' + language + '/price_comparison?gtin=' + selection.eancode + '&key=' + typed_input
       else
         # COMPENDIUM search
         localStorage.setItem 'compendium-selection-id', selection.id
@@ -431,6 +457,9 @@ $ ->
     # Here we put the value in another variable so it doesn't get lost when typeahead('val', '') is called
     current_input = typed_input
     $('.twitter-typeahead').typeahead('val', '').typeahead('val', current_input)
+
+  $('#price-comparison-button').on 'click', ->
+    setSearchType(SearchType.PriceComparison)
 
   $('#article-button').on 'click', ->
     setSearchType(SearchType.Title)

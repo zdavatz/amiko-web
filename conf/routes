@@ -34,6 +34,9 @@ GET     /fr/fi/gtin/:gtin           controllers.MainController.fachinfoDirect(re
 GET     /de/fi                      controllers.MainController.fachinfoRequest(request: Request, lang: String="de", gtin: String, type: String?="", key: String?="", highlight: String?="", anchor: String?="", filter: String?="0")
 GET     /fr/fi                      controllers.MainController.fachinfoRequest(request: Request, lang: String="fr", gtin: String, type: String?="", key: String?="", highlight: String?="", anchor: String?="", filter: String?="0")
 
+GET     /de/price_comparison        controllers.MainController.getPriceComparison(request: Request, lang: String="de", gtin: String, key: String?="", sort: String?="percentage")
+GET     /fr/price_comparison        controllers.MainController.getPriceComparison(request: Request, lang: String="fr", gtin: String, key: String?="", sort: String?="percentage")
+
 GET     /fulltext                   controllers.MainController.showFullTextSearchResult(request: Request, lang: String?="de", keyword: String, key: String, filter: String?="0")
 GET     /de/fulltext                controllers.MainController.showFullTextSearchResult(request: Request, lang: String?="de", keyword: String, key: String, filter: String?="0")
 GET     /fr/fulltext                controllers.MainController.showFullTextSearchResult(request: Request, lang: String?="fr", keyword: String, key: String, filter: String?="0")

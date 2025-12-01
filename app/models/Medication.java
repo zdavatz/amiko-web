@@ -19,6 +19,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 package models;
 
+import java.util.*;
+
 public class Medication {
     private long id;
     private String title;
@@ -170,5 +172,14 @@ public class Medication {
 
     public void setPackages(String packages) {
         this.packages = packages;
+    }
+
+    public List<Package> parsedPackages() {
+        List<Package> packages = new ArrayList<>();
+        String[] packageStrings = this.packages.split("\n");
+        for (String packageString : packageStrings) {
+            packages.add(new Package(packageString, this));
+        }
+        return packages;
     }
 }

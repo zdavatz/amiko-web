@@ -173,7 +173,7 @@ $ ->
 
   packInfoData = (data, packinfo) ->
     JSON.stringify({
-      eancode: data.eancode,
+      eancode: packinfo.gtin || data.eancode,
       package: packinfo.title,
       title: data.title
       author: data.author,

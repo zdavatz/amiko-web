@@ -78,10 +78,12 @@ public class Article {
     }
 
     public ArrayList<PackInfo> makePackInfos() {
+        String[] packageArray = _packages.split("\n");
         Pattern p_red = Pattern.compile(".*O]");
         Pattern p_green = Pattern.compile(".*G]");
         Scanner pack_str_scanner = new Scanner(_packinfo);
         ArrayList<PackInfo> result = new ArrayList<PackInfo>();
+        int i = 0;
         while (pack_str_scanner.hasNextLine()) {
             String pack_str_line = pack_str_scanner.nextLine();
             Matcher m_red = p_red.matcher(pack_str_line);
@@ -95,7 +97,16 @@ public class Article {
             else {
                 color = "gray";
             }
-            result.add(new PackInfo(color, pack_str_line));
+            String gtin = null;
+            if (packageArray.length > i) {
+                String packageStr = packageArray[i];
+                String[] packageParts = packageStr.split("\\|");
+                if (packageParts.length > 9) {
+                    gtin = packageParts[9];
+                }
+            }
+            result.add(new PackInfo(color, pack_str_line, gtin));
+            i++;
         }
         pack_str_scanner.close();
         return result;

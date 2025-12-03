@@ -500,3 +500,15 @@ $ ->
         Favourites.addRegNrs(regnrs)
     $(e.target).toggleClass('--favourited')
   )
+
+  $('#price-comparison-sort').on 'change', (e)->
+    url = new URL(document.location)
+    value = e.currentTarget.value
+    console.log('value', value)
+    url.searchParams.set('sort', value)
+    document.location.href = url.toString()
+
+  $('#sort-reverse-button').on 'click', (e)->
+    url = new URL(document.location)
+    url.searchParams.set('reverse', if url.searchParams.get('reverse') == 'true' then 'false' else 'true')
+    window.location.href = url.toString()

@@ -349,8 +349,21 @@ public class MainController extends Controller {
                 return pc1.package_.dosage.compareTo(pc2.package_.dosage);
             } else if (sort.equals("auth")) {
                 return pc1.package_.medication.getAuth().compareTo(pc2.package_.medication.getAuth());
-            } else if (sort.equals("percentage")) {
-                return new Double(pc1.priceDifferenceInPercentage).compareTo(new Double(pc2.priceDifferenceInPercentage));
+            } else if (sort.equals("price")) {
+                String p1 = pc1.package_.pp.replace("CHF ", "");
+                String p2 = pc2.package_.pp.replace("CHF ", "");
+                Double d1 = 0d, d2 = 0d;
+                try {
+                    d1 = Double.parseDouble(p1);
+                } catch (NumberFormatException e) {
+                    // Handle invalid input gracefully
+                }
+                try {
+                    d2 = Double.parseDouble(p2);
+                } catch (NumberFormatException e) {
+                    // Handle invalid input gracefully
+                }
+                return d1.compareTo(d2);
             } else if (sort.equals("sb")) {
                 String sb1 = pc1.package_.selbstbehalt();
                 String sb2 = pc2.package_.selbstbehalt();
@@ -367,45 +380,42 @@ public class MainController extends Controller {
                 }
                 return d1.compareTo(d2);
             }
-            // Price, or default
-            String p1 = pc1.package_.pp.replace("CHF ", "");
-            String p2 = pc2.package_.pp.replace("CHF ", "");
-            Double d1 = 0d, d2 = 0d;
-            try {
-                d1 = Double.parseDouble(p1);
-            } catch (NumberFormatException e) {
-                // Handle invalid input gracefully
-            }
-            try {
-                d2 = Double.parseDouble(p2);
-            } catch (NumberFormatException e) {
-                // Handle invalid input gracefully
-            }
-            return d1.compareTo(d2);
+            // Percentage, or default
+            return new Double(pc1.priceDifferenceInPercentage).compareTo(new Double(pc2.priceDifferenceInPercentage));
         });
 
         if (reverse.equals("true")) {
             Collections.reverse(comparisons);
         }
 
-        System.out.print("sort: " + sort);
         if (sort.equals("")) {
             int indexOfThePackage = 0;
             PriceComparison thePc = null;
             for (int i = 0; i < comparisons.size(); i++) {
-                if (comparisons.get(i).package_.gtin == thePackage.gtin) {
+                if (comparisons.get(i).package_.gtin.equals(thePackage.gtin)) {
                     indexOfThePackage = i;
+                    thePc = comparisons.get(i);
                     break;
                 }
             }
-            System.out.print("indexOfThePackage: " + indexOfThePackage);
             if (indexOfThePackage != 0) {
                 comparisons.remove(indexOfThePackage);
                 comparisons.add(0, thePc);
             }
         }
-
-        String content = "<table><thead><tr><th>Name</th><th>Auth</th><th>Size</th><th>Price</th><th>Percentage</th><th>SbL</th><tr></thead><tbody>";
+        String content = "";
+        content += "<div class='price-comparison-buttons'>";
+        content += "<select id='price-comparison-sort'>";
+        content += "<option value='name' " + (sort.equals("name") ? "selected" : "") + ">Name</option>";
+        content += "<option value='auth' " + (sort.equals("auth") ? "selected" : "") + ">Auth</option>";
+        content += "<option value='size' " + (sort.equals("size") ? "selected" : "") + ">Size</option>";
+        content += "<option value='price' " + (sort.equals("price") ? "selected" : "") + ">Price</option>";
+        content += "<option value='percentage' " + ((sort.equals("percentage") || sort.equals("")) ? "selected" : "") + ">Percentage</option>";
+        content += "<option value='sb' " + (sort.equals("sb") ? "selected" : "") + ">Sb</option>";
+        content += "</select>";
+        content += "<button type='button' id='sort-reverse-button'>" + (reverse.equals("true") ? "↓" : "↑") + "</button>";
+        content += "</div>";
+        content += "<table class='price-comparison-table'><thead><tr><th>Name</th><th>Auth</th><th>Size</th><th>Price</th><th>Percentage</th><th>SbL</th><tr></thead><tbody>";
         for (PriceComparison pc : comparisons) {
             content += "<tr>";
             content += "<td>" + pc.package_.name + "</td>";

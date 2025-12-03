@@ -73,3 +73,7 @@ scan_file = Fichier de scannage
 send_to_zurrose = Envoyer à ZurRose
 prescription_is_sent_to_zurrose = La recette a été envoyée à ZurRose.
 error = Erreur
+package_size = Taille du paquet
+price = PP
+price_difference = Différence de prix
+deductible = Franchise

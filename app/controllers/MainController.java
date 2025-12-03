@@ -403,19 +403,28 @@ public class MainController extends Controller {
                 comparisons.add(0, thePc);
             }
         }
+
+        Messages messages = messagesApi.preferred(request);
         String content = "";
         content += "<div class='price-comparison-buttons'>";
         content += "<select id='price-comparison-sort'>";
-        content += "<option value='name' " + (sort.equals("name") ? "selected" : "") + ">Name</option>";
-        content += "<option value='auth' " + (sort.equals("auth") ? "selected" : "") + ">Auth</option>";
-        content += "<option value='size' " + (sort.equals("size") ? "selected" : "") + ">Size</option>";
-        content += "<option value='price' " + (sort.equals("price") ? "selected" : "") + ">Price</option>";
-        content += "<option value='percentage' " + ((sort.equals("percentage") || sort.equals("")) ? "selected" : "") + ">Percentage</option>";
-        content += "<option value='sb' " + (sort.equals("sb") ? "selected" : "") + ">Sb</option>";
+        content += "<option value='name' " + (sort.equals("name") ? "selected" : "") + ">" + messages.at("title") + "</option>";
+        content += "<option value='auth' " + (sort.equals("auth") ? "selected" : "") + ">" + messages.at("author") + "</option>";
+        content += "<option value='size' " + (sort.equals("size") ? "selected" : "") + ">" + messages.at("package_size") + "</option>";
+        content += "<option value='price' " + (sort.equals("price") ? "selected" : "") + ">" + messages.at("price") + "</option>";
+        content += "<option value='percentage' " + ((sort.equals("percentage") || sort.equals("")) ? "selected" : "") + ">" + messages.at("price_difference") + "</option>";
+        content += "<option value='sb' " + (sort.equals("sb") ? "selected" : "") + ">" + messages.at("deductible") + "</option>";
         content += "</select>";
         content += "<button type='button' id='sort-reverse-button'>" + (reverse.equals("true") ? "↓" : "↑") + "</button>";
         content += "</div>";
-        content += "<table class='price-comparison-table'><thead><tr><th>Name</th><th>Auth</th><th>Size</th><th>Price</th><th>Percentage</th><th>SbL</th><tr></thead><tbody>";
+        content += "<table class='price-comparison-table'><thead><tr>";
+        content += "<th>" + messages.at("title") + "</th>";
+        content += "<th>" + messages.at("author") + "</th>";
+        content += "<th>" + messages.at("package_size") + "</th>";
+        content += "<th>" + messages.at("price") + "</th>";
+        content += "<th>%</th>";
+        content += "<th>SB</th>";
+        content += "<tr></thead><tbody>";
         for (PriceComparison pc : comparisons) {
             content += "<tr>";
             content += "<td>" + pc.package_.name + "</td>";
@@ -431,7 +440,6 @@ public class MainController extends Controller {
         content += "</tbody></table>";
 
         ViewContext vc = getViewContext(request);
-        Messages messages = messagesApi.preferred(request);
         return ok(index.render(content, "", key, "", "", vc, messages));
     }
 

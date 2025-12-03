@@ -768,6 +768,6 @@ input[type="search"]::-webkit-search-results-decoration {
     text-align: left;
 }
 
-.price-comparison-table tr {
-    border-bottom: solid 1px var(--lines-color);
+.price-comparison-table tr:nth-child(even) {
+  background: var(--background-color-gray);
 }

@@ -759,3 +759,15 @@ input[type="search"]::-webkit-search-results-decoration {
 #qrcode-scanner video {
     width: 100%;
 }
+
+.price-comparison-buttons {
+    text-align: right;
+}
+
+.price-comparison-table th {
+    text-align: left;
+}
+
+.price-comparison-table tr:nth-child(even) {
+  background: var(--background-color-gray);
+}

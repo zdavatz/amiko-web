@@ -1492,8 +1492,8 @@ function main() {
         PrescriptionBasket.save(items);
     });
 
-    $(document).on('click', 'p.article-packinfo', function(e) {
-        var data = $(e.currentTarget).data('prescription');
+    $(document).on('click', 'p.article-packinfo.--prescription', function(e) {
+        var data = $(e.currentTarget).data('packinfo');
         PrescriptionBasket.add(data);
     });
     UI.Prescription.reloadInfo();

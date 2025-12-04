@@ -89,6 +89,7 @@
             </form>
             <br>
             <div>
+                <button id="price-comparison-button" class="rounded-button">@messages("price_comparison")</button>
                 <button id="article-button" class="rounded-button">@messages("title")</button>
                 <button id="owner-button" class="rounded-button">@messages("author")</button>
                 <button id="substance-button" class="rounded-button">@messages("substance")</button>
@@ -173,6 +174,11 @@
             $('#search-field').attr('placeholder', '@messages("search_fulltext")');
             $(this).addClass('active');
         });
+        $('#price-comparison-button').click(function() {
+            disableButtons();
+            $('#search-field').attr('placeholder', '@messages("search_price_comparison")');
+            $(this).addClass('active');
+        });
 
         var query_var = getURLParameter('type');
         if (query_var) {
@@ -188,6 +194,8 @@
                 localStorage.setItem('search-type', 5);
             } else if (query_var == 'fulltext') {
                 localStorage.setItem('search-type', 6);
+            } else if (query_var === 'pricecomparison') {
+                localStorage.setItem('search-type', 9);
             } else {
                 localStorage.setItem('search-type', 1);
             }
@@ -211,6 +219,9 @@
         } else if (localStorage.getItem('search-type')==6) {
             $('#fulltext-button').addClass('active')
             $('#search-field').attr('placeholder', '@messages("search_fulltext")');
+        } else if (localStorage.getItem('search-type')==9) {
+            $('#price-comparison-button').addClass('active')
+            $('#search-field').attr('placeholder', '@messages("search_price_comparison")');
         } else {
             $('#article-button').addClass('active');
             $('#search-field').attr('placeholder', '@messages("search_title")');

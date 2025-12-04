@@ -21,6 +21,8 @@ package controllers;
 
 import akka.stream.Materializer;
 import models.*;
+import models.Package;
+
 import com.typesafe.config.Config;
 import play.data.FormFactory;
 import play.db.NamedDatabase;
@@ -161,7 +163,6 @@ public class MainController extends Controller {
 
     public Result prescriptionImport(Http.Request request) {
         var origin = request.header("origin");
-        System.out.println("got origin" + origin);
         String acceptedParentOrigin = configuration.getString("feature.prescription_import_origin");
         if (!origin.orElse("").equals(acceptedParentOrigin)) {
             return badRequest("Bad Origin");
@@ -282,6 +283,164 @@ public class MainController extends Controller {
             return retrieveFachinfo(request, lang, m, type, anchor, highlight);
         else
             return retrieveFachinfo(request, lang, m, type, key, "");
+    }
+
+    public Result getPriceComparison(Http.Request request, String lang, String gtin, String key, String sort, String reverse) {
+        Medication m = getMedicationWithEan(lang, gtin);
+        Package thePackage = null;
+        for (Package p : m.parsedPackages()) {
+            if (p.gtin.equals(gtin)) {
+                thePackage = p;
+                break;
+            }
+        }
+        if (thePackage == null) {
+            return notFound("Package not found");
+        }
+        List<Medication> comparables = searchATC(lang, m.getAtcCode());
+
+        double baseQuantity = 0;
+        try {
+            baseQuantity = Double.parseDouble(thePackage.dosage);
+        } catch (NumberFormatException e) {
+            // Handle invalid dosage format
+        }
+        double basePrice = 0;
+        try {
+            basePrice = Double.parseDouble(thePackage.pp.replace("CHF ", ""));
+        } catch (NumberFormatException e) {
+            // Handle invalid price format
+        }
+
+        List<PriceComparison> comparisons = new ArrayList<>();
+        for (Medication comparable : comparables) {
+            for (Package p : comparable.parsedPackages()) {
+                if (!p.units.equals(thePackage.units)) continue;
+                PriceComparison pc = new PriceComparison();
+                comparisons.add(pc);
+                pc.package_ = p;
+
+                double thisQuantity = 0;
+                try {
+                    thisQuantity = Double.parseDouble(p.dosage);
+                } catch (NumberFormatException e) {
+                    // Handle invalid dosage format
+                }
+                double thisPrice = 0;
+                try {
+                    thisPrice = Double.parseDouble(p.pp.replace("CHF ", ""));
+                } catch (NumberFormatException e) {
+                    // Handle invalid price format
+                }
+                if (basePrice <= 0 || thisPrice <= 0 || baseQuantity <= 0 || thisQuantity <= 0) {
+                    // We still add it to the results even when numbers are missing
+                    continue;
+                }
+                // cheaper = negative number
+                double diff = thisPrice / (basePrice / baseQuantity * thisQuantity) - 1;
+                pc.priceDifferenceInPercentage = diff * 100;
+            }
+        }
+
+        Collections.sort(comparisons, (PriceComparison pc1, PriceComparison pc2) -> {
+            if (sort.equals("name")) {
+                return pc1.package_.name.compareTo(pc2.package_.name);
+            } else if (sort.equals("size")) {
+                return pc1.package_.dosage.compareTo(pc2.package_.dosage);
+            } else if (sort.equals("auth")) {
+                return pc1.package_.medication.getAuth().compareTo(pc2.package_.medication.getAuth());
+            } else if (sort.equals("price")) {
+                String p1 = pc1.package_.pp.replace("CHF ", "");
+                String p2 = pc2.package_.pp.replace("CHF ", "");
+                Double d1 = 0d, d2 = 0d;
+                try {
+                    d1 = Double.parseDouble(p1);
+                } catch (NumberFormatException e) {
+                    // Handle invalid input gracefully
+                }
+                try {
+                    d2 = Double.parseDouble(p2);
+                } catch (NumberFormatException e) {
+                    // Handle invalid input gracefully
+                }
+                return d1.compareTo(d2);
+            } else if (sort.equals("sb")) {
+                String sb1 = pc1.package_.selbstbehalt();
+                String sb2 = pc2.package_.selbstbehalt();
+                Double d1 = 0d, d2 = 0d;
+                try {
+                    d1 = Double.parseDouble(sb1.replace("%", ""));
+                } catch (NumberFormatException e) {
+                    // Handle invalid input gracefully
+                }
+                try {
+                    d2 = Double.parseDouble(sb2.replace("%", ""));
+                } catch (NumberFormatException e) {
+                    // Handle invalid input gracefully
+                }
+                return d1.compareTo(d2);
+            }
+            // Percentage, or default
+            return new Double(pc1.priceDifferenceInPercentage).compareTo(new Double(pc2.priceDifferenceInPercentage));
+        });
+
+        if (reverse.equals("true")) {
+            Collections.reverse(comparisons);
+        }
+
+        if (sort.equals("")) {
+            int indexOfThePackage = 0;
+            PriceComparison thePc = null;
+            for (int i = 0; i < comparisons.size(); i++) {
+                if (comparisons.get(i).package_.gtin.equals(thePackage.gtin)) {
+                    indexOfThePackage = i;
+                    thePc = comparisons.get(i);
+                    break;
+                }
+            }
+            if (indexOfThePackage != 0) {
+                comparisons.remove(indexOfThePackage);
+                comparisons.add(0, thePc);
+            }
+        }
+
+        Messages messages = messagesApi.preferred(request);
+        String content = "";
+        content += "<div class='price-comparison-buttons'>";
+        content += "<select id='price-comparison-sort'>";
+        content += "<option value='name' " + (sort.equals("name") ? "selected" : "") + ">" + messages.at("title") + "</option>";
+        content += "<option value='auth' " + (sort.equals("auth") ? "selected" : "") + ">" + messages.at("author") + "</option>";
+        content += "<option value='size' " + (sort.equals("size") ? "selected" : "") + ">" + messages.at("package_size") + "</option>";
+        content += "<option value='price' " + (sort.equals("price") ? "selected" : "") + ">" + messages.at("price") + "</option>";
+        content += "<option value='percentage' " + ((sort.equals("percentage") || sort.equals("")) ? "selected" : "") + ">" + messages.at("price_difference") + "</option>";
+        content += "<option value='sb' " + (sort.equals("sb") ? "selected" : "") + ">" + messages.at("deductible") + "</option>";
+        content += "</select>";
+        content += "<button type='button' id='sort-reverse-button'>" + (reverse.equals("true") ? "↓" : "↑") + "</button>";
+        content += "</div>";
+        content += "<table class='price-comparison-table'><thead><tr>";
+        content += "<th>" + messages.at("title") + "</th>";
+        content += "<th>" + messages.at("author") + "</th>";
+        content += "<th>" + messages.at("package_size") + "</th>";
+        content += "<th>" + messages.at("price") + "</th>";
+        content += "<th>%</th>";
+        content += "<th>SB</th>";
+        content += "<tr></thead><tbody>";
+        for (PriceComparison pc : comparisons) {
+            content += "<tr>";
+            content += "<td>" + pc.package_.name + "</td>";
+            content += "<td>" + pc.package_.medication.getAuth() + "</td>";
+            content += "<td>" + pc.package_.dosage + " " + pc.package_.units + "</td>";
+            content += "<td>" + pc.package_.pp + "</td>";
+            content += "<td>" + String.format("%.0f", pc.priceDifferenceInPercentage) + "%</td>";
+            String sb = pc.package_.selbstbehalt();
+            content += "<td>" + (sb != null ? sb : "") + "</td>";
+            content += "</tr>";
+        }
+
+        content += "</tbody></table>";
+
+        ViewContext vc = getViewContext(request);
+        return ok(index.render(content, "", key, "", "", vc, messages));
     }
 
     /**

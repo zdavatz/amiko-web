@@ -388,16 +388,16 @@ public class MainController extends Controller {
             Collections.reverse(comparisons);
         }
 
-        if (sort.equals("")) {
-            int indexOfThePackage = 0;
-            PriceComparison thePc = null;
-            for (int i = 0; i < comparisons.size(); i++) {
-                if (comparisons.get(i).package_.gtin.equals(thePackage.gtin)) {
-                    indexOfThePackage = i;
-                    thePc = comparisons.get(i);
-                    break;
-                }
+        int indexOfThePackage = 0;
+        PriceComparison thePc = null;
+        for (int i = 0; i < comparisons.size(); i++) {
+            if (comparisons.get(i).package_.gtin.equals(thePackage.gtin)) {
+                indexOfThePackage = i;
+                thePc = comparisons.get(i);
+                break;
             }
+        }
+        if (sort.equals("")) {
             if (indexOfThePackage != 0) {
                 comparisons.remove(indexOfThePackage);
                 comparisons.add(0, thePc);
@@ -425,8 +425,11 @@ public class MainController extends Controller {
         content += "<th>%</th>";
         content += "<th>SB</th>";
         content += "<tr></thead><tbody>";
+        int i = 0;
         for (PriceComparison pc : comparisons) {
-            content += "<tr>";
+            System.out.println("i: " + i + " indexOfThePackage: " + indexOfThePackage);
+            boolean isSearchedPackage = i == indexOfThePackage;
+            content += isSearchedPackage ? "<tr class='searched-package'>" : "<tr>";
             content += "<td>" + pc.package_.name + "</td>";
             content += "<td>" + pc.package_.medication.getAuth() + "</td>";
             content += "<td>" + pc.package_.dosage + " " + pc.package_.units + "</td>";
@@ -435,6 +438,7 @@ public class MainController extends Controller {
             String sb = pc.package_.selbstbehalt();
             content += "<td>" + (sb != null ? sb : "") + "</td>";
             content += "</tr>";
+            i++;
         }
 
         content += "</tbody></table>";

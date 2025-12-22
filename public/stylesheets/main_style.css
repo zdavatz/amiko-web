@@ -769,5 +769,9 @@ input[type="search"]::-webkit-search-results-decoration {
 }
 
 .price-comparison-table tr:nth-child(even) {
-  background: var(--background-color-gray);
+    background-color: var(--background-color-gray);
+}
+
+.price-comparison-table tr.searched-package {
+    background-color: var(--background-color-highlight);
 }

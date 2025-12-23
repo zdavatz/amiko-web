@@ -316,6 +316,7 @@ public class MainController extends Controller {
         for (Medication comparable : comparables) {
             for (Package p : comparable.parsedPackages()) {
                 if (!p.units.equals(thePackage.units)) continue;
+                if (!Package.dosageEqual(p, thePackage)) continue;
                 PriceComparison pc = new PriceComparison();
                 comparisons.add(pc);
                 pc.package_ = p;

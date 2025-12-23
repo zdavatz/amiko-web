@@ -19,6 +19,9 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 package models;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class Package {
     public String name;
     public String dosage;
@@ -80,5 +83,51 @@ public class Package {
             }
         }
         return false;
+    }
+
+    public String parsedDosageFromName() {
+
+        Pattern regex1 = Pattern.compile("((\\d+)(\\.\\d+)?\\s*(ml|mg|g))");
+        Matcher match1 = regex1.matcher(this.name);
+        String dosage1 = match1.find() ? match1.group() : "";
+
+        Pattern regex2 = Pattern.compile("(((\\d+)(\\.\\d+)?(Ds|ds|mg)?)(\\/(\\d+)(\\.\\d+)?\\s*(Ds|ds|mg|ml|mg|g)?)+)");
+        Matcher match2 = regex2.matcher(this.name);
+        String dosage2 = match2.find() ? match2.group() : "";
+
+        if (dosage1.isEmpty() || dosage2.contains(dosage1)) {
+            return dosage2;
+        }
+
+        return dosage1;
+    }
+
+    static public boolean dosageEqual(Package p1, Package p2) {
+        String dosage1 = p1.parsedDosageFromName().replaceAll("\\s", "");
+        String dosage2 = p2.parsedDosageFromName().replaceAll("\\s", "");
+        if (dosage1.equals(dosage2)) {
+            return true;
+        }
+        String numOnly1 = takeNumOnly(dosage1);
+        String numOnly2 = takeNumOnly(dosage2);
+        boolean is1WithoutUnit = dosage1.toLowerCase().endsWith("ds") || numOnly1.equals(dosage1);
+        boolean is2WithoutUnit = dosage2.toLowerCase().endsWith("ds") || numOnly2.equals(dosage2);
+        if (is1WithoutUnit || is2WithoutUnit) {
+            return numOnly1.equals(numOnly2);
+        }
+        return false;
+    }
+
+    static private String takeNumOnly(String str) {
+        str = str.trim();
+        try {
+            for (int i = 0; i < str.length(); i++) {
+                if (!Character.isDigit(str.charAt(i))) {
+                    return str.substring(0, i);
+                }
+            }
+            return str;
+        } catch (NumberFormatException e) {}
+        return "";
     }
 }

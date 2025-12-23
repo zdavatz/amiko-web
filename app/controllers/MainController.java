@@ -347,7 +347,18 @@ public class MainController extends Controller {
             if (sort.equals("name")) {
                 return pc1.package_.name.compareTo(pc2.package_.name);
             } else if (sort.equals("size")) {
-                return pc1.package_.dosage.compareTo(pc2.package_.dosage);
+                Double d1 = 0d, d2 = 0d;
+                try {
+                    d1 = Double.parseDouble(pc1.package_.dosage);
+                } catch (NumberFormatException e) {
+                    // Handle invalid input gracefully
+                }
+                try {
+                    d2 = Double.parseDouble(pc2.package_.dosage);
+                } catch (NumberFormatException e) {
+                    // Handle invalid input gracefully
+                }
+                return d1.compareTo(d2);
             } else if (sort.equals("auth")) {
                 return pc1.package_.medication.getAuth().compareTo(pc2.package_.medication.getAuth());
             } else if (sort.equals("price")) {

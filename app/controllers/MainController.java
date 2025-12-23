@@ -401,6 +401,7 @@ public class MainController extends Controller {
             if (indexOfThePackage != 0) {
                 comparisons.remove(indexOfThePackage);
                 comparisons.add(0, thePc);
+                indexOfThePackage = 0;
             }
         }
 
@@ -427,7 +428,6 @@ public class MainController extends Controller {
         content += "<tr></thead><tbody>";
         int i = 0;
         for (PriceComparison pc : comparisons) {
-            System.out.println("i: " + i + " indexOfThePackage: " + indexOfThePackage);
             boolean isSearchedPackage = i == indexOfThePackage;
             content += isSearchedPackage ? "<tr class='searched-package'>" : "<tr>";
             content += "<td>" + pc.package_.name + "</td>";

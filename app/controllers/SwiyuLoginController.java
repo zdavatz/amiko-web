@@ -61,7 +61,7 @@ public class SwiyuLoginController extends Controller {
     // GET /swiyu/login  →  {verification_id, deeplink}
     // ─────────────────────────────────────────────────────────────────────────
 
-    public CompletionStage<r> initiateLogin(Http.Request request) {
+    public CompletionStage<Result> initiateLogin(Http.Request request) {
         ObjectNode body = Json.newObject();
         body.putArray("accepted_issuer_dids").add(ACCEPTED_ISSUER_DID);
         body.put("response_mode", "direct_post");
@@ -102,7 +102,7 @@ public class SwiyuLoginController extends Controller {
     // GET /swiyu/status/:id  →  {state, claims?, authenticated?}
     // ─────────────────────────────────────────────────────────────────────────
 
-    public CompletionStage<r> checkStatus(Http.Request request, String verificationId) {
+    public CompletionStage<Result> checkStatus(Http.Request request, String verificationId) {
         return ws.url(VERIFIER_MANAGEMENT_URL + "/verifications/" + verificationId)
             .get()
             .thenApply(response -> {
@@ -152,16 +152,16 @@ public class SwiyuLoginController extends Controller {
             return badRequest(Json.newObject().put("error", "Name fehlt"));
         }
 
+        java.util.Map<String,String> session = new java.util.HashMap<>();
+        session.put(SESSION_AUTH,      "true");
+        session.put(SESSION_GLN,       gln);
+        session.put(SESSION_FIRSTNAME, firstName);
+        session.put(SESSION_LASTNAME,  lastName);
         return ok(Json.newObject()
-                .put("status",    "ok")
-                .put("name",      firstName + " " + lastName)
-                .put("gln",       gln))
-            .withSession(
-                SESSION_AUTH,      "true",
-                SESSION_GLN,       gln,
-                SESSION_FIRSTNAME, firstName,
-                SESSION_LASTNAME,  lastName
-            );
+                .put("status", "ok")
+                .put("name",   firstName + " " + lastName)
+                .put("gln",    gln))
+            .withSession(session);
     }
 
     // ─────────────────────────────────────────────────────────────────────────

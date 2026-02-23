@@ -64,18 +64,21 @@ class SwiyuLogin {
 
     private showQRCode(deeplink: string): void {
         this.render('qr', deeplink);
-        const QRCode = (window as any).QRCode;
-        if (QRCode) {
-            const canvas = document.getElementById('swiyu-qr-canvas') as HTMLCanvasElement;
-            if (canvas) {
-                QRCode.toCanvas(canvas, deeplink, {
-                    width: 256,
-                    color: { dark: '#003d73', light: '#ffffff' }
-                });
+        // Wait for DOM update before rendering QR code
+        setTimeout(() => {
+            const QRCode = (window as any).QRCode;
+            if (QRCode) {
+                const canvas = document.getElementById('swiyu-qr-canvas') as HTMLCanvasElement;
+                if (canvas) {
+                    QRCode.toCanvas(canvas, deeplink, {
+                        width: 256,
+                        color: { dark: '#003d73', light: '#ffffff' }
+                    });
+                }
             }
-        }
-        const link = document.getElementById('swiyu-deeplink') as HTMLAnchorElement;
-        if (link) link.href = deeplink;
+            const link = document.getElementById('swiyu-deeplink') as HTMLAnchorElement;
+            if (link) link.href = deeplink;
+        }, 50);
     }
 
     private startPolling(): void {

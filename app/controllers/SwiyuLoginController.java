@@ -84,6 +84,7 @@ public class SwiyuLoginController extends Controller {
 
         return ws.url(VERIFIER_MANAGEMENT_URL + "/verifications")
             .setContentType("application/json")
+            .addHeader("SWIYU-API-Version", "1")
             .post(body)
             .thenApply(response -> {
                 if (response.getStatus() != 201 && response.getStatus() != 200) {

@@ -1,0 +1,48 @@
+@(messages: play.i18n.Messages)
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>swiyu Login – AmiKo</title>
+        <meta charset="UTF-8"/>
+        <link rel="shortcut icon" type="image/png" href="@routes.Assets.versioned("images/favicon.png")">
+        <link rel="stylesheet" type="text/css" href="@routes.Assets.versioned("stylesheets/color-scheme.css")" />
+        <link rel="stylesheet" type="text/css" href="@routes.Assets.versioned("stylesheets/main_style.css")" />
+        <link rel="stylesheet" type="text/css" href="@routes.Assets.versioned("stylesheets/swiyu-login.css")" />
+    </head>
+    <body>
+        <div id="swiyu-page">
+            <div id="swiyu-login-container"></div>
+        </div>
+
+        <!-- Scripts am Ende des Body: jQuery zuerst, dann QRCode, dann Widget -->
+        <script type="text/javascript" src="@routes.Assets.versioned("javascripts/jquery-2.2.0.min.js")"></script>
+        <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+        <script type="text/javascript" src="@routes.Assets.versioned("javascripts/swiyu-login.js")"></script>
+        <script type="text/javascript">
+            $(document).ready(function() {
+                var login = new SwiyuLogin(
+                    '#swiyu-login-container',
+                    function(claims) {
+                        $.ajax({
+                            url: '/swiyu/session',
+                            method: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify(claims),
+                            success: function(response) {
+                                window.location.href = '/';
+                            },
+                            error: function(xhr) {
+                                console.error('Session creation failed:', xhr.responseText);
+                            }
+                        });
+                    },
+                    function(error) {
+                        console.error('swiyu login error:', error);
+                    }
+                );
+                login.start();
+            });
+        </script>
+    </body>
+</html>

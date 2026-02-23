@@ -19,7 +19,6 @@ GET     /interactions/:basket          controllers.MainController.interactionsBa
 GET     /de/interactions/:basket       controllers.MainController.interactionsBasket(request: Request, lang: String="de", basket: String)
 GET     /fr/interactions/:basket       controllers.MainController.interactionsBasket(request: Request, lang: String="fr", basket: String)
 
-
 GET     /fi/id/:id                  controllers.MainController.fachinfoId(request: Request, lang: String?="de", id: Long)
 GET     /rezept                     controllers.MainController.prescription(request: Request)
 GET     /prescription               controllers.MainController.prescription(request: Request)
@@ -56,6 +55,14 @@ GET     /sds/profile                controllers.OAuthController.fetchSDSSelfProf
 POST    /adswiss/saml               controllers.OAuthController.fetchADSwissSAML(request: Request, access_token: String)
 POST    /adswiss/auth_handle        controllers.OAuthController.fetchAdswissAuthHandle(request: Request)
 POST    /adswiss/eprescription_qr   controllers.OAuthController.makeEPrescriptionQR(request: Request, auth_handle: String)
+
+# swiyu Wallet Login (OID4VP)
+GET     /swiyu                      controllers.SwiyuLoginController.loginPage(request: Request)
+GET     /swiyu/login                controllers.SwiyuLoginController.initiateLogin(request: Request)
+GET     /swiyu/status/:id           controllers.SwiyuLoginController.checkStatus(request: Request, id: String)
++ nocsrf
+POST    /swiyu/session              controllers.SwiyuLoginController.createSession(request: Request)
+GET     /swiyu/logout               controllers.SwiyuLoginController.logout(request: Request)
 
 GET     /javascriptRoutes           controllers.MainController.javascriptRoutes(request: Request)
 

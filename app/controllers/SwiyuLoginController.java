@@ -20,6 +20,7 @@ import views.html.swiyu_login;
 
 import javax.inject.Inject;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 public class SwiyuLoginController extends Controller {
@@ -135,34 +136,65 @@ public class SwiyuLoginController extends Controller {
     // nocsrf in routes (called from JS, not a form)
     // ─────────────────────────────────────────────────────────────────────────
 
-    public Result createSession(Http.Request request) {
+    public CompletionStage<Result> createSession(Http.Request request) {
         JsonNode body = request.body().asJson();
         if (body == null) {
-            return badRequest(Json.newObject().put("error", "Kein JSON-Body"));
+            return CompletableFuture.completedFuture(
+                badRequest(Json.newObject().put("error", "Kein JSON-Body")));
         }
 
-        String firstName = body.path("firstName").asText("").trim();
-        String lastName  = body.path("lastName").asText("").trim();
-        String gln       = body.path("gln").asText("").trim();
-
-        // GLN: 13 digits starting with 760
-        if (!gln.matches("^760\\d{10}$")) {
-            return forbidden(Json.newObject().put("error", "Ungültiges GLN-Format"));
-        }
-        if (firstName.isEmpty() || lastName.isEmpty()) {
-            return badRequest(Json.newObject().put("error", "Name fehlt"));
+        String verificationId = body.path("verification_id").asText("").trim();
+        if (verificationId.isEmpty()) {
+            return CompletableFuture.completedFuture(
+                badRequest(Json.newObject().put("error", "verification_id fehlt")));
         }
 
-        java.util.Map<String,String> session = new java.util.HashMap<>();
-        session.put(SESSION_AUTH,      "true");
-        session.put(SESSION_GLN,       gln);
-        session.put(SESSION_FIRSTNAME, firstName);
-        session.put(SESSION_LASTNAME,  lastName);
-        return ok(Json.newObject()
-                .put("status", "ok")
-                .put("name",   firstName + " " + lastName)
-                .put("gln",    gln))
-            .withSession(session);
+        // Re-fetch verification result from the verifier API (server-side)
+        return ws.url(VERIFIER_MANAGEMENT_URL + "/verifications/" + verificationId)
+            .get()
+            .thenApply(response -> {
+                if (response.getStatus() != 200) {
+                    return badRequest(Json.newObject()
+                        .put("error", "Verifikation nicht gefunden"));
+                }
+
+                JsonNode json  = response.asJson();
+                String   state = json.path("state").asText("");
+                if (!"SUCCESS".equals(state)) {
+                    return forbidden(Json.newObject()
+                        .put("error", "Verifikation nicht erfolgreich: " + state));
+                }
+
+                JsonNode claims = extractClaims(json);
+                if (claims == null || claims.path("gln").asText("").isEmpty()) {
+                    return forbidden(Json.newObject()
+                        .put("error", "Claims konnten nicht extrahiert werden"));
+                }
+
+                String firstName = claims.path("firstName").asText("").trim();
+                String lastName  = claims.path("lastName").asText("").trim();
+                String gln       = claims.path("gln").asText("").trim();
+
+                if (!gln.matches("^760\\d{10}$")) {
+                    return forbidden(Json.newObject()
+                        .put("error", "Ungültiges GLN-Format"));
+                }
+                if (firstName.isEmpty() || lastName.isEmpty()) {
+                    return badRequest(Json.newObject()
+                        .put("error", "Name fehlt in den Claims"));
+                }
+
+                java.util.Map<String,String> session = new java.util.HashMap<>();
+                session.put(SESSION_AUTH,      "true");
+                session.put(SESSION_GLN,       gln);
+                session.put(SESSION_FIRSTNAME, firstName);
+                session.put(SESSION_LASTNAME,  lastName);
+                return ok(Json.newObject()
+                        .put("status", "ok")
+                        .put("name",   firstName + " " + lastName)
+                        .put("gln",    gln))
+                    .withSession(session);
+            });
     }
 
     // ─────────────────────────────────────────────────────────────────────────

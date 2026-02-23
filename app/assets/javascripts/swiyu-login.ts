@@ -17,7 +17,7 @@ interface SwiyuClaims {
 }
 
 // Use different name to avoid collision with DOM's ErrorCallback
-type SwiyuSuccessCallback = (claims: SwiyuClaims) => void;
+type SwiyuSuccessCallback = (claims: SwiyuClaims, verificationId: string) => void;
 type SwiyuErrorCallback   = (error: string)       => void;
 
 class SwiyuLogin {
@@ -93,7 +93,7 @@ class SwiyuLogin {
                     if (data.state === 'SUCCESS' && data.authenticated && data.claims) {
                         this.stopPolling();
                         this.render('success', data.claims);
-                        this.onSuccess(data.claims);
+                        this.onSuccess(data.claims, id);
                     } else if (data.state === 'FAILED' || data.state === 'EXPIRED') {
                         this.stopPolling();
                         this.render('error', 'Verifikation fehlgeschlagen oder abgelaufen.');

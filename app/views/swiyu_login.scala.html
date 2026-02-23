@@ -22,12 +22,12 @@
             $(document).ready(function() {
                 var login = new SwiyuLogin(
                     '#swiyu-login-container',
-                    function(claims) {
+                    function(claims, verificationId) {
                         $.ajax({
                             url: '/swiyu/session',
                             method: 'POST',
                             contentType: 'application/json',
-                            data: JSON.stringify(claims),
+                            data: JSON.stringify({ verification_id: verificationId }),
                             success: function(response) {
                                 window.location.href = '/';
                             },

@@ -18,6 +18,7 @@ import play.i18n.MessagesApi;
 import play.i18n.Messages;
 import views.html.swiyu_login;
 
+import com.typesafe.config.Config;
 import javax.inject.Inject;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -29,13 +30,9 @@ public class SwiyuLoginController extends Controller {
     private static final String VERIFIER_MANAGEMENT_URL =
         "https://swiyu.ywesee.com/verifier-mgmt/api";
 
-    // Only accept credentials issued by ywesee GmbH
-    private static final String ACCEPTED_ISSUER_DID =
-        "did:tdw:QmeA6Hpod7N85daNqWZD5w8jBCU6oaXcxxQFNZ6ox245ci:" +
-        "identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:" +
-        "5b1672d3-2805-4752-b364-2f87013bc5c3";
-
     private static final String DOCTOR_CREDENTIAL_VCT = "doctor-credential-sdjwt";
+
+    private final String acceptedIssuerDid;
 
     // Session keys
     public static final String SESSION_AUTH      = "swiyu_auth";
@@ -45,6 +42,11 @@ public class SwiyuLoginController extends Controller {
 
     @Inject WSClient ws;
     @Inject MessagesApi messagesApi;
+
+    @Inject
+    public SwiyuLoginController(Config config) {
+        this.acceptedIssuerDid = config.getString("swiyu.accepted_issuer_did");
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // GET /swiyu  →  Login page with QR widget
@@ -64,7 +66,7 @@ public class SwiyuLoginController extends Controller {
 
     public CompletionStage<Result> initiateLogin(Http.Request request) {
         ObjectNode body = Json.newObject();
-        body.putArray("accepted_issuer_dids").add(ACCEPTED_ISSUER_DID);
+        body.putArray("accepted_issuer_dids").add(acceptedIssuerDid);
         body.put("response_mode", "direct_post");
 
         ObjectNode pd = body.putObject("presentation_definition");

@@ -24,4 +24,7 @@ public class ViewContext {
     public boolean showInteraction;
     public boolean showPrescriptions;
     public String googleAnalyticsId;
+    public boolean swiyuAuthenticated;
+    public String swiyuFullName;
+    public String swiyuGln;
 }

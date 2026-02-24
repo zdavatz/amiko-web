@@ -237,11 +237,9 @@ public class SwiyuLoginController extends Controller {
 
     private JsonNode extractClaims(JsonNode verificationResult) {
         try {
-            JsonNode claims = verificationResult.path("verified_claims");
-            if (claims.isMissingNode() || claims.isNull())
-                claims = verificationResult.path("credential_claims");
-            if (claims.isMissingNode() || claims.isNull())
-                claims = verificationResult.path("vp_token");
+            // swiyu verifier returns claims at wallet_response.credential_subject_data
+            JsonNode claims = verificationResult.path("wallet_response")
+                                                .path("credential_subject_data");
             if (claims.isMissingNode() || claims.isNull())
                 return null;
 

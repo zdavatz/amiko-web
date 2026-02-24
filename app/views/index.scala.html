@@ -60,6 +60,15 @@
                 </button>
             </div>
         </div>
+        <!-- SWIYU LOGIN STATUS -->
+        <div class="nav-button" id="swiyu-status" style="float: right; margin-right: 12px; line-height: 48px;">
+            @if(vc.swiyuAuthenticated) {
+                <span style="font-size: 13px; color: #fff;">@vc.swiyuFullName (GLN: @vc.swiyuGln)</span>
+                <a href="/swiyu/logout" style="font-size: 13px; color: #aaa; margin-left: 8px;">Logout</a>
+            } else {
+                <a href="/swiyu" style="font-size: 13px; color: #fff;">swiyu Login</a>
+            }
+        </div>
         <!-- SPONSORS BUTTONS -->
         <div class="nav-button" id="sponsor-button">
             <div class="center-image">

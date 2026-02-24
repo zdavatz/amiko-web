@@ -122,6 +122,11 @@ public class MainController extends Controller {
             ctx.logo = "DESITIN";
             ctx.googleAnalyticsId = "UA-47115045-2";
         }
+        ctx.swiyuAuthenticated = SwiyuLoginController.isAuthenticated(request);
+        if (ctx.swiyuAuthenticated) {
+            ctx.swiyuFullName = SwiyuLoginController.getFullName(request);
+            ctx.swiyuGln = SwiyuLoginController.getGln(request);
+        }
         return ctx;
     }
 

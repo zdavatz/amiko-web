@@ -111,13 +111,8 @@ public class InteractionsData {
                 }
                 basket_html_str += "</table>";
                 // Medikamentenkorb löschen
-                String show_epha_button_name = lang.equals("de")
-                    ? "EPha API Details anzeigen"
-                    : "Afficher les détails de l'API EPha";
-                String ephaResLink = ephaRes == null ? "" : ephaRes.get("link").asText();
                 delete_all_button_str = "<div id=\"Delete_all\"><input type=\"button\" value=\"" + delete_all_text
                         + "\" style=\"cursor: pointer; background: transparent; border: 1px solid #aaaaaa;\" onclick=\"deleteRow('Delete_all',this)\" />"
-                        + "<input type=\"button\" value=\"" + show_epha_button_name + "\" style=\"cursor: pointer; background: transparent; border: 1px solid #aaaaaa;float:right;\" onclick=\"window.open('" + ephaResLink + "')\" />"
                         + "</div>";
 
                 if (ephaRes != null) {

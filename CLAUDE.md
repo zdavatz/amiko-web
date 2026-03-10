@@ -81,6 +81,10 @@ GitHub Actions workflows in `.github/workflows/`:
 
 Both inject secrets (HIN_CLIENT_ID, HIN_CLIENT_SECRET, CERTIFACTION_SERVER) by modifying OAuthController.java at build time.
 
+### Footer
+
+The copyright year in `app/views/index.scala.html` is generated dynamically using `@java.time.Year.now().getValue` so it always shows the current year.
+
 ## Deployment
 
 Production uses Daemontools service management with Apache reverse proxy to port 9000. SSL via Let's Encrypt.

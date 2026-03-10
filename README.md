@@ -118,5 +118,8 @@ this will install
 * node v6.9.5
 * npm v3.10.10
 
+## Footer Copyright Year
+The copyright year in the footer is generated dynamically and always shows the current year.
+
 ## Generating amikoweb-1.0-SNAPSHOT.zip
 In the _$SRC_ Dir type `activator`. This will build `amikoweb-1.0-SNAPSHOT.zip`

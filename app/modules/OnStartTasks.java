@@ -26,10 +26,7 @@ import javax.inject.Inject;
 public class OnStartTasks {
     @Inject
     public OnStartTasks() {
-        System.out.print("Loading all de interactions... ");
-        InteractionsData.getInstance().loadAllGermanFiles();
-        System.out.print("Loading all fr interactions... ");
-        InteractionsData.getInstance().loadAllFrenchFiles();
-        System.out.println("OK");
+        System.out.println("InteractionsData initialized (using SDIF interactions.db)");
+        InteractionsData.getInstance();
     }
 }

@@ -91,6 +91,7 @@ public class MainController extends Controller {
     @Inject @NamedDatabase("french") Database french_db;
     @Inject @NamedDatabase("frequency_de") Database frequency_de_db;
     @Inject @NamedDatabase("frequency_fr") Database frequency_fr_db;
+    @Inject @NamedDatabase("interactions") Database interactions_db;
 
     @Inject FormFactory formFactory;
 
@@ -525,7 +526,14 @@ public class MainController extends Controller {
         final String final_article_title = article_title;
         InteractionsData inter_data = InteractionsData.getInstance();
         final Messages messages = messagesApi.preferred(request);
-        return inter_data.updateHtml(ws, med_basket, lang).thenApply((interactions_html)-> {
+        final Connection interactionsConn;
+        try {
+            interactionsConn = interactions_db.getConnection();
+        } catch (Exception e) {
+            System.err.println("Failed to get interactions DB connection: " + e.getMessage());
+            return CompletableFuture.completedFuture(internalServerError("Interactions database not available"));
+        }
+        return inter_data.updateHtml(ws, interactionsConn, med_basket, lang).thenApply((interactions_html)-> {
             // Associate section titles and anchors
             String[] section_titles = inter_data.sectionTitles();
             String[] section_anchors = inter_data.sectionAnchors();
@@ -538,6 +546,7 @@ public class MainController extends Controller {
             titles_html += "</ul>";
             if (interactions_html == null)
                 interactions_html = "";
+            try { interactionsConn.close(); } catch (Exception e) { /* ignore */ }
             return ok(index.render(interactions_html, titles_html, final_article_title, "", "", vc, messages));
         });
     }

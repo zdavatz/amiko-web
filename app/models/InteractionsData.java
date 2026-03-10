@@ -3,7 +3,7 @@ Copyright (c) 2016 ML <cybrmx@gmail.com>
 
 This file is part of AmikoWeb.
 
-AmikoRose is free software: you can redistribute it and/or modify
+AmiKoRose is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
@@ -19,13 +19,10 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 package models;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
+import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import play.libs.ws.*;
 import static play.libs.Json.*;
@@ -36,14 +33,11 @@ import java.util.concurrent.CompletionStage;
 
 /**
  * Created by maxl on 06.12.2016.
+ * Refactored to use SDIF interactions.db (3-strategy search) instead of CSV lookups.
  */
 public class InteractionsData {
 
     private static volatile InteractionsData instance;
-
-    private static Map<String, String> m_interactions_de_map = null;
-    private static Map<String, String> m_interactions_fr_map = null;
-    private static Map<String, String> m_interactions_map = null;
 
     private static String[] m_section_titles = null;
     private static String[] m_section_anchors = null;
@@ -51,11 +45,6 @@ public class InteractionsData {
 
     private InteractionsData() {}
 
-    /**
-     * Get the only instance of this class. Singleton pattern.
-     *
-     * @return
-     */
     public static InteractionsData getInstance() {
         if (instance == null) {
             synchronized (InteractionsData.class) {
@@ -67,40 +56,15 @@ public class InteractionsData {
         return instance;
     }
 
-    public void loadAllGermanFiles() {
-        m_interactions_de_map = readFromCsvToMap("sqlite/drug_interactions_csv_de.csv");
-        int num_entries = -1;
-        if (m_interactions_de_map != null)
-            num_entries = m_interactions_de_map.size();
-        // Default interactions map
-        m_interactions_map = m_interactions_de_map;
-        System.out.println("found " + num_entries + " entries");
-    }
-
-    public void loadAllFrenchFiles() {
-        m_interactions_fr_map = readFromCsvToMap("sqlite/drug_interactions_csv_fr.csv");
-        int num_entries = -1;
-        if (m_interactions_fr_map != null)
-            num_entries = m_interactions_fr_map.size();
-        System.out.println("found " + num_entries + " entries");
-    }
-
-    public void setLang(String lang) {
-        if (lang.equals("de"))
-            m_interactions_map = m_interactions_de_map;
-        else if (lang.equals("fr"))
-            m_interactions_map = m_interactions_fr_map;
-    }
-
     public String[] sectionTitles() {
         return m_section_titles;
     }
 
     public String[] sectionAnchors() { return m_section_anchors; }
 
-    public CompletionStage<String> updateHtml(WSClient ws, Map<String, Medication> med_basket, String lang) {
+    public CompletionStage<String> updateHtml(WSClient ws, Connection interactionsConn,
+                                              Map<String, Medication> med_basket, String lang) {
         return this.dataFromEpha(ws, med_basket, lang).thenApply((ephaRes)-> {
-            // Redisplay selected meds
             String basket_html_str = "<table id=\"Interaktionen\" width=\"100%25\">";
             String delete_all_button_str = "";
             String epha_report_html_str = "";
@@ -109,24 +73,17 @@ public class InteractionsData {
             String legend_html_str = "";
             String bottom_note_html_str = "";
             String atc_code1 = "";
-            String atc_code2 = "";
             String name1 = "";
-            String delete_all_text = "alle löschen";
             String[] m_code1 = null;
-            String[] m_code2 = null;
             int med_counter = 1;
 
-            if (lang.equals("de")) {
-                delete_all_text = "alle löschen";
-            } else if (lang.equals("fr")) {
-                delete_all_text = "tout supprimer";
-            }
+            String delete_all_text = lang.equals("fr") ? "tout supprimer" : "alle löschen";
 
             // Build interaction basket table
             if (med_basket.size() > 0) {
                 for (Map.Entry<String, Medication> entry1 : med_basket.entrySet()) {
                     String atc = entry1.getValue().getAtcCode();
-                    if (atc!=null && !atc.isEmpty()) {
+                    if (atc != null && !atc.isEmpty()) {
                         m_code1 = atc.split(";");
                         atc_code1 = "k.A.";
                         name1 = "k.A.";
@@ -167,112 +124,194 @@ public class InteractionsData {
                     epha_report_html_str = htmlForEpha(ephaRes, lang);
                 }
             } else {
-                // Medikamentenkorb ist leer
-                if (lang.equals("de"))
-                    basket_html_str = "<div>Ihr Medikamentenkorb ist leer.<br><br></div>";
-                else if (lang.equals("fr"))
+                if (lang.equals("fr"))
                     basket_html_str = "<div>Votre panier de médicaments est vide.<br><br></div>";
+                else
+                    basket_html_str = "<div>Ihr Medikamentenkorb ist leer.<br><br></div>";
             }
 
-            // Build list of interactions
+            // --- SDIF 3-strategy interaction check ---
             ArrayList<String> section_str = new ArrayList<>();
             ArrayList<String> section_anchors = new ArrayList<>();
-            // Add table to section titles
-            if (lang.equals("de")) {
-                section_str.add("Interaktionen");
-                section_anchors.add("Interaktionen");
-            } else if (lang.equals("fr")) {
+            if (lang.equals("fr")) {
                 section_str.add("Interactions");
                 section_anchors.add("Interactions");
+            } else {
+                section_str.add("Interaktionen");
+                section_anchors.add("Interaktionen");
             }
-            if (med_counter > 1) {
-                for (Map.Entry<String, Medication> entry1 : med_basket.entrySet()) {
-                    String atc1 = entry1.getValue().getAtcCode();
-                    if (atc1!=null && !atc1.isEmpty()) {
-                        m_code1 = atc1.split(";");
-                        if (m_code1.length > 1) {
-                            // Get ATC code of first drug, make sure to get the first in the list (the second one is not used)
-                            atc_code1 = m_code1[0].split(",")[0];
-                            for (Map.Entry<String, Medication> entry2 : med_basket.entrySet()) {
-                                String atc2 = entry2.getValue().getAtcCode();
-                                if (atc2!=null && !atc2.isEmpty()) {
-                                    m_code2 = atc2.split(";");
-                                    String title1 = entry1.getValue().getTitle();
-                                    String title2 = entry2.getValue().getTitle();
-                                    String ean1 = entry1.getKey();
-                                    String ean2 = entry2.getKey();
-                                    if (m_code2.length > 1) {
-                                        // Get ATC code of second drug
-                                        atc_code2 = m_code2[0];
-                                        if (atc_code1 != null && atc_code2 != null && !atc_code1.equals(atc_code2)) {
 
-                                            if(lang.equals("fr")){
-                                                    m_interactions_map=m_interactions_fr_map;
-                                                }
-                                            else if(lang.equals("de")){
-                                                    m_interactions_map=m_interactions_de_map;
-                                            }
+            if (med_basket.size() >= 2 && interactionsConn != null) {
+                // Resolve basket drugs from interactions.db
+                List<InteractionsSearch.BasketDrug> basketDrugs = new ArrayList<>();
+                // Keep mapping from basket drug index to EAN key for anchors
+                List<String> basketEans = new ArrayList<>();
+                List<String> basketTitles = new ArrayList<>();
 
-                                            // Get html interaction content from drug interactions map
-                                            // Anchors: use titles and not eancodes
-                                            String inter = m_interactions_map.get(atc_code1 + "-" + atc_code2);
-                                            if (inter != null) {
-                                                // This changes the "id" tag
-                                                inter = inter.replaceAll(atc_code1 + "-", ean1 + "-").replaceAll(atc_code1, shortTitle(title1));
-                                                inter = inter.replaceAll("-" + atc_code2, "-" + ean2).replaceAll(atc_code2, shortTitle(title2));
-                                                interactions_html_str += (inter + "");
-                                                // Add title to section title list
-                                                if (!inter.isEmpty()) {
-                                                    section_anchors.add(ean1 + "-" + ean2);
-                                                    section_str.add("<html>" + shortTitle(title1) + " &rarr; " + shortTitle(title2) + "</html>");
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                for (Map.Entry<String, Medication> entry : med_basket.entrySet()) {
+                    InteractionsSearch.BasketDrug bd = InteractionsSearch.resolveDrug(interactionsConn, entry.getValue());
+                    if (bd != null) {
+                        basketDrugs.add(bd);
+                        basketEans.add(entry.getKey());
+                        basketTitles.add(entry.getValue().getTitle());
                     }
+                }
+
+                // Run 3-strategy check
+                List<InteractionsSearch.InteractionResult> interactionResults =
+                    InteractionsSearch.checkBasket(interactionsConn, basketDrugs);
+
+                if (!interactionResults.isEmpty()) {
+                    interactions_html_str = renderInteractionsHtml(interactionResults, section_str, section_anchors, lang);
                 }
             }
 
             if (med_basket.size() > 0 && section_str.size() < 2) {
-                // Add note to indicate that there are no interactions
-                if (lang.equals("de")) {
-                    top_note_html_str = "<div><p class=\"paragraph0\">Zur Zeit sind keine Interaktionen zwischen diesen Medikamenten in der EPha.ch-Datenbank vorhanden. "
-                            + "Weitere Informationen finden Sie in der Fachinformation. "
-                            + "<i>Möchten Sie eine Interaktion melden? Senden Sie bitte eine Email an: zdavatz@ywesee.com.</i></p></div><br><br>";
-                } else if (lang.equals("fr")) {
-                    top_note_html_str = "<p class=\"paragraph0\">Il n’y a aucune information dans la banque de données EPha.ch à propos d’une interaction entre les médicaments sélectionnés. Veuillez consulter les informations professionelles.</p><br><br>";
+                if (lang.equals("fr")) {
+                    top_note_html_str = "<p class=\"paragraph0\">Il n'y a aucune interaction connue entre les médicaments sélectionnés dans la base de données SDIF. "
+                            + "Veuillez consulter les informations professionnelles.</p><br><br>";
+                } else {
+                    top_note_html_str = "<div><p class=\"paragraph0\">Zur Zeit sind keine Interaktionen zwischen diesen Medikamenten in der SDIF-Datenbank vorhanden. "
+                            + "Weitere Informationen finden Sie in der Fachinformation.</p></div><br><br>";
                 }
             } else if (med_basket.size() > 0 && section_str.size() > 1) {
-                // Add color legend
-                legend_html_str = addColorLegend(lang);
-                // Add legend to section titles
-                if (lang.equals("de")) {
-                    section_str.add("Legende");
-                    section_anchors.add("Legende");
-                } else if (lang.equals("fr")) {
+                legend_html_str = addSeverityLegend(lang);
+                if (lang.equals("fr")) {
                     section_str.add("Légende");
                     section_anchors.add("Légende");
+                } else {
+                    section_str.add("Legende");
+                    section_anchors.add("Legende");
                 }
             }
 
-            if (lang.equals("de"))
-                bottom_note_html_str += "<p class=\"footnote\">1. Datenquelle: Public Domain Daten von EPha.ch.</p>";
-            else if (lang.equals("fr"))
-                bottom_note_html_str += "<p class=\"footnote\">1. Source des données: données du domaine publique de EPha.ch.</p>";
+            if (lang.equals("fr"))
+                bottom_note_html_str += "<p class=\"footnote\">1. Source des données: SDIF (Swiss Drug Interaction Finder) — basé sur les informations professionnelles Swissmedic.</p>";
+            else
+                bottom_note_html_str += "<p class=\"footnote\">1. Datenquelle: SDIF (Swiss Drug Interaction Finder) — basierend auf Swissmedic-Fachinformationen.</p>";
 
             String html_str = "<html><head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\" /></head><body><div id=\"interactions\">"
                     + basket_html_str + epha_report_html_str + delete_all_button_str + "<br><br>" + top_note_html_str
                     + interactions_html_str + "<br>" + legend_html_str + "<br>" + bottom_note_html_str + "</div></body></html>";
 
-            // Update section titles
-            m_section_titles = section_str.toArray(new String[section_str.size()]);
-            m_section_anchors = section_anchors.toArray(new String[section_anchors.size()]);
+            m_section_titles = section_str.toArray(new String[0]);
+            m_section_anchors = section_anchors.toArray(new String[0]);
 
             return html_str;
         });
+    }
+
+    /**
+     * Render SDIF interaction results as HTML.
+     */
+    private String renderInteractionsHtml(List<InteractionsSearch.InteractionResult> results,
+                                          ArrayList<String> sectionStr, ArrayList<String> sectionAnchors,
+                                          String lang) {
+        StringBuilder html = new StringBuilder();
+
+        // Group by drug pair for section navigation
+        // Track unique drug pairs we've already added to sections
+        java.util.Set<String> addedPairs = new java.util.LinkedHashSet<>();
+
+        for (InteractionsSearch.InteractionResult ir : results) {
+            String pairKey = ir.drugA + "-" + ir.drugB;
+            String reversePairKey = ir.drugB + "-" + ir.drugA;
+
+            if (!addedPairs.contains(pairKey) && !addedPairs.contains(reversePairKey)) {
+                addedPairs.add(pairKey);
+                String anchor = sanitizeAnchor(ir.drugA) + "-" + sanitizeAnchor(ir.drugB);
+                sectionAnchors.add(anchor);
+                sectionStr.add("<html>" + shortTitle(ir.drugA) + " &rarr; " + shortTitle(ir.drugB) + "</html>");
+            }
+        }
+
+        // Render each interaction result
+        for (InteractionsSearch.InteractionResult ir : results) {
+            String color = InteractionsSearch.severityColor(ir.severityScore);
+            String anchor = sanitizeAnchor(ir.drugA) + "-" + sanitizeAnchor(ir.drugB);
+
+            html.append("<div class=\"interaction-entry\" id=\"").append(anchor).append("\">\n");
+            html.append("<p class=\"paragraph1\" style=\"background-color:").append(color).append(";\">");
+
+            // Type badge
+            String typeBadge;
+            switch (ir.interactionType) {
+                case "substance":
+                    typeBadge = lang.equals("fr") ? "Substance" : "Wirkstoff";
+                    break;
+                case "class-level":
+                    typeBadge = lang.equals("fr") ? "Classe" : "Klasse";
+                    break;
+                case "CYP":
+                    typeBadge = "CYP";
+                    break;
+                default:
+                    typeBadge = ir.interactionType;
+            }
+
+            html.append("<b>").append(ir.drugA).append(" &harr; ").append(ir.drugB).append("</b>");
+            html.append(" &nbsp; <span style=\"font-size:0.85em;\">[").append(typeBadge).append("]</span>");
+            html.append(" &nbsp; <span style=\"font-size:0.85em;\">")
+                .append(ir.severityIndicator).append(" ").append(ir.severityLabel).append("</span>");
+            html.append("</p>\n");
+
+            // Description
+            html.append("<p class=\"paragraph0\">");
+            if (!ir.keyword.isEmpty()) {
+                html.append("<b>").append(escapeHtml(ir.keyword)).append(":</b> ");
+            }
+            html.append(escapeHtml(ir.description));
+            html.append("</p>\n");
+
+            // Explanation
+            if (!ir.explanation.isEmpty()) {
+                html.append("<p class=\"paragraph0\" style=\"font-size:0.85em; color:#666;\">");
+                html.append(escapeHtml(ir.explanation));
+                html.append("</p>\n");
+            }
+
+            html.append("</div>\n");
+        }
+
+        return html.toString();
+    }
+
+    private String shortTitle(String title) {
+        if (title == null) return "";
+        String[] t = title.split(" ");
+        if (t.length > 1)
+            title = t[0] + " " + t[1];
+        title = title.replaceAll(",\\s*$", "");
+        return title;
+    }
+
+    private String sanitizeAnchor(String s) {
+        if (s == null) return "";
+        return s.replaceAll("[^a-zA-Z0-9äöüÄÖÜéèêàâîôûç-]", "_");
+    }
+
+    private static String escapeHtml(String s) {
+        if (s == null) return "";
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
+    }
+
+    private String addSeverityLegend(String lang) {
+        String legend;
+        if (lang.equals("fr")) {
+            legend = "<table id=\"Légende\" width=\"100%25\">";
+            legend += "<tr><td bgcolor=\"#ff6a6a\" width=\"20\"></td><td><b>###</b></td><td>Contre-indiqué</td></tr>";
+            legend += "<tr><td bgcolor=\"#ff82ab\"></td><td><b>##</b></td><td>Grave</td></tr>";
+            legend += "<tr><td bgcolor=\"#ffb90f\"></td><td><b>#</b></td><td>Précaution</td></tr>";
+            legend += "<tr><td bgcolor=\"#caff70\"></td><td><b>-</b></td><td>Pas de classification</td></tr>";
+        } else {
+            legend = "<table id=\"Legende\" width=\"100%25\">";
+            legend += "<tr><td bgcolor=\"#ff6a6a\" width=\"20\"></td><td><b>###</b></td><td>Kontraindiziert</td></tr>";
+            legend += "<tr><td bgcolor=\"#ff82ab\"></td><td><b>##</b></td><td>Schwerwiegend</td></tr>";
+            legend += "<tr><td bgcolor=\"#ffb90f\"></td><td><b>#</b></td><td>Vorsicht</td></tr>";
+            legend += "<tr><td bgcolor=\"#caff70\"></td><td><b>-</b></td><td>Keine Einstufung</td></tr>";
+        }
+        legend += "</table>";
+        return legend;
     }
 
     private CompletionStage<JsonNode> dataFromEpha(WSClient ws, Map<String, Medication> med_basket, String lang) {
@@ -282,7 +321,7 @@ public class InteractionsData {
         ArrayNode arr = newArray();
         for (Map.Entry<String, Medication> entry1 : med_basket.entrySet()) {
             String atc = entry1.getValue().getAtcCode();
-            if (atc!=null && !atc.isEmpty()) {
+            if (atc != null && !atc.isEmpty()) {
                 ObjectNode map = newObject();
                 map.put("type", "drug");
                 map.put("gtin", entry1.getKey());
@@ -322,7 +361,7 @@ public class InteractionsData {
         int adverse = j.get("risk").get("adverse").asInt();
 
         String html_str = "";
-        
+
         if (lang.equals("de")) {
             html_str += "Sicherheit<BR>";
             html_str += "<p class='risk-description'>Je höher die Sicherheit, desto sicherer die Kombination.</p>";
@@ -332,7 +371,7 @@ public class InteractionsData {
         }
 
         html_str += "<div class='risk'>100";
-        html_str += "<div class='gradient'>" + 
+        html_str += "<div class='gradient'>" +
                 "<div class='pin' style='left: " + (100-safety) + "%'>" + safety + "</div>" +
             "</div>";
         html_str += "0</div><BR><BR>";
@@ -397,96 +436,5 @@ public class InteractionsData {
         html_str += "</table>";
 
         return html_str;
-    }
-
-    private String shortTitle(String title) {
-        String[] t = title.split(" ");
-        if (t.length>1)
-            title = t[0] + " " + t[1];
-        // Remove trailing commas
-        title = title.replaceAll(",\\s*$", "");
-        return title;
-    }
-
-    private String addColorLegend(String lang) {
-        String legend = "<table id=\"Legende\" width=\"100%25\">";
-        /*
-	     Risikoklassen
-	     -------------
-		     A: Keine Massnahmen notwendig (grün)
-		     B: Vorsichtsmassnahmen empfohlen (gelb)
-		     C: Regelmässige Überwachung (orange)
-		     D: Kombination vermeiden (pinky)
-		     X: Kontraindiziert (hellrot)
-		     0: Keine Angaben (grau)
-	    */
-        // Sets the anchor
-        if (lang.equals("de")) {
-            legend = "<table id=\"Legende\" width=\"100%25\">";
-            legend += "<tr><td bgcolor=\"#caff70\"></td>" +
-                    "<td>A</td>" +
-                    "<td>Keine Massnahmen notwendig</td></tr>";
-            legend += "<tr><td bgcolor=\"#ffec8b\"></td>" +
-                    "<td>B</td>" +
-                    "<td>Vorsichtsmassnahmen empfohlen</td></tr>";
-            legend += "<tr><td bgcolor=\"#ffb90f\"></td>" +
-                    "<td>C</td>" +
-                    "<td>Regelmässige Überwachung</td></tr>";
-            legend += "<tr><td bgcolor=\"#ff82ab\"></td>" +
-                    "<td>D</td>" +
-                    "<td>Kombination vermeiden</td></tr>";
-            legend += "<tr><td bgcolor=\"#ff6a6a\"></td>" +
-                    "<td>X</td>" +
-                    "<td>Kontraindiziert</td></tr>";
-        } else if (lang.equals("fr")) {
-            legend = "<table id=\"Légende\" width=\"100%25\">";
-            legend += "<tr><td bgcolor=\"#caff70\"></td>" +
-                    "<td>A</td>" +
-                    "<td>Aucune mesure nécessaire</td></tr>";
-            legend += "<tr><td bgcolor=\"#ffec8b\"></td>" +
-                    "<td>B</td>" +
-                    "<td>Mesures de précaution sont recommandées</td></tr>";
-            legend += "<tr><td bgcolor=\"#ffb90f\"></td>" +
-                    "<td>C</td>" +
-                    "<td>Doit être régulièrement surveillée</td></tr>";
-            legend += "<tr><td bgcolor=\"#ff82ab\"></td>" +
-                    "<td>D</td>" +
-                    "<td>Eviter la combinaison</td></tr>";
-            legend += "<tr><td bgcolor=\"#ff6a6a\"></td>" +
-                    "<td>X</td>" +
-                    "<td>Contre-indiquée</td></tr>";
-        }
-		/*
-		legend += "<tr><td bgcolor=\"#dddddd\"></td>" +
-				"<td>0</td>" +
-				"<td>Keine Angaben</td></tr>";
-		*/
-        legend += "</table>";
-
-        return legend;
-    }
-
-    private Map<String, String> readFromCsvToMap(String filename) {
-        Map<String, String> map = new TreeMap<String, String>();
-        try {
-            filename = System.getProperty("user.dir") + "/" + filename;
-            File file = new File(filename);
-            if (!file.exists()) {
-                System.out.println("File " + filename + " not found!");
-                return null;
-            }
-            FileInputStream fis = new FileInputStream(filename);
-            BufferedReader br = new BufferedReader(new InputStreamReader(fis, "UTF-8"));
-            String line;
-            while ((line = br.readLine()) != null) {
-                String token[] = line.split("\\|\\|");
-                map.put(token[0] + "-" + token[1], token[2]);
-            }
-            br.close();
-        } catch (Exception e) {
-            System.err.println(">> Error in reading csv file: " + filename);
-        }
-
-        return map;
     }
 }

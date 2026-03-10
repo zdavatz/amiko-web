@@ -1,5 +1,13 @@
 # amiko-web
-AmiKo auf dem Web mit Play 2.5.2
+AmiKo Web — Swiss Drug Compendium with Play Framework 2.9.2
+
+## Drug Interaction Check (SDIF)
+Drug interactions are powered by [SDIF](https://github.com/zdavatz/sdif) (Swiss Drug Interaction Finder) using a pre-built `interactions.db` in the `sqlite/` directory. Three detection strategies:
+1. **Substance-level** — direct lookup of substance mentions in Fachinformation
+2. **ATC class-level** — 42 pharmacological classes with German keyword matching
+3. **CYP enzyme** — CYP450-mediated interactions (CYP3A4, CYP2D6, CYP2C9, CYP2C19, CYP1A2, CYP2C8, CYP2B6)
+
+Severity levels: Kontraindiziert (###), Schwerwiegend (##), Vorsicht (#), Keine Einstufung (-). EPha API provides supplementary risk scoring.
 ## Install Activator
 ```
 https://www.lightbend.com/activator/download
@@ -32,6 +40,14 @@ rm amiko_db_full_idx_de.db
 wget http://pillbox.oddb.org/amiko_db_full_idx_de.zip
 unzip amiko_db_full_idx_de.zip
 rm amiko_db_full_idx_de.zip
+svc -h /service/amiko.oddb.org
+```
+## Update the interactions database
+Rebuild `interactions.db` using [SDIF](https://github.com/zdavatz/sdif):
+```
+cd /usr/local/src/sdif
+cargo run -- build
+cp db/interactions.db /var/www/amiko.oddb.org/sqlite/
 svc -h /service/amiko.oddb.org
 ```
 ## Update Full-Text-Search

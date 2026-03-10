@@ -42,9 +42,10 @@ The build produces `target/universal/amikoweb-1.0-SNAPSHOT.zip`.
 
 ### Database Setup
 
-Four SQLite databases injected via `@NamedDatabase`:
+Five SQLite databases injected via `@NamedDatabase`:
 - `german` / `french` — Main drug databases (`amiko_db_full_idx_{de,fr}.db`)
 - `frequency_de` / `frequency_fr` — Full-text search frequency databases
+- `interactions` — SDIF drug interactions database (`interactions.db`)
 
 Database files live in `sqlite/` directory. Tables: `amikodb` (medications), `frequency` (full-text entries). Queries use SQLite GLOB patterns with accent normalization. Large registration number queries are batched in groups of 50.
 
@@ -52,7 +53,7 @@ Database files live in `sqlite/` directory. Tables: `amikodb` (medications), `fr
 
 - **Multi-tenant language**: `MyActionCreator` (app/actions/) intercepts requests, sets language based on hostname
 - **Dependency injection**: Guice — databases via `@NamedDatabase`, config via `@Inject Config`
-- **Singleton cache**: `InteractionsData.getInstance()` loads drug interaction CSVs once at startup (via `OnStartModule`/`OnStartTasks`)
+- **Drug interactions**: `InteractionsData.getInstance()` uses SDIF 3-strategy search (substance, ATC class, CYP enzyme) via `InteractionsSearch.java` querying `interactions.db` at request time. EPha API provides supplementary risk scoring.
 - **Async**: Controllers return `CompletionStage<Result>` for non-blocking operations
 - **ViewContext**: Passes UI state (logo, feature flags, analytics ID) to Twirl templates
 

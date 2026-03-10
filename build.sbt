@@ -1,6 +1,6 @@
 name := """AmiKoWeb"""
 
-version := "1.6.1"
+version := "1.0-SNAPSHOT"
 
 scalaVersion := "2.13.13"
 

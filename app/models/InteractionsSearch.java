@@ -5,12 +5,13 @@ import java.util.*;
 
 /**
  * Drug interaction search engine using the pre-built interactions.db from SDIF.
- * Implements 3 detection strategies:
- *   1. Substance-level matching (direct DB lookup)
- *   2. ATC class-level matching (keyword search in interaction text)
- *   3. CYP enzyme-mediated interactions
+ * Implements 3-tier detection (following Android reference pattern):
+ *   Tier 1: EPha curated interactions (epha_interactions table) — highest priority
+ *   Tier 2: Substance-level matching (interactions table)
+ *   Tier 3: ATC class-level matching (class_keywords table + fachinfo text)
+ *   + CYP enzyme-mediated interactions (cyp_rules table)
  *
- * Ported from https://github.com/zdavatz/sdif (Rust)
+ * Keywords, CYP rules, and EPha data are all loaded from database tables.
  */
 public class InteractionsSearch {
 
@@ -35,13 +36,21 @@ public class InteractionsSearch {
         public String drugAAtc;
         public String drugB;
         public String drugBAtc;
-        public String interactionType; // "substance", "class-level", "CYP"
+        public String interactionType; // "substance", "class-level", "CYP", "epha"
         public int severityScore;      // 0-3
         public String severityLabel;
         public String severityIndicator;
         public String keyword;
         public String description;
         public String explanation;
+        // EPha-specific fields
+        public String riskClass;
+        public String riskLabel;
+        public String effect;
+        public String mechanism;
+        public String measures;
+        // Directional severity hint (Gegenrichtung)
+        public String directionHint;
     }
 
     public static class ClassHit {
@@ -54,128 +63,18 @@ public class InteractionsSearch {
         }
     }
 
-    // --- ATC class keywords for Strategy 2 ---
+    private static class CypRule {
+        String enzyme;
+        String textPattern;
+        String role; // "inhibitor" or "inducer"
+        String atcPrefix; // nullable
+        String substance; // nullable
+    }
 
-    private static final String[][] CLASS_KEYWORDS = {
-        {"B01A", "antikoagul", "warfarin", "cumarin", "coumarin", "vitamin-k-antagonist",
-                 "vitamin k antagonist", "blutgerinnungshemm", "thrombozytenaggregationshemm",
-                 "plättchenhemm", "antithrombotisch", "heparin", "thrombin-hemm",
-                 "faktor-xa", "direktes orales antikoagulans", "doak"},
-        {"B01AC", "thrombozytenaggregationshemm", "plättchenhemm", "thrombocytenaggregation"},
-        {"M01A", "nsar", "nsaid", "nichtsteroidale antiphlogistika", "antiphlogistika",
-                 "nichtsteroidale antirheumatika", "cox-2", "cox-hemmer", "cyclooxygenase",
-                 "prostaglandinsynthesehemm", "entzündungshemm"},
-        {"N02B", "analgetik", "antipyretik", "acetylsalicylsäure", "paracetamol"},
-        {"N02A", "opioid", "opiat", "morphin", "atemdepression", "zns-depression"},
-        {"C09A", "ace-hemmer", "ace-inhibitor", "ace inhibitor", "angiotensin-converting"},
-        {"C09B", "ace-hemmer", "ace-inhibitor", "angiotensin-converting"},
-        {"C09C", "angiotensin", "sartan", "at1-rezeptor", "at1-antagonist", "at1-blocker"},
-        {"C09D", "angiotensin", "sartan", "at1-rezeptor", "at1-antagonist"},
-        {"C07", "beta-blocker", "betablocker", "\u03b2-blocker", "betarezeptorenblocker", "beta-adrenozeptor"},
-        {"C08", "calciumantagonist", "calciumkanalblocker", "kalziumantagonist",
-                "kalziumkanalblocker", "calcium-antagonist"},
-        {"C03", "diuretik", "thiazid", "schleifendiuretik", "kaliumsparend"},
-        {"C03C", "schleifendiuretik", "furosemid", "torasemid"},
-        {"C03A", "thiazid", "hydrochlorothiazid"},
-        {"C01A", "herzglykosid", "digoxin", "digitalis", "digitoxin"},
-        {"C01B", "antiarrhythmi", "amiodaron"},
-        {"C10A", "statin", "hmg-coa", "lipidsenk", "cholesterinsenk"},
-        {"N06AB", "ssri", "serotonin-wiederaufnahme", "serotonin reuptake",
-                  "selektive serotonin", "serotonerg"},
-        {"N06A", "antidepressiv", "trizyklisch", "serotonin", "snri", "maoh",
-                 "mao-hemmer", "monoaminoxidase"},
-        {"A10", "antidiabetik", "insulin", "blutzucker", "hypoglykämie", "orale antidiabetika",
-                "sulfonylharnstoff", "metformin"},
-        {"H02", "corticosteroid", "kortikosteroid", "glucocorticoid", "glukokortikoid",
-                "kortison", "steroid"},
-        {"L04", "immunsuppress", "ciclosporin", "tacrolimus", "mycophenolat", "azathioprin",
-                "sirolimus"},
-        {"L01", "antineoplast", "zytostatik", "methotrexat", "chemotherap"},
-        {"N03", "antiepileptik", "antikonvulsiv", "krampflösend", "carbamazepin",
-                "valproinsäure", "phenytoin", "enzymindukt"},
-        {"N05A", "antipsychoti", "neuroleptik", "qt-verlänger", "qt-zeit"},
-        {"N05B", "anxiolytik", "benzodiazepin"},
-        {"N05C", "sedativ", "hypnotik", "schlafmittel", "zns-dämpfend", "zns-depression"},
-        {"J01", "antibiotik", "antibakteriell"},
-        {"J01FA", "makrolid", "erythromycin", "clarithromycin", "azithromycin"},
-        {"J01MA", "fluorchinolon", "chinolon", "gyrasehemm"},
-        {"J02A", "antimykotik", "azol-antimykotik", "triazol", "itraconazol",
-                 "fluconazol", "voriconazol", "cyp3a4-hemm"},
-        {"J05A", "antiviral", "proteasehemm", "protease-inhibitor", "hiv"},
-        {"A02BC", "protonenpumpeninhibitor", "protonenpumpenhemm", "ppi", "säureblocker"},
-        {"A02B", "antazid", "h2-blocker", "h2-antagonist", "säurehemm"},
-        {"G03A", "kontrazeptiv", "östrogen", "orale kontrazeptiva", "hormonelle verhütung"},
-        {"N07", "dopaminerg", "cholinerg", "anticholinerg"},
-        {"R03", "bronchodilatat", "theophyllin", "sympathomimetik", "beta-2"},
-        {"M04", "urikosurik", "gichtmittel", "harnsäure", "allopurinol"},
-        {"B03", "eisen", "eisenpräparat", "eisensupplementation"},
-        {"L02BA", "toremifen", "tamoxifen", "antiöstrogen", "östrogen-rezeptor",
-                  "serm", "selektive östrogenrezeptor"},
-        {"L02B", "hormonantagonist", "antihormon", "antiandrogen", "antiöstrogen"},
-        {"V03AB", "sugammadex", "antidot", "antagonisierung", "neuromuskuläre blockade",
-                  "verdrängung"},
-        {"M03A", "muskelrelax", "neuromuskulär", "rocuronium", "vecuronium",
-                 "succinylcholin", "curare"},
-    };
+    // --- Cached DB data ---
 
-    // --- CYP enzyme data for Strategy 3 ---
-    // Each entry: {enzyme, textPatterns[], inhibitorAtcPrefixes[], inhibitorSubstances[], inducerAtcPrefixes[], inducerSubstances[]}
-
-    private static final String[] CYP3A4_PATTERNS = {"cyp3a4", "cyp3a"};
-    private static final String[] CYP3A4_INHIB_ATC = {"J05AE", "J02A", "J01FA"};
-    private static final String[] CYP3A4_INHIB_SUBST = {"ritonavir", "cobicistat", "itraconazol", "ketoconazol",
-            "voriconazol", "posaconazol", "fluconazol", "clarithromycin", "erythromycin", "diltiazem", "verapamil", "grapefruit"};
-    private static final String[] CYP3A4_INDUC_ATC = {"J04AB", "N03AF", "N03AB"};
-    private static final String[] CYP3A4_INDUC_SUBST = {"rifampicin", "rifabutin", "carbamazepin", "phenytoin",
-            "phenobarbital", "johanniskraut", "efavirenz", "nevirapin"};
-
-    private static final String[] CYP2D6_PATTERNS = {"cyp2d6"};
-    private static final String[] CYP2D6_INHIB_ATC = {};
-    private static final String[] CYP2D6_INHIB_SUBST = {"fluoxetin", "paroxetin", "bupropion", "chinidin",
-            "terbinafin", "duloxetin", "ritonavir", "cobicistat"};
-    private static final String[] CYP2D6_INDUC_ATC = {};
-    private static final String[] CYP2D6_INDUC_SUBST = {"rifampicin"};
-
-    private static final String[] CYP2C9_PATTERNS = {"cyp2c9"};
-    private static final String[] CYP2C9_INHIB_ATC = {};
-    private static final String[] CYP2C9_INHIB_SUBST = {"fluconazol", "amiodaron", "miconazol", "voriconazol", "fluvoxamin"};
-    private static final String[] CYP2C9_INDUC_ATC = {};
-    private static final String[] CYP2C9_INDUC_SUBST = {"rifampicin", "carbamazepin", "phenytoin"};
-
-    private static final String[] CYP2C19_PATTERNS = {"cyp2c19"};
-    private static final String[] CYP2C19_INHIB_ATC = {};
-    private static final String[] CYP2C19_INHIB_SUBST = {"omeprazol", "esomeprazol", "fluvoxamin", "fluconazol",
-            "voriconazol", "ticlopidin"};
-    private static final String[] CYP2C19_INDUC_ATC = {};
-    private static final String[] CYP2C19_INDUC_SUBST = {"rifampicin", "carbamazepin", "phenytoin", "johanniskraut"};
-
-    private static final String[] CYP1A2_PATTERNS = {"cyp1a2"};
-    private static final String[] CYP1A2_INHIB_ATC = {"J01MA"};
-    private static final String[] CYP1A2_INHIB_SUBST = {"ciprofloxacin", "fluvoxamin", "enoxacin"};
-    private static final String[] CYP1A2_INDUC_ATC = {};
-    private static final String[] CYP1A2_INDUC_SUBST = {"rifampicin", "carbamazepin", "phenytoin", "johanniskraut"};
-
-    private static final String[] CYP2C8_PATTERNS = {"cyp2c8"};
-    private static final String[] CYP2C8_INHIB_ATC = {};
-    private static final String[] CYP2C8_INHIB_SUBST = {"gemfibrozil", "clopidogrel", "trimethoprim"};
-    private static final String[] CYP2C8_INDUC_ATC = {};
-    private static final String[] CYP2C8_INDUC_SUBST = {"rifampicin"};
-
-    private static final String[] CYP2B6_PATTERNS = {"cyp2b6"};
-    private static final String[] CYP2B6_INHIB_ATC = {};
-    private static final String[] CYP2B6_INHIB_SUBST = {"ticlopidin", "clopidogrel"};
-    private static final String[] CYP2B6_INDUC_ATC = {};
-    private static final String[] CYP2B6_INDUC_SUBST = {"rifampicin", "efavirenz"};
-
-    private static final Object[][] CYP_MAP = {
-        {"CYP3A4", CYP3A4_PATTERNS, CYP3A4_INHIB_ATC, CYP3A4_INHIB_SUBST, CYP3A4_INDUC_ATC, CYP3A4_INDUC_SUBST},
-        {"CYP2D6", CYP2D6_PATTERNS, CYP2D6_INHIB_ATC, CYP2D6_INHIB_SUBST, CYP2D6_INDUC_ATC, CYP2D6_INDUC_SUBST},
-        {"CYP2C9", CYP2C9_PATTERNS, CYP2C9_INHIB_ATC, CYP2C9_INHIB_SUBST, CYP2C9_INDUC_ATC, CYP2C9_INDUC_SUBST},
-        {"CYP2C19", CYP2C19_PATTERNS, CYP2C19_INHIB_ATC, CYP2C19_INHIB_SUBST, CYP2C19_INDUC_ATC, CYP2C19_INDUC_SUBST},
-        {"CYP1A2", CYP1A2_PATTERNS, CYP1A2_INHIB_ATC, CYP1A2_INHIB_SUBST, CYP1A2_INDUC_ATC, CYP1A2_INDUC_SUBST},
-        {"CYP2C8", CYP2C8_PATTERNS, CYP2C8_INHIB_ATC, CYP2C8_INHIB_SUBST, CYP2C8_INDUC_ATC, CYP2C8_INDUC_SUBST},
-        {"CYP2B6", CYP2B6_PATTERNS, CYP2B6_INHIB_ATC, CYP2B6_INHIB_SUBST, CYP2B6_INDUC_ATC, CYP2B6_INDUC_SUBST},
-    };
+    private static volatile Map<String, List<String>> cachedClassKeywords = null;
+    private static volatile List<CypRule> cachedCypRules = null;
 
     // --- Severity scoring keywords ---
 
@@ -213,63 +112,70 @@ public class InteractionsSearch {
         "wirkungsverlust", "wirkverlust"
     };
 
-    // --- ATC class descriptions ---
+    // --- DB data loading ---
 
-    private static final Map<String, String> ATC_CLASS_DESCRIPTIONS = new LinkedHashMap<>();
-    static {
-        ATC_CLASS_DESCRIPTIONS.put("B01A", "Antikoagulantien");
-        ATC_CLASS_DESCRIPTIONS.put("B01AC", "Thrombozytenaggregationshemmer");
-        ATC_CLASS_DESCRIPTIONS.put("M01A", "NSAR (NSAIDs)");
-        ATC_CLASS_DESCRIPTIONS.put("N02B", "Analgetika / Antipyretika");
-        ATC_CLASS_DESCRIPTIONS.put("N02A", "Opioide");
-        ATC_CLASS_DESCRIPTIONS.put("C09A", "ACE-Hemmer");
-        ATC_CLASS_DESCRIPTIONS.put("C09B", "ACE-Hemmer (Kombination)");
-        ATC_CLASS_DESCRIPTIONS.put("C09C", "Sartane (AT1-Antagonisten)");
-        ATC_CLASS_DESCRIPTIONS.put("C09D", "Sartane (Kombination)");
-        ATC_CLASS_DESCRIPTIONS.put("C07", "Beta-Blocker");
-        ATC_CLASS_DESCRIPTIONS.put("C08", "Calciumkanalblocker");
-        ATC_CLASS_DESCRIPTIONS.put("C03", "Diuretika");
-        ATC_CLASS_DESCRIPTIONS.put("C03C", "Schleifendiuretika");
-        ATC_CLASS_DESCRIPTIONS.put("C03A", "Thiazide");
-        ATC_CLASS_DESCRIPTIONS.put("C01A", "Herzglykoside");
-        ATC_CLASS_DESCRIPTIONS.put("C01B", "Antiarrhythmika");
-        ATC_CLASS_DESCRIPTIONS.put("C10A", "Statine");
-        ATC_CLASS_DESCRIPTIONS.put("N06AB", "SSRIs");
-        ATC_CLASS_DESCRIPTIONS.put("N06A", "Antidepressiva");
-        ATC_CLASS_DESCRIPTIONS.put("A10", "Antidiabetika");
-        ATC_CLASS_DESCRIPTIONS.put("H02", "Corticosteroide");
-        ATC_CLASS_DESCRIPTIONS.put("L04", "Immunsuppressiva");
-        ATC_CLASS_DESCRIPTIONS.put("L01", "Antineoplastika");
-        ATC_CLASS_DESCRIPTIONS.put("N03", "Antiepileptika");
-        ATC_CLASS_DESCRIPTIONS.put("N05A", "Antipsychotika");
-        ATC_CLASS_DESCRIPTIONS.put("N05B", "Anxiolytika");
-        ATC_CLASS_DESCRIPTIONS.put("N05C", "Sedativa / Hypnotika");
-        ATC_CLASS_DESCRIPTIONS.put("J01", "Antibiotika");
-        ATC_CLASS_DESCRIPTIONS.put("J01FA", "Makrolide");
-        ATC_CLASS_DESCRIPTIONS.put("J01MA", "Fluorchinolone");
-        ATC_CLASS_DESCRIPTIONS.put("J02A", "Antimykotika");
-        ATC_CLASS_DESCRIPTIONS.put("J05A", "Antivirale");
-        ATC_CLASS_DESCRIPTIONS.put("A02BC", "PPI (Protonenpumpenhemmer)");
-        ATC_CLASS_DESCRIPTIONS.put("A02B", "Ulkusmittel");
-        ATC_CLASS_DESCRIPTIONS.put("G03A", "Hormonale Kontrazeptiva");
-        ATC_CLASS_DESCRIPTIONS.put("N07", "Nervensystem (andere)");
-        ATC_CLASS_DESCRIPTIONS.put("R03", "Bronchodilatatoren");
-        ATC_CLASS_DESCRIPTIONS.put("M04", "Gichtmittel");
-        ATC_CLASS_DESCRIPTIONS.put("B03", "Eisenpräparate");
-        ATC_CLASS_DESCRIPTIONS.put("L02BA", "SERMs (Tamoxifen)");
-        ATC_CLASS_DESCRIPTIONS.put("L02B", "Hormonantagonisten");
-        ATC_CLASS_DESCRIPTIONS.put("V03AB", "Antidota");
-        ATC_CLASS_DESCRIPTIONS.put("M03A", "Muskelrelaxantien");
+    private static synchronized Map<String, List<String>> loadClassKeywords(Connection conn) {
+        if (cachedClassKeywords != null) return cachedClassKeywords;
+        Map<String, List<String>> keywords = new LinkedHashMap<>();
+        try (PreparedStatement stmt = conn.prepareStatement(
+                "SELECT atc_prefix, keyword FROM class_keywords ORDER BY atc_prefix");
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                String prefix = rs.getString("atc_prefix");
+                String kw = rs.getString("keyword");
+                keywords.computeIfAbsent(prefix, k -> new ArrayList<>()).add(kw);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error loading class keywords: " + e.getMessage());
+        }
+        cachedClassKeywords = keywords;
+        return cachedClassKeywords;
     }
 
-    // ATC prefix lookup order (most specific first)
-    private static final String[] ATC_PREFIX_ORDER = {
-        "B01AC", "B01A", "M01A", "N02B", "N02A", "C09A", "C09B", "C09C", "C09D",
-        "C07", "C08", "C03C", "C03A", "C03", "C01A", "C01B", "C10A", "N06AB", "N06A",
-        "A10", "H02", "L04", "L01", "N03", "N05A", "N05B", "N05C",
-        "J01FA", "J01MA", "J01", "J02A", "J05A", "A02BC", "A02B", "G03A", "N07", "R03",
-        "M04", "B03", "L02BA", "L02B", "V03AB", "M03A"
-    };
+    private static synchronized List<CypRule> loadCypRules(Connection conn) {
+        if (cachedCypRules != null) return cachedCypRules;
+        List<CypRule> rules = new ArrayList<>();
+        try (PreparedStatement stmt = conn.prepareStatement(
+                "SELECT enzyme, text_pattern, role, atc_prefix, substance FROM cyp_rules");
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                CypRule rule = new CypRule();
+                rule.enzyme = rs.getString("enzyme");
+                rule.textPattern = rs.getString("text_pattern");
+                rule.role = rs.getString("role");
+                rule.atcPrefix = rs.getString("atc_prefix");
+                rule.substance = rs.getString("substance");
+                rules.add(rule);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error loading CYP rules: " + e.getMessage());
+        }
+        cachedCypRules = rules;
+        return cachedCypRules;
+    }
+
+    // --- EPha lookup ---
+
+    private static Map<String, String> findEphaInteraction(Connection conn, String atc1, String atc2) {
+        try (PreparedStatement stmt = conn.prepareStatement(
+                "SELECT * FROM epha_interactions WHERE atc1 = ? AND atc2 = ? LIMIT 1")) {
+            stmt.setString(1, atc1);
+            stmt.setString(2, atc2);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Map<String, String> row = new LinkedHashMap<>();
+                    ResultSetMetaData meta = rs.getMetaData();
+                    for (int i = 1; i <= meta.getColumnCount(); i++) {
+                        row.put(meta.getColumnName(i), rs.getString(i));
+                    }
+                    return row;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error in EPha lookup: " + e.getMessage());
+        }
+        return null;
+    }
 
     // --- Public API ---
 
@@ -355,9 +261,14 @@ public class InteractionsSearch {
 
     /**
      * Check all pairwise interactions for a basket of drugs.
-     * Returns a list of InteractionResult sorted by severity (highest first).
+     * All tiers run for every pair (EPha + Swissmedic FI shown together).
+     * Gegenrichtung hint computed across all results per drug pair.
      */
     public static List<InteractionResult> checkBasket(Connection conn, List<BasketDrug> drugs) {
+        // Ensure DB data is loaded
+        loadClassKeywords(conn);
+        loadCypRules(conn);
+
         List<InteractionResult> results = new ArrayList<>();
 
         for (int i = 0; i < drugs.size(); i++) {
@@ -365,90 +276,24 @@ public class InteractionsSearch {
                 BasketDrug a = drugs.get(i);
                 BasketDrug b = drugs.get(j);
 
-                // Strategy 1: Substance match A->B
-                for (String subst : b.substances) {
-                    addSubstanceMatches(conn, results, a, b, subst);
-                }
-                // Strategy 1: Substance match B->A
-                for (String subst : a.substances) {
-                    addSubstanceMatches(conn, results, b, a, subst);
-                }
+                List<InteractionResult> pairResults = getInteractionsForPair(conn, a, b);
+                results.addAll(pairResults);
+            }
+        }
 
-                // Strategy 2: Class-level A->B
-                for (ClassHit hit : findClassInteractions(a.interactionsText, b.atcCode)) {
-                    int[] sev = scoreSeverity(hit.context);
-                    String classDesc = atcClassDescriptionForCode(b.atcCode);
-                    InteractionResult ir = new InteractionResult();
-                    ir.drugA = a.brand;
-                    ir.drugAAtc = a.atcCode;
-                    ir.drugB = b.brand;
-                    ir.drugBAtc = b.atcCode;
-                    ir.interactionType = "class-level";
-                    ir.severityScore = sev[0];
-                    ir.severityLabel = severityLabel(sev[0]);
-                    ir.severityIndicator = severityIndicator(sev[0]);
-                    ir.keyword = hit.classKeyword;
-                    ir.description = hit.context;
-                    ir.explanation = String.format("%s [%s] gehört zur Klasse %s — Keyword «%s» gefunden in Fachinformation von %s",
-                            b.brand, b.atcCode, classDesc, hit.classKeyword, a.brand);
-                    results.add(ir);
-                }
-                // Strategy 2: Class-level B->A
-                for (ClassHit hit : findClassInteractions(b.interactionsText, a.atcCode)) {
-                    int[] sev = scoreSeverity(hit.context);
-                    String classDesc = atcClassDescriptionForCode(a.atcCode);
-                    InteractionResult ir = new InteractionResult();
-                    ir.drugA = b.brand;
-                    ir.drugAAtc = b.atcCode;
-                    ir.drugB = a.brand;
-                    ir.drugBAtc = a.atcCode;
-                    ir.interactionType = "class-level";
-                    ir.severityScore = sev[0];
-                    ir.severityLabel = severityLabel(sev[0]);
-                    ir.severityIndicator = severityIndicator(sev[0]);
-                    ir.keyword = hit.classKeyword;
-                    ir.description = hit.context;
-                    ir.explanation = String.format("%s [%s] gehört zur Klasse %s — Keyword «%s» gefunden in Fachinformation von %s",
-                            a.brand, a.atcCode, classDesc, hit.classKeyword, b.brand);
-                    results.add(ir);
-                }
-
-                // Strategy 3: CYP A->B
-                for (ClassHit hit : findCypInteractions(a.interactionsText, b.atcCode, b.substances)) {
-                    int[] sev = scoreSeverity(hit.context);
-                    InteractionResult ir = new InteractionResult();
-                    ir.drugA = a.brand;
-                    ir.drugAAtc = a.atcCode;
-                    ir.drugB = b.brand;
-                    ir.drugBAtc = b.atcCode;
-                    ir.interactionType = "CYP";
-                    ir.severityScore = sev[0];
-                    ir.severityLabel = severityLabel(sev[0]);
-                    ir.severityIndicator = severityIndicator(sev[0]);
-                    ir.keyword = hit.classKeyword;
-                    ir.description = hit.context;
-                    ir.explanation = String.format("%s ist %s — Fachinformation von %s erwähnt dieses Enzym",
-                            b.brand, hit.classKeyword, a.brand);
-                    results.add(ir);
-                }
-                // Strategy 3: CYP B->A
-                for (ClassHit hit : findCypInteractions(b.interactionsText, a.atcCode, a.substances)) {
-                    int[] sev = scoreSeverity(hit.context);
-                    InteractionResult ir = new InteractionResult();
-                    ir.drugA = b.brand;
-                    ir.drugAAtc = b.atcCode;
-                    ir.drugB = a.brand;
-                    ir.drugBAtc = a.atcCode;
-                    ir.interactionType = "CYP";
-                    ir.severityScore = sev[0];
-                    ir.severityLabel = severityLabel(sev[0]);
-                    ir.severityIndicator = severityIndicator(sev[0]);
-                    ir.keyword = hit.classKeyword;
-                    ir.description = hit.context;
-                    ir.explanation = String.format("%s ist %s — Fachinformation von %s erwähnt dieses Enzym",
-                            a.brand, hit.classKeyword, b.brand);
-                    results.add(ir);
-                }
+        // Compute Gegenrichtung hints: for each drug pair (sorted),
+        // find the max severity. Results below max get a hint.
+        Map<String, Integer> pairMax = new LinkedHashMap<>();
+        for (InteractionResult ir : results) {
+            String key = pairKey(ir.drugA, ir.drugB);
+            pairMax.merge(key, ir.severityScore, Math::max);
+        }
+        for (InteractionResult ir : results) {
+            String key = pairKey(ir.drugA, ir.drugB);
+            int max = pairMax.getOrDefault(key, 0);
+            if (ir.severityScore < max) {
+                ir.directionHint = String.format(
+                    "Gegenrichtung hat höhere Einstufung — diese FI stuft die Interaktion tiefer ein");
             }
         }
 
@@ -457,156 +302,267 @@ public class InteractionsSearch {
         return results;
     }
 
-    // --- Strategy 1: Substance-level lookup ---
+    private static String pairKey(String a, String b) {
+        if (a == null) a = "";
+        if (b == null) b = "";
+        return a.compareTo(b) <= 0 ? a + "||" + b : b + "||" + a;
+    }
+
+    /**
+     * All-tier interaction lookup for a drug pair.
+     * EPha, substance, class-level, and CYP all run — nothing is skipped.
+     */
+    private static List<InteractionResult> getInteractionsForPair(Connection conn,
+                                                                   BasketDrug drugA, BasketDrug drugB) {
+        List<InteractionResult> results = new ArrayList<>();
+
+        // EPha curated ATC-to-ATC (both directions)
+        Map<String, String> ephaForward = findEphaInteraction(conn, drugA.atcCode, drugB.atcCode);
+        Map<String, String> ephaReverse = findEphaInteraction(conn, drugB.atcCode, drugA.atcCode);
+        if (ephaForward != null) {
+            results.add(buildEphaResult(ephaForward, drugA, drugB));
+        }
+        if (ephaReverse != null) {
+            results.add(buildEphaResult(ephaReverse, drugB, drugA));
+        }
+
+        // Substance match (both directions)
+        for (String subst : drugB.substances) {
+            addSubstanceMatches(conn, results, drugA, drugB, subst);
+        }
+        for (String subst : drugA.substances) {
+            addSubstanceMatches(conn, results, drugB, drugA, subst);
+        }
+
+        // Class-level (both directions)
+        addClassResults(conn, results, drugA, drugB);
+        addClassResults(conn, results, drugB, drugA);
+
+        // CYP enzyme (both directions)
+        addCypResults(conn, results, drugA, drugB);
+        addCypResults(conn, results, drugB, drugA);
+
+        return results;
+    }
+
+    // --- Tier 1: EPha result builder ---
+
+    private static InteractionResult buildEphaResult(Map<String, String> ephaRow,
+                                                     BasketDrug drugA, BasketDrug drugB) {
+        int severity = 0;
+        try { severity = Integer.parseInt(ephaRow.get("severity_score")); } catch (Exception e) {}
+
+        InteractionResult ir = new InteractionResult();
+        ir.drugA = drugA.brand;
+        ir.drugAAtc = drugA.atcCode;
+        ir.drugB = drugB.brand;
+        ir.drugBAtc = drugB.atcCode;
+        ir.interactionType = "epha";
+        ir.severityScore = severity;
+        ir.severityLabel = severityLabel(severity);
+        ir.severityIndicator = severityIndicator(severity);
+        ir.riskClass = ephaRow.get("risk_class");
+        ir.riskLabel = ephaRow.get("risk_label");
+        ir.effect = ephaRow.get("effect");
+        ir.mechanism = ephaRow.get("mechanism");
+        ir.measures = ephaRow.get("measures");
+        ir.keyword = "";
+        ir.description = "";
+        ir.explanation = String.format("EPha Interaktionsdatenbank (ATC %s \u2194 %s)",
+                drugA.atcCode, drugB.atcCode);
+        // directionHint computed centrally in checkBasket()
+
+        return ir;
+    }
+
+    // --- Tier 2: Substance-level lookup (by drug_substance, matching Android reference) ---
+    // One result per substance pair (highest severity), deduplicated across brands.
 
     private static void addSubstanceMatches(Connection conn, List<InteractionResult> results,
-                                            BasketDrug source, BasketDrug other, String substance) {
-        try (PreparedStatement stmt = conn.prepareStatement(
-                "SELECT description, severity_score, severity_label FROM interactions " +
-                "WHERE drug_brand = ? AND interacting_substance = ?")) {
-            stmt.setString(1, source.brand);
-            stmt.setString(2, substance);
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    InteractionResult ir = new InteractionResult();
-                    ir.drugA = source.brand;
-                    ir.drugAAtc = source.atcCode;
-                    ir.drugB = other.brand;
-                    ir.drugBAtc = other.atcCode;
-                    ir.interactionType = "substance";
-                    ir.severityScore = rs.getInt("severity_score");
-                    ir.severityLabel = rs.getString("severity_label");
-                    ir.severityIndicator = severityIndicator(ir.severityScore);
-                    ir.keyword = substance;
-                    ir.description = rs.getString("description");
-                    ir.explanation = String.format("Wirkstoff «%s» wird in der Fachinformation von %s erwähnt",
-                            substance, source.brand);
-                    results.add(ir);
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Error in substance lookup: " + e.getMessage());
-        }
-    }
+                                            BasketDrug source, BasketDrug other, String interactingSubstance) {
+        if (source.substances == null || source.substances.isEmpty()) return;
 
-    // --- Strategy 2: Class-level interactions ---
+        for (String sourceSubst : source.substances) {
+            try (PreparedStatement stmt = conn.prepareStatement(
+                    "SELECT drug_substance, interacting_substance, description, severity_score, severity_label " +
+                    "FROM interactions WHERE LOWER(drug_substance) = LOWER(?) AND LOWER(interacting_substance) = LOWER(?) " +
+                    "ORDER BY severity_score DESC LIMIT 1")) {
+                stmt.setString(1, sourceSubst);
+                stmt.setString(2, interactingSubstance);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        String drugSubst = rs.getString("drug_substance");
+                        String interSubst = rs.getString("interacting_substance");
+                        InteractionResult ir = new InteractionResult();
+                        ir.drugA = source.brand;
+                        ir.drugAAtc = source.atcCode;
+                        ir.drugB = other.brand;
+                        ir.drugBAtc = other.atcCode;
+                        ir.interactionType = "substance";
+                        ir.severityScore = rs.getInt("severity_score");
+                        ir.severityLabel = rs.getString("severity_label");
+                        ir.severityIndicator = severityIndicator(ir.severityScore);
+                        ir.keyword = interSubst;
+                        ir.description = rs.getString("description");
+                        ir.explanation = String.format("Wirkstoff «%s» (%s) → «%s» (%s)",
+                                drugSubst, source.brand, interSubst, other.brand);
 
-    public static List<ClassHit> findClassInteractions(String interactionText, String otherAtc) {
-        if (interactionText == null || interactionText.isEmpty() || otherAtc == null || otherAtc.isEmpty()) {
-            return Collections.emptyList();
-        }
-        String textLower = interactionText.toLowerCase();
-        List<ClassHit> hits = new ArrayList<>();
-
-        for (String[] entry : CLASS_KEYWORDS) {
-            String atcPrefix = entry[0];
-            if (!otherAtc.startsWith(atcPrefix)) {
-                continue;
-            }
-            for (int k = 1; k < entry.length; k++) {
-                String keyword = entry[k];
-                if (textLower.contains(keyword)) {
-                    String context = extractContext(interactionText, keyword);
-                    if (!context.isEmpty()) {
-                        hits.add(new ClassHit(keyword, context));
-                        break; // One hit per ATC prefix is enough
+                        results.add(ir);
                     }
                 }
+            } catch (SQLException e) {
+                System.err.println("Error in substance lookup: " + e.getMessage());
             }
         }
-        return hits;
     }
 
-    // --- Strategy 3: CYP enzyme interactions ---
+    // --- Tier 3: Class-level interactions (from class_keywords table) ---
 
-    public static List<ClassHit> findCypInteractions(String interactionText, String otherAtc, List<String> otherSubstances) {
-        if (interactionText == null || interactionText.isEmpty()) {
-            return Collections.emptyList();
+    private static void addClassResults(Connection conn, List<InteractionResult> results,
+                                        BasketDrug source, BasketDrug other) {
+        if (source.interactionsText == null || source.interactionsText.isEmpty()
+                || other.atcCode == null || other.atcCode.isEmpty()) {
+            return;
         }
-        String textLower = interactionText.toLowerCase();
-        List<ClassHit> hits = new ArrayList<>();
+        String textLower = source.interactionsText.toLowerCase();
+
+        Map<String, List<String>> keywords = loadClassKeywords(conn);
+        for (Map.Entry<String, List<String>> entry : keywords.entrySet()) {
+            String prefix = entry.getKey();
+            if (!other.atcCode.startsWith(prefix)) continue;
+
+            for (String kw : entry.getValue()) {
+                if (!textLower.contains(kw.toLowerCase())) continue;
+                String context = extractContext(source.interactionsText, kw);
+                if (context == null || context.isEmpty()) continue;
+
+                int[] sev = scoreSeverity(context);
+
+                InteractionResult ir = new InteractionResult();
+                ir.drugA = source.brand;
+                ir.drugAAtc = source.atcCode;
+                ir.drugB = other.brand;
+                ir.drugBAtc = other.atcCode;
+                ir.interactionType = "class-level";
+                ir.severityScore = sev[0];
+                ir.severityLabel = severityLabel(sev[0]);
+                ir.severityIndicator = severityIndicator(sev[0]);
+                ir.keyword = kw;
+                ir.description = context;
+                ir.explanation = String.format(
+                        "%s [%s] — Keyword «%s» gefunden in Fachinformation von %s",
+                        other.brand, other.atcCode, kw, source.brand);
+
+                results.add(ir);
+                break; // One hit per ATC prefix is enough
+            }
+        }
+    }
+
+    // --- CYP enzyme interactions (from cyp_rules table) ---
+
+    private static void addCypResults(Connection conn, List<InteractionResult> results,
+                                      BasketDrug source, BasketDrug other) {
+        if (source.interactionsText == null || source.interactionsText.isEmpty()) {
+            return;
+        }
+        String textLower = source.interactionsText.toLowerCase();
 
         List<String> otherSubstLower = new ArrayList<>();
-        if (otherSubstances != null) {
-            for (String s : otherSubstances) {
+        if (other.substances != null) {
+            for (String s : other.substances) {
                 otherSubstLower.add(s.toLowerCase());
             }
         }
 
-        for (Object[] cypEntry : CYP_MAP) {
-            String enzyme = (String) cypEntry[0];
-            String[] textPatterns = (String[]) cypEntry[1];
-            String[] inhibAtc = (String[]) cypEntry[2];
-            String[] inhibSubst = (String[]) cypEntry[3];
-            String[] inducAtc = (String[]) cypEntry[4];
-            String[] inducSubst = (String[]) cypEntry[5];
+        List<CypRule> rules = loadCypRules(conn);
+
+        // Group rules by enzyme
+        Map<String, List<CypRule>> rulesByEnzyme = new LinkedHashMap<>();
+        for (CypRule rule : rules) {
+            rulesByEnzyme.computeIfAbsent(rule.enzyme, k -> new ArrayList<>()).add(rule);
+        }
+
+        Set<String> matchedEnzymes = new HashSet<>();
+
+        for (Map.Entry<String, List<CypRule>> entry : rulesByEnzyme.entrySet()) {
+            String enzyme = entry.getKey();
+            List<CypRule> enzymeRules = entry.getValue();
 
             // Check if interaction text mentions this CYP enzyme
             boolean mentioned = false;
-            for (String p : textPatterns) {
-                if (textLower.contains(p)) {
+            String matchedPattern = null;
+            for (CypRule rule : enzymeRules) {
+                if (textLower.contains(rule.textPattern.toLowerCase())) {
                     mentioned = true;
+                    matchedPattern = rule.textPattern;
                     break;
                 }
             }
             if (!mentioned) continue;
 
-            // Check if the other drug is a known inhibitor
+            // Check if other drug matches any inhibitor or inducer rule for this enzyme
             boolean isInhibitor = false;
-            if (otherAtc != null) {
-                for (String prefix : inhibAtc) {
-                    if (otherAtc.startsWith(prefix)) {
-                        isInhibitor = true;
-                        break;
-                    }
-                }
-            }
-            if (!isInhibitor) {
-                for (String s : inhibSubst) {
-                    if (otherSubstLower.contains(s)) {
-                        isInhibitor = true;
-                        break;
-                    }
-                }
-            }
-
-            // Check if the other drug is a known inducer
             boolean isInducer = false;
-            if (otherAtc != null) {
-                for (String prefix : inducAtc) {
-                    if (otherAtc.startsWith(prefix)) {
-                        isInducer = true;
-                        break;
-                    }
+            for (CypRule rule : enzymeRules) {
+                boolean matches = false;
+                if (rule.atcPrefix != null && !rule.atcPrefix.isEmpty()
+                        && other.atcCode != null && other.atcCode.startsWith(rule.atcPrefix)) {
+                    matches = true;
                 }
-            }
-            if (!isInducer) {
-                for (String s : inducSubst) {
-                    if (otherSubstLower.contains(s)) {
-                        isInducer = true;
-                        break;
-                    }
+                if (rule.substance != null && !rule.substance.isEmpty()
+                        && otherSubstLower.contains(rule.substance.toLowerCase())) {
+                    matches = true;
+                }
+                if (matches) {
+                    if ("inhibitor".equals(rule.role)) isInhibitor = true;
+                    if ("inducer".equals(rule.role)) isInducer = true;
                 }
             }
 
-            if (isInhibitor || isInducer) {
+            if ((isInhibitor || isInducer) && !matchedEnzymes.contains(enzyme)) {
+                matchedEnzymes.add(enzyme);
                 String role = isInhibitor ? "Hemmer" : "Induktor";
-                String context = extractContext(interactionText, textPatterns[0]);
-                if (!context.isEmpty()) {
-                    hits.add(new ClassHit(enzyme + "-" + role, context));
+                String context = extractContext(source.interactionsText, matchedPattern);
+                if (context != null && !context.isEmpty()) {
+                    int[] sev = scoreSeverity(context);
+                    InteractionResult ir = new InteractionResult();
+                    ir.drugA = source.brand;
+                    ir.drugAAtc = source.atcCode;
+                    ir.drugB = other.brand;
+                    ir.drugBAtc = other.atcCode;
+                    ir.interactionType = "CYP";
+                    ir.severityScore = sev[0];
+                    ir.severityLabel = severityLabel(sev[0]);
+                    ir.severityIndicator = severityIndicator(sev[0]);
+                    ir.keyword = enzyme + "-" + role;
+                    ir.description = context;
+                    ir.explanation = String.format("%s ist %s-%s — Fachinformation von %s erwähnt dieses Enzym",
+                            other.brand, enzyme, role, source.brand);
+                    results.add(ir);
                 }
             }
         }
+    }
 
-        return hits;
+    private static String interactionsTextForAtc(Connection conn, String atcCode) {
+        if (atcCode == null || atcCode.isEmpty()) return null;
+        try (PreparedStatement stmt = conn.prepareStatement(
+                "SELECT interactions_text FROM drugs WHERE atc_code = ? AND length(interactions_text) > 0 LIMIT 1")) {
+            stmt.setString(1, atcCode);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("interactions_text");
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error loading interactions text: " + e.getMessage());
+        }
+        return null;
     }
 
     // --- Severity scoring ---
 
-    /**
-     * Score severity of a text snippet.
-     * Returns int[]{score, 0} where score is 0-3.
-     */
     public static int[] scoreSeverity(String text) {
         if (text == null || text.isEmpty()) return new int[]{0};
         String lower = text.toLowerCase();
@@ -641,9 +597,6 @@ public class InteractionsSearch {
         }
     }
 
-    /**
-     * Severity color for HTML rendering.
-     */
     public static String severityColor(int score) {
         switch (score) {
             case 3: return "#ff6a6a"; // red - Kontraindiziert
@@ -653,12 +606,23 @@ public class InteractionsSearch {
         }
     }
 
+    /**
+     * CSS paragraph class for EPha risk_class values.
+     */
+    public static String paragraphClassForRisk(String riskClass) {
+        if (riskClass == null) return "paragraph0";
+        switch (riskClass.trim()) {
+            case "X": return "paragraphX";
+            case "D": return "paragraphD";
+            case "C": return "paragraphC";
+            case "B": return "paragraphB";
+            case "A": return "paragraphA";
+            default: return "paragraph0";
+        }
+    }
+
     // --- Context extraction ---
 
-    /**
-     * Extract the best context snippet containing the given keyword.
-     * Picks the sentence with the highest severity score.
-     */
     public static String extractContext(String text, String keyword) {
         if (text == null || keyword == null) return "";
         String lower = text.toLowerCase();
@@ -698,25 +662,12 @@ public class InteractionsSearch {
                 } else {
                     bestSnippet = snippet;
                 }
-                if (bestSeverity >= 3) break; // Can't do better
+                if (bestSeverity >= 3) break;
             }
 
             searchFrom = pos + keyLower.length();
         }
 
         return bestSnippet;
-    }
-
-    // --- ATC class description lookup ---
-
-    public static String atcClassDescriptionForCode(String atcCode) {
-        if (atcCode == null || atcCode.isEmpty()) return "";
-        for (String prefix : ATC_PREFIX_ORDER) {
-            if (atcCode.startsWith(prefix)) {
-                String desc = ATC_CLASS_DESCRIPTIONS.get(prefix);
-                return desc != null ? desc : "";
-            }
-        }
-        return "";
     }
 }

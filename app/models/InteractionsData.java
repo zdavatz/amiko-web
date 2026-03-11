@@ -222,47 +222,90 @@ public class InteractionsData {
 
         // Render each interaction result
         for (InteractionsSearch.InteractionResult ir : results) {
-            String color = InteractionsSearch.severityColor(ir.severityScore);
             String anchor = sanitizeAnchor(ir.drugA) + "-" + sanitizeAnchor(ir.drugB);
 
             html.append("<div class=\"interaction-entry\" id=\"").append(anchor).append("\">\n");
-            html.append("<p class=\"paragraph1\" style=\"background-color:").append(color).append(";\">");
 
-            // Type badge
-            String typeBadge;
-            switch (ir.interactionType) {
-                case "substance":
-                    typeBadge = lang.equals("fr") ? "Substance" : "Wirkstoff";
-                    break;
-                case "class-level":
-                    typeBadge = lang.equals("fr") ? "Classe" : "Klasse";
-                    break;
-                case "CYP":
-                    typeBadge = "CYP";
-                    break;
-                default:
-                    typeBadge = ir.interactionType;
-            }
-
-            html.append("<b>").append(ir.drugA).append(" &harr; ").append(ir.drugB).append("</b>");
-            html.append(" &nbsp; <span style=\"font-size:0.85em;\">[").append(typeBadge).append("]</span>");
-            html.append(" &nbsp; <span style=\"font-size:0.85em;\">")
-                .append(ir.severityIndicator).append(" ").append(ir.severityLabel).append("</span>");
-            html.append("</p>\n");
-
-            // Description
-            html.append("<p class=\"paragraph0\">");
-            if (!ir.keyword.isEmpty()) {
-                html.append("<b>").append(escapeHtml(ir.keyword)).append(":</b> ");
-            }
-            html.append(escapeHtml(ir.description));
-            html.append("</p>\n");
-
-            // Explanation
-            if (!ir.explanation.isEmpty()) {
-                html.append("<p class=\"paragraph0\" style=\"font-size:0.85em; color:#666;\">");
-                html.append(escapeHtml(ir.explanation));
+            if ("epha".equals(ir.interactionType)) {
+                // EPha curated interaction — use CSS paragraph class based on risk_class
+                String paragraphClass = InteractionsSearch.paragraphClassForRisk(ir.riskClass);
+                html.append("<p class=\"").append(paragraphClass).append("\">");
+                html.append("<b>").append(escapeHtml(ir.drugA)).append(" [").append(escapeHtml(ir.drugAAtc))
+                    .append("] &harr; ").append(escapeHtml(ir.drugB)).append(" [").append(escapeHtml(ir.drugBAtc)).append("]</b>");
+                html.append("<br>");
+                html.append("<span style=\"font-size:0.85em; background-color:#dde8f0; padding:1px 6px; border-radius:3px;\">")
+                    .append(lang.equals("fr") ? "Source: EPha.ch" : "Quelle: EPha.ch").append("</span>");
+                html.append(" &nbsp; <span style=\"font-size:0.85em;\">")
+                    .append(ir.severityIndicator).append(" ").append(escapeHtml(ir.riskLabel != null ? ir.riskLabel : ir.severityLabel))
+                    .append("</span>");
+                if (ir.effect != null && !ir.effect.isEmpty()) {
+                    html.append("<br><b>").append(escapeHtml(ir.effect)).append("</b>");
+                }
+                if (ir.mechanism != null && !ir.mechanism.isEmpty()) {
+                    html.append("<br>").append(escapeHtml(ir.mechanism));
+                }
+                if (ir.measures != null && !ir.measures.isEmpty()) {
+                    html.append("<br><i>").append(lang.equals("fr") ? "Mesures: " : "Massnahmen: ")
+                        .append(escapeHtml(ir.measures)).append("</i>");
+                }
+                if (ir.directionHint != null && !ir.directionHint.isEmpty()) {
+                    html.append("<br><span style=\"background-color:#ffec8b; padding:2px 6px; font-size:0.85em;\">")
+                        .append(escapeHtml(ir.directionHint)).append("</span>");
+                }
                 html.append("</p>\n");
+            } else {
+                // Substance, class-level, CYP interactions
+                String color = InteractionsSearch.severityColor(ir.severityScore);
+                html.append("<p class=\"paragraph1\" style=\"background-color:").append(color).append(";\">");
+
+                // Type badge
+                String typeBadge;
+                switch (ir.interactionType) {
+                    case "substance":
+                        typeBadge = lang.equals("fr") ? "Substance" : "Wirkstoff";
+                        break;
+                    case "class-level":
+                        typeBadge = lang.equals("fr") ? "Classe ATC" : "ATC-Klasse";
+                        break;
+                    case "CYP":
+                        typeBadge = "CYP";
+                        break;
+                    default:
+                        typeBadge = ir.interactionType;
+                }
+
+                html.append("<b>").append(escapeHtml(ir.drugA)).append(" &harr; ").append(escapeHtml(ir.drugB)).append("</b>");
+                html.append(" &nbsp; <span style=\"font-size:0.85em; background-color:#d5ecd5; padding:1px 6px; border-radius:3px;\">")
+                    .append(lang.equals("fr") ? "Source: Swissmedic FI" : "Quelle: Swissmedic FI").append("</span>");
+                html.append(" &nbsp; <span style=\"font-size:0.85em;\">[").append(typeBadge).append("]</span>");
+                html.append(" &nbsp; <span style=\"font-size:0.85em;\">")
+                    .append(ir.severityIndicator).append(" ").append(escapeHtml(ir.severityLabel)).append("</span>");
+                html.append("</p>\n");
+
+                // Description
+                html.append("<p class=\"paragraph0\">");
+                if (ir.keyword != null && !ir.keyword.isEmpty()) {
+                    html.append("<b>").append(escapeHtml(ir.keyword)).append(":</b> ");
+                }
+                if (ir.description != null && !ir.description.isEmpty()) {
+                    html.append(escapeHtml(ir.description));
+                }
+                html.append("</p>\n");
+
+                // Explanation
+                if (ir.explanation != null && !ir.explanation.isEmpty()) {
+                    html.append("<p class=\"paragraph0\" style=\"font-size:0.85em; color:#666;\">");
+                    html.append(escapeHtml(ir.explanation));
+                    html.append("</p>\n");
+                }
+
+                // Directional hint
+                if (ir.directionHint != null && !ir.directionHint.isEmpty()) {
+                    html.append("<p class=\"paragraph0\" style=\"font-size:0.85em;\">");
+                    html.append("<span style=\"background-color:#ffec8b; padding:2px 6px;\">")
+                        .append(escapeHtml(ir.directionHint)).append("</span>");
+                    html.append("</p>\n");
+                }
             }
 
             html.append("</div>\n");

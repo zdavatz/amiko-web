@@ -22,6 +22,8 @@ public class InteractionsSearch {
         public List<String> substances;
         public String atcCode;
         public String interactionsText;
+        public String route;
+        public String comboHint;
 
         public BasketDrug(String brand, List<String> substances, String atcCode, String interactionsText) {
             this.brand = brand;
@@ -51,6 +53,10 @@ public class InteractionsSearch {
         public String measures;
         // Directional severity hint (Gegenrichtung)
         public String directionHint;
+        // Route and combo hint
+        public String drugARoute;
+        public String drugBRoute;
+        public String comboHint;
     }
 
     public static class ClassHit {
@@ -106,8 +112,8 @@ public class InteractionsSearch {
         "dosisanpassung", "dosis reduz", "dosis anpassen", "dosisreduktion",
         "sorgfältig", "regelmässig", "regelmäßig", "aufmerksam",
         "cave", "beobacht", "verstärkt", "vermindert", "abgeschwächt",
-        "erhöht", "erniedrigt", "beeinflusst", "wechselwirkung",
-        "plasmaspiegel", "serumkonzentration", "bioverfügbarkeit",
+        "erhöh", "erniedrigt", "beeinflusst", "wechselwirkung",
+        "plasmaspiegel", "plasmakonzentration", "serumkonzentration", "bioverfügbarkeit",
         "subtherapeutisch", "supratherapeutisch", "therapieversagen",
         "wirkungsverlust", "wirkverlust"
     };
@@ -194,7 +200,7 @@ public class InteractionsSearch {
             // Try brand name match
             String pattern = "%" + brandSearch + "%";
             try (PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT brand_name, active_substances, atc_code, interactions_text " +
+                    "SELECT brand_name, active_substances, atc_code, interactions_text, route, combo_hint " +
                     "FROM drugs WHERE brand_name LIKE ? ORDER BY length(interactions_text) DESC")) {
                 stmt.setString(1, pattern);
                 try (ResultSet rs = stmt.executeQuery()) {
@@ -210,7 +216,7 @@ public class InteractionsSearch {
                 String atcCode = atc.split("[;,]")[0].trim();
                 if (!atcCode.isEmpty()) {
                     try (PreparedStatement stmt = conn.prepareStatement(
-                            "SELECT brand_name, active_substances, atc_code, interactions_text " +
+                            "SELECT brand_name, active_substances, atc_code, interactions_text, route, combo_hint " +
                             "FROM drugs WHERE atc_code = ? ORDER BY length(interactions_text) DESC")) {
                         stmt.setString(1, atcCode);
                         try (ResultSet rs = stmt.executeQuery()) {
@@ -224,7 +230,7 @@ public class InteractionsSearch {
 
             // Try substance match
             try (PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT DISTINCT d.brand_name, d.active_substances, d.atc_code, d.interactions_text " +
+                    "SELECT DISTINCT d.brand_name, d.active_substances, d.atc_code, d.interactions_text, d.route, d.combo_hint " +
                     "FROM substance_brand_map s JOIN drugs d ON d.brand_name = s.brand_name " +
                     "WHERE s.substance LIKE ? ORDER BY length(d.interactions_text) DESC LIMIT 1")) {
                 stmt.setString(1, "%" + brandSearch.toLowerCase() + "%");
@@ -245,18 +251,23 @@ public class InteractionsSearch {
         String substStr = rs.getString("active_substances");
         String atc = rs.getString("atc_code");
         String text = rs.getString("interactions_text");
+        String route = rs.getString("route");
+        String comboHint = rs.getString("combo_hint");
         List<String> substances = new ArrayList<>();
         if (substStr != null && !substStr.isEmpty()) {
             for (String s : substStr.split(", ")) {
                 substances.add(s.toLowerCase().trim());
             }
         }
-        return new BasketDrug(
+        BasketDrug bd = new BasketDrug(
             brand != null ? brand : "",
             substances,
             atc != null ? atc : "",
             text != null ? text : ""
         );
+        bd.route = route != null ? route : "";
+        bd.comboHint = comboHint != null ? comboHint : "";
+        return bd;
     }
 
     /**
@@ -370,6 +381,9 @@ public class InteractionsSearch {
         ir.description = "";
         ir.explanation = String.format("EPha Interaktionsdatenbank (ATC %s \u2194 %s)",
                 drugA.atcCode, drugB.atcCode);
+        ir.drugARoute = drugA.route;
+        ir.drugBRoute = drugB.route;
+        ir.comboHint = drugA.comboHint;
         // directionHint computed centrally in checkBasket()
 
         return ir;
@@ -406,6 +420,9 @@ public class InteractionsSearch {
                         ir.description = rs.getString("description");
                         ir.explanation = String.format("Wirkstoff «%s» (%s) → «%s» (%s)",
                                 drugSubst, source.brand, interSubst, other.brand);
+                        ir.drugARoute = source.route;
+                        ir.drugBRoute = other.route;
+                        ir.comboHint = source.comboHint;
 
                         results.add(ir);
                     }
@@ -452,6 +469,9 @@ public class InteractionsSearch {
                 ir.explanation = String.format(
                         "%s [%s] — Keyword «%s» gefunden in Fachinformation von %s",
                         other.brand, other.atcCode, kw, source.brand);
+                ir.drugARoute = source.route;
+                ir.drugBRoute = other.route;
+                ir.comboHint = source.comboHint;
 
                 results.add(ir);
                 break; // One hit per ATC prefix is enough
@@ -539,6 +559,9 @@ public class InteractionsSearch {
                     ir.description = context;
                     ir.explanation = String.format("%s ist %s-%s — Fachinformation von %s erwähnt dieses Enzym",
                             other.brand, enzyme, role, source.brand);
+                    ir.drugARoute = source.route;
+                    ir.drugBRoute = other.route;
+                    ir.comboHint = source.comboHint;
                     results.add(ir);
                 }
             }
@@ -630,6 +653,7 @@ public class InteractionsSearch {
 
         String bestSnippet = "";
         int bestSeverity = -1;
+        boolean bestIsAnimal = false;
         int searchFrom = 0;
 
         while (true) {
@@ -655,8 +679,20 @@ public class InteractionsSearch {
             String snippet = text.substring(start, end).trim();
             int[] sev = scoreSeverity(snippet);
 
-            if (sev[0] > bestSeverity || bestSnippet.isEmpty()) {
-                bestSeverity = sev[0];
+            // Deprioritize if substance appears after Tiermodell/Tierstudie/Tierversuch
+            String prefixLower = lower.substring(start, pos);
+            boolean isAnimal = prefixLower.contains("tiermodell")
+                || prefixLower.contains("tierstudie")
+                || prefixLower.contains("tierversuch");
+            int effectiveSev = isAnimal ? 0 : sev[0];
+
+            boolean dominated = effectiveSev > bestSeverity
+                || (effectiveSev == bestSeverity && bestIsAnimal && !isAnimal)
+                || bestSnippet.isEmpty();
+
+            if (dominated) {
+                bestSeverity = effectiveSev;
+                bestIsAnimal = isAnimal;
                 if (snippet.length() > 500) {
                     bestSnippet = snippet.substring(0, 497) + "...";
                 } else {

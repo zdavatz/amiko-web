@@ -230,8 +230,18 @@ public class InteractionsData {
                 // EPha curated interaction — use CSS paragraph class based on risk_class
                 String paragraphClass = InteractionsSearch.paragraphClassForRisk(ir.riskClass);
                 html.append("<p class=\"").append(paragraphClass).append("\">");
-                html.append("<b>").append(escapeHtml(ir.drugA)).append(" [").append(escapeHtml(ir.drugAAtc))
-                    .append("] &harr; ").append(escapeHtml(ir.drugB)).append(" [").append(escapeHtml(ir.drugBAtc)).append("]</b>");
+                html.append("<b>").append(escapeHtml(ir.drugA));
+                if (ir.drugARoute != null && !ir.drugARoute.isEmpty()) {
+                    html.append(" <span style=\"font-size:0.8em; background-color:#e8e0f0; padding:1px 4px; border-radius:2px;\">")
+                        .append(escapeHtml(ir.drugARoute)).append("</span>");
+                }
+                html.append(" [").append(escapeHtml(ir.drugAAtc))
+                    .append("] &harr; ").append(escapeHtml(ir.drugB));
+                if (ir.drugBRoute != null && !ir.drugBRoute.isEmpty()) {
+                    html.append(" <span style=\"font-size:0.8em; background-color:#e8e0f0; padding:1px 4px; border-radius:2px;\">")
+                        .append(escapeHtml(ir.drugBRoute)).append("</span>");
+                }
+                html.append(" [").append(escapeHtml(ir.drugBAtc)).append("]</b>");
                 html.append("<br>");
                 html.append("<span style=\"font-size:0.85em; background-color:#dde8f0; padding:1px 6px; border-radius:3px;\">")
                     .append(lang.equals("fr") ? "Source: EPha.ch" : "Quelle: EPha.ch").append("</span>");
@@ -274,7 +284,17 @@ public class InteractionsData {
                         typeBadge = ir.interactionType;
                 }
 
-                html.append("<b>").append(escapeHtml(ir.drugA)).append(" &harr; ").append(escapeHtml(ir.drugB)).append("</b>");
+                html.append("<b>").append(escapeHtml(ir.drugA));
+                if (ir.drugARoute != null && !ir.drugARoute.isEmpty()) {
+                    html.append(" <span style=\"font-size:0.8em; background-color:#e8e0f0; padding:1px 4px; border-radius:2px;\">")
+                        .append(escapeHtml(ir.drugARoute)).append("</span>");
+                }
+                html.append(" &harr; ").append(escapeHtml(ir.drugB));
+                if (ir.drugBRoute != null && !ir.drugBRoute.isEmpty()) {
+                    html.append(" <span style=\"font-size:0.8em; background-color:#e8e0f0; padding:1px 4px; border-radius:2px;\">")
+                        .append(escapeHtml(ir.drugBRoute)).append("</span>");
+                }
+                html.append("</b>");
                 html.append(" &nbsp; <span style=\"font-size:0.85em; background-color:#d5ecd5; padding:1px 6px; border-radius:3px;\">")
                     .append(lang.equals("fr") ? "Source: Swissmedic FI" : "Quelle: Swissmedic FI").append("</span>");
                 html.append(" &nbsp; <span style=\"font-size:0.85em;\">[").append(typeBadge).append("]</span>");
@@ -305,6 +325,13 @@ public class InteractionsData {
                     html.append("<span style=\"background-color:#ffec8b; padding:2px 6px;\">")
                         .append(escapeHtml(ir.directionHint)).append("</span>");
                     html.append("</p>\n");
+                }
+
+                // Combo hint
+                if (ir.comboHint != null && !ir.comboHint.isEmpty()) {
+                    html.append("<p class=\"paragraph0\" style=\"font-size:0.85em;\">")
+                        .append("<span style=\"background-color:#d5ecd5; padding:2px 6px;\">")
+                        .append(escapeHtml(ir.comboHint)).append("</span></p>\n");
                 }
             }
 

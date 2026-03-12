@@ -50,7 +50,7 @@ Five SQLite databases injected via `@NamedDatabase`:
 Database files live in `sqlite/` directory. Tables: `amikodb` (medications), `frequency` (full-text entries). Queries use SQLite GLOB patterns with accent normalization. Large registration number queries are batched in groups of 50.
 
 The `interactions.db` contains 6 tables:
-- `drugs` — Drug registry with brand_name, atc_code, active_substances, interactions_text (FI text)
+- `drugs` — Drug registry with brand_name, atc_code, active_substances, interactions_text (FI text), route (administration route indicator), combo_hint (approved combination therapy hint)
 - `interactions` — Substance-level drug interactions with severity_score (0-3) and description
 - `substance_brand_map` — Maps substance names to brand names
 - `epha_interactions` — EPha curated ATC-to-ATC interactions with risk_class (A/B/C/D/X), effect, mechanism, measures
@@ -61,7 +61,7 @@ The `interactions.db` contains 6 tables:
 
 - **Multi-tenant language**: `MyActionCreator` (app/actions/) intercepts requests, sets language based on hostname
 - **Dependency injection**: Guice — databases via `@NamedDatabase`, config via `@Inject Config`
-- **Drug interactions**: `InteractionsData.getInstance()` runs all tiers for each drug pair via `InteractionsSearch.java` querying `interactions.db`: EPha curated (epha_interactions table), substance-level (interactions table), ATC class-level (class_keywords table + FI text), CYP enzyme (cyp_rules table). All keywords, CYP rules, and EPha data come from database tables (not hardcoded). Bidirectional results shown with Gegenrichtung hints when severity differs across directions. EPha API provides supplementary risk scoring.
+- **Drug interactions**: `InteractionsData.getInstance()` runs all tiers for each drug pair via `InteractionsSearch.java` querying `interactions.db`: EPha curated (epha_interactions table), substance-level (interactions table), ATC class-level (class_keywords table + FI text), CYP enzyme (cyp_rules table). All keywords, CYP rules, and EPha data come from database tables (not hardcoded). Route indicators and combo_hint badges displayed next to drug names. Severity keywords synced with SDIF (uses "erhöh" stem, "plasmakonzentration"); Tiermodell references deprioritized in context extraction. Bidirectional results shown with Gegenrichtung hints when severity differs across directions. EPha API provides supplementary risk scoring.
 - **Async**: Controllers return `CompletionStage<Result>` for non-blocking operations
 - **ViewContext**: Passes UI state (logo, feature flags, analytics ID) to Twirl templates
 

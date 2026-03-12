@@ -7,7 +7,7 @@ Drug interactions are powered by [SDIF](https://github.com/zdavatz/sdif) (Swiss 
 2. **ATC class-level** — 42 pharmacological classes with German keyword matching
 3. **CYP enzyme** — CYP450-mediated interactions (CYP3A4, CYP2D6, CYP2C9, CYP2C19, CYP1A2, CYP2C8, CYP2B6)
 
-Severity levels: Kontraindiziert (###), Schwerwiegend (##), Vorsicht (#), Keine Einstufung (-). EPha API provides supplementary risk scoring.
+Route indicators (topisch, i.v., s.c., etc.) and approved combination therapy hints are displayed next to drug names. Severity levels: Kontraindiziert (###), Schwerwiegend (##), Vorsicht (#), Keine Einstufung (-). Severity keywords are synced with SDIF; animal model references (Tiermodell) are deprioritized in context extraction. EPha API provides supplementary risk scoring.
 ## Install Activator
 ```
 https://www.lightbend.com/activator/download

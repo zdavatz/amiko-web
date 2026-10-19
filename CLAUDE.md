@@ -93,6 +93,19 @@ Both inject secrets (HIN_CLIENT_ID, HIN_CLIENT_SECRET, CERTIFACTION_SERVER) by m
 
 The copyright year in `app/views/index.scala.html` is generated dynamically using `@java.time.Year.now().getValue` so it always shows the current year.
 
+## Access-log analysis (tools/gtin-report)
+
+Standalone Rust crate in `tools/gtin-report/`, independent of the Play build.
+Reads Apache `other_vhosts_access.log*` (plain or .gz), counts opened
+Fachinformationen per GTIN (`/de/fi/gtin/<GTIN>` and `/de/fi?gtin=<GTIN>`),
+looks up names in `Refdata.Articles.xml`, and renders a PDF with genpdf
+(DejaVu fonts in `fonts/`). `--geoip` takes a DB-IP Country Lite mmdb queried
+via the `mmdblookup` binary; `--nur-ch` restricts to Swiss IPs. Only HTTP 200
+counts; assets, `javascriptRoutes` and `interactions/null` are ignored. A
+search counts once per user (longest typed term), because the UI fires a
+request per keystroke to several endpoints. Build with
+`cargo build --release` inside that directory; see its README for usage.
+
 ## Deployment
 
 Production uses Daemontools service management with Apache reverse proxy to port 9000. SSL via Let's Encrypt.

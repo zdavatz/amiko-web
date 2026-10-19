@@ -123,3 +123,10 @@ The copyright year in the footer is generated dynamically and always shows the c
 
 ## Generating amikoweb-1.0-SNAPSHOT.zip
 In the _$SRC_ Dir type `activator`. This will build `amikoweb-1.0-SNAPSHOT.zip`
+
+## Zugriffsauswertung (tools/gtin-report)
+
+Rust-Tool, das aus den Apache-Logs ein PDF mit Nutzern (IP-Adressen,
+aktive Tage, Aktionen) und geöffneten Fachinformationen (GTIN, Präparat,
+Zulassungsinhaberin) erzeugt, wahlweise nur für Schweizer IPs. Details in
+`tools/gtin-report/README.md`.

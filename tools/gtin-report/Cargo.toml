@@ -1,0 +1,11 @@
+[package]
+name = "gtin-report"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+description = "PDF der auf amiko.zurrose.ch abgerufenen Fachinformationen (GTIN, Praeparat, Abrufe) aus den Apache-Logs"
+
+[dependencies]
+anyhow = "1"
+flate2 = "1"
+genpdf = "0.2"
